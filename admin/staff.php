@@ -1,0 +1,335 @@
+<?php
+require_once __DIR__ . '/../includes/session.php';
+require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/feature_access.php';
+
+requireAdmin();
+
+$tenantId = (int) ($_SESSION['tenant_id'] ?? 0);
+$currentUserId = (int) ($_SESSION['user_id'] ?? 0);
+$businessName = $_SESSION['business_name'] ?? 'Tenant Workspace';
+$fullName = $_SESSION['full_name'] ?? 'Admin User';
+$flashMessage = $_SESSION['staff_success'] ?? null;
+$errorMessage = $_SESSION['staff_error'] ?? null;
+$oldInput = $_SESSION['staff_old_input'] ?? [];
+unset($_SESSION['staff_success'], $_SESSION['staff_error'], $_SESSION['staff_old_input']);
+
+$staffMembers = [];
+$staffSummary = [
+    'total_staff' => 0,
+    'active_staff' => 0,
+    'admins' => 0,
+    'mechanics' => 0,
+    'cashiers' => 0,
+];
+
+$moduleLinks = [
+    ['label' => 'Staff Management', 'feature' => null, 'hint' => 'Live', 'href' => 'staff.php'],
+    ['label' => 'Customers', 'feature' => 'customer_module', 'hint' => 'Live', 'href' => 'customers.php'],
+    ['label' => 'Vehicles', 'feature' => 'customer_module', 'hint' => 'Live', 'href' => 'vehicles.php'],
+    ['label' => 'Appointments', 'feature' => 'appointments', 'hint' => 'Live', 'href' => 'appointments.php'],
+    ['label' => 'Jobs', 'feature' => 'jobs', 'hint' => 'Live', 'href' => 'jobs.php'],
+    ['label' => 'Inventory', 'feature' => 'inventory', 'hint' => 'Live', 'href' => 'inventory.php'],
+    ['label' => 'Invoices', 'feature' => 'invoicing', 'hint' => 'Live', 'href' => 'invoices.php'],
+    ['label' => 'Payments', 'feature' => 'payments', 'hint' => 'Live', 'href' => 'payments.php'],
+];
+
+try {
+    $pdo = Database::getInstance();
+
+    $tenantStmt = $pdo->prepare("
+        SELECT business_name
+        FROM tenants
+        WHERE tenant_id = :tenant_id
+        LIMIT 1
+    ");
+    $tenantStmt->execute(['tenant_id' => $tenantId]);
+    $tenantRow = $tenantStmt->fetch();
+
+    if ($tenantRow && !empty($tenantRow['business_name'])) {
+        $businessName = $tenantRow['business_name'];
+        $_SESSION['business_name'] = $businessName;
+    }
+
+    $summaryStmt = $pdo->prepare("
+        SELECT
+            COUNT(*) AS total_staff,
+            SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) AS active_staff,
+            SUM(CASE WHEN role = 'admin' THEN 1 ELSE 0 END) AS admins,
+            SUM(CASE WHEN role = 'mechanic' THEN 1 ELSE 0 END) AS mechanics,
+            SUM(CASE WHEN role = 'cashier' THEN 1 ELSE 0 END) AS cashiers
+        FROM users
+        WHERE tenant_id = :tenant_id
+          AND role IN ('admin', 'cashier', 'mechanic')
+    ");
+    $summaryStmt->execute(['tenant_id' => $tenantId]);
+    $summaryRow = $summaryStmt->fetch();
+
+    if ($summaryRow) {
+        foreach ($staffSummary as $key => $unused) {
+            $staffSummary[$key] = (int) ($summaryRow[$key] ?? 0);
+        }
+    }
+
+    $staffStmt = $pdo->prepare("
+        SELECT
+            user_id,
+            full_name,
+            username,
+            role,
+            status,
+            must_change_password,
+            created_at
+        FROM users
+        WHERE tenant_id = :tenant_id
+          AND role IN ('admin', 'cashier', 'mechanic')
+        ORDER BY
+            FIELD(role, 'admin', 'cashier', 'mechanic'),
+            full_name ASC,
+            user_id ASC
+    ");
+    $staffStmt->execute(['tenant_id' => $tenantId]);
+    $staffMembers = $staffStmt->fetchAll();
+} catch (PDOException $e) {
+    $errorMessage = 'Staff module could not be loaded: ' . $e->getMessage();
+}
+
+$showAnalytics = tenantHasFeature('reports', $tenantId);
+$visibleModuleLinks = array_filter($moduleLinks, function ($module) use ($tenantId) {
+    return $module['feature'] === null || tenantHasFeature($module['feature'], $tenantId);
+});
+
+function staffDate($date) {
+    if (!$date) {
+        return 'No date';
+    }
+
+    $timestamp = strtotime($date);
+    return $timestamp ? date('M d, Y', $timestamp) : $date;
+}
+?>
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Management - MECHANIX</title>
+    <link rel="stylesheet" href="../assets/css/styles.css">
+</head>
+<body class="page-shell">
+    <div class="dashboard">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="brand">
+                    <div class="brand-mark">M</div>
+                    <div class="brand-text">
+                        <h2>MECHANIX</h2>
+                        <p><?= htmlspecialchars($businessName, ENT_QUOTES, 'UTF-8') ?></p>
+                    </div>
+                </div>
+                <p class="sidebar-meta">Tenant admin workspace for daily repair operations.</p>
+            </div>
+
+            <div class="sidebar-section-title">Overview</div>
+            <nav class="sidebar-menu">
+                <a href="dashboard.php"><span>Dashboard</span><span class="badge">Now</span></a>
+                <?php if ($showAnalytics): ?>
+                    <a href="reports.php"><span>Analytics</span><span class="sidebar-hint">Live</span></a>
+                <?php endif; ?>
+            </nav>
+
+            <div class="sidebar-section-title">Operations</div>
+            <nav class="sidebar-menu">
+                <?php foreach ($visibleModuleLinks as $module): ?>
+                    <a href="<?= htmlspecialchars($module['href'], ENT_QUOTES, 'UTF-8') ?>"<?= $module['href'] === 'staff.php' ? ' class="active"' : '' ?>>
+                        <span><?= htmlspecialchars($module['label'], ENT_QUOTES, 'UTF-8') ?></span>
+                        <span class="sidebar-hint"><?= htmlspecialchars($module['hint'], ENT_QUOTES, 'UTF-8') ?></span>
+                    </a>
+                <?php endforeach; ?>
+            </nav>
+
+            <div class="sidebar-footer">
+                <a href="../logout.php" class="btn btn-secondary btn-full">Log Out</a>
+            </div>
+        </aside>
+
+        <main class="dashboard-main">
+            <div class="dashboard-topbar">
+                <div class="dashboard-title">
+                    <h2>Staff Management</h2>
+                    <p>Manage tenant-scoped admins, cashiers, and mechanics for <?= htmlspecialchars($businessName, ENT_QUOTES, 'UTF-8') ?>.</p>
+                </div>
+
+                <div class="nav-actions">
+                    <button type="button" class="theme-toggle" data-theme-toggle>Dark Mode</button>
+                </div>
+            </div>
+
+            <?php if ($flashMessage !== null): ?>
+                <div class="alert alert-success">
+                    <?= htmlspecialchars($flashMessage, ENT_QUOTES, 'UTF-8') ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if ($errorMessage !== null): ?>
+                <div class="alert alert-error">
+                    <?= htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') ?>
+                </div>
+            <?php endif; ?>
+
+            <section class="dashboard-grid">
+                <article class="metric-card">
+                    <span>Total Staff</span>
+                    <h3><?= number_format($staffSummary['total_staff']) ?></h3>
+                </article>
+                <article class="metric-card">
+                    <span>Active Staff</span>
+                    <h3><?= number_format($staffSummary['active_staff']) ?></h3>
+                </article>
+                <article class="metric-card">
+                    <span>Admins</span>
+                    <h3><?= number_format($staffSummary['admins']) ?></h3>
+                </article>
+                <article class="metric-card">
+                    <span>Mechanics</span>
+                    <h3><?= number_format($staffSummary['mechanics']) ?></h3>
+                </article>
+            </section>
+
+            <section class="content-grid staff-grid">
+                <article class="content-card">
+                    <h3>Staff Directory</h3>
+                    <p>Every account shown here is filtered by the current tenant and ready for admin-side access control.</p>
+
+                    <?php if (!empty($staffMembers)): ?>
+                        <div class="dashboard-list">
+                            <?php foreach ($staffMembers as $staff): ?>
+                                <?php $isCurrentUser = (int) $staff['user_id'] === $currentUserId; ?>
+                                <div class="dashboard-list-item staff-list-item">
+                                    <div>
+                                        <strong><?= htmlspecialchars($staff['full_name'], ENT_QUOTES, 'UTF-8') ?></strong>
+                                        <p>
+                                            @<?= htmlspecialchars($staff['username'], ENT_QUOTES, 'UTF-8') ?> |
+                                            <?= htmlspecialchars(ucfirst($staff['role']), ENT_QUOTES, 'UTF-8') ?> |
+                                            Added <?= htmlspecialchars(staffDate($staff['created_at']), ENT_QUOTES, 'UTF-8') ?>
+                                        </p>
+                                        <?php if ((int) $staff['must_change_password'] === 1): ?>
+                                            <p class="staff-note">First login password change is still required for this account.</p>
+                                        <?php endif; ?>
+                                    </div>
+
+                                    <div class="staff-actions">
+                                        <span class="status-chip status-<?= htmlspecialchars($staff['status'], ENT_QUOTES, 'UTF-8') ?>">
+                                            <?= htmlspecialchars(ucfirst($staff['status']), ENT_QUOTES, 'UTF-8') ?>
+                                        </span>
+
+                                        <?php if ($isCurrentUser): ?>
+                                            <span class="metric-pill">You</span>
+                                        <?php else: ?>
+                                            <form action="actions/update_staff_status.php" method="POST" class="inline-form">
+                                                <input type="hidden" name="user_id" value="<?= (int) $staff['user_id'] ?>">
+                                                <input type="hidden" name="status" value="<?= $staff['status'] === 'active' ? 'inactive' : 'active' ?>">
+                                                <button type="submit" class="btn btn-secondary">
+                                                    <?= $staff['status'] === 'active' ? 'Deactivate' : 'Activate' ?>
+                                                </button>
+                                            </form>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else: ?>
+                        <div class="table-placeholder">
+                            No tenant staff accounts have been added yet beyond onboarding.
+                        </div>
+                    <?php endif; ?>
+                </article>
+
+                <article class="content-card">
+                    <h3>Add Staff Member</h3>
+                    <p>Create a tenant-scoped account for a cashier, mechanic, or another admin.</p>
+
+                    <form action="actions/create_staff.php" method="POST" class="feature-toggle-form">
+                        <div class="form-group">
+                            <label for="full_name">Full Name</label>
+                            <input class="form-control" type="text" id="full_name" name="full_name" value="<?= htmlspecialchars($oldInput['full_name'] ?? '', ENT_QUOTES, 'UTF-8') ?>" required>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="username">Username</label>
+                                <input class="form-control" type="text" id="username" name="username" value="<?= htmlspecialchars($oldInput['username'] ?? '', ENT_QUOTES, 'UTF-8') ?>" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="role">Role</label>
+                                <select class="form-control" id="role" name="role" required>
+                                    <option value="cashier"<?= (($oldInput['role'] ?? '') === 'cashier') ? ' selected' : '' ?>>Cashier</option>
+                                    <option value="mechanic"<?= (($oldInput['role'] ?? '') === 'mechanic') ? ' selected' : '' ?>>Mechanic</option>
+                                    <option value="admin"<?= (($oldInput['role'] ?? '') === 'admin') ? ' selected' : '' ?>>Admin</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="password">Temporary Password</label>
+                                <input class="form-control" type="password" id="password" name="password" required minlength="8">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="confirm_password">Confirm Password</label>
+                                <input class="form-control" type="password" id="confirm_password" name="confirm_password" required minlength="8">
+                            </div>
+                        </div>
+
+                        <label class="toggle-option" for="show-staff-passwords">
+                            <input type="checkbox" id="show-staff-passwords" data-password-toggle-group data-password-targets="password,confirm_password">
+                            <span>Show passwords</span>
+                        </label>
+
+                        <label class="toggle-option" for="must_change_password">
+                            <input type="checkbox" id="must_change_password" name="must_change_password" value="1"<?= !isset($oldInput['must_change_password']) || !empty($oldInput['must_change_password']) ? ' checked' : '' ?>>
+                            <span>Require password change on first login</span>
+                        </label>
+
+                        <div class="approval-actions">
+                            <button type="submit" class="btn btn-primary">Create Staff Account</button>
+                        </div>
+                    </form>
+
+                    <div class="table-placeholder">
+                        <strong>Current tenant admin</strong><br>
+                        Signed in as <?= htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8') ?>. Staff records created here are isolated to <code>tenant_id = <?= $tenantId ?></code>.
+                    </div>
+                </article>
+            </section>
+        </main>
+    </div>
+
+    <script src="../assets/js/theme.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const toggle = document.querySelector('[data-password-toggle-group]');
+
+            if (!toggle) {
+                return;
+            }
+
+            const targets = (toggle.getAttribute('data-password-targets') || '')
+                .split(',')
+                .map(function (id) { return id.trim(); })
+                .filter(Boolean)
+                .map(function (id) { return document.getElementById(id); })
+                .filter(Boolean);
+
+            toggle.addEventListener('change', function () {
+                targets.forEach(function (input) {
+                    input.type = toggle.checked ? 'text' : 'password';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+# OS / editor noise
+.DS_Store
+Thumbs.db
+Desktop.ini
+.vscode/
+.idea/
+
+# Logs and temp files
+*.log
+*.tmp
+*.bak
+
+# Local environment / secrets
+.env
+.env.*
+config/config.php
+
+# Local test helpers and installers
+Git-*.exe
+
+# Dependency/vendor folders if added later
+vendor/
+node_modules/
+
+# Optional local database exports
+*.sql.zip
+*.sql.gz
