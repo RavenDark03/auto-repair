@@ -1,0 +1,20 @@
+name: Deploy to Alwaysdata
+
+on:
+  push:
+    branches:
+      - main # Change this to 'master' if your default branch is called master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Execute deployment commands via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd ~/www
+            git pull origin main
