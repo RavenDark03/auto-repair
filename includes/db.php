@@ -7,15 +7,22 @@ class Database {
 
     private function __construct() {
         try {
-            $this->connection = new PDO(
-                "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4",
-                DB_USER,
-                DB_PASS
-            );
-            $this->connection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $this->connection->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+            $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4';
+            $opts = [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            ];
+
+            if (DB_SSL_CA !== '' && defined('PDO::MYSQL_ATTR_SSL_CA')) {
+                $opts[PDO::MYSQL_ATTR_SSL_CA] = DB_SSL_CA;
+                if (defined('PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT')) {
+                    $opts[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = DB_SSL_VERIFY ? true : false;
+                }
+            }
+
+            $this->connection = new PDO($dsn, DB_USER, DB_PASS, $opts);
         } catch (PDOException $e) {
-            die("Database connection failed: " . $e->getMessage());
+            die('Database connection failed: ' . $e->getMessage());
         }
     }
 
