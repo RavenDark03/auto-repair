@@ -245,7 +245,7 @@ function cashierDashboardMetricUrl($type) {
     <div class="dashboard">
         <?= renderTenantAdminSidebar($businessName, $visibleModuleLinks, 'cashier_dashboard.php', $showAnalytics) ?>
 
-        <main class="dashboard-main">
+        <main class="dashboard-main" id="main-content" tabindex="-1">
             <?= renderTenantAdminTopbar('Cashier Dashboard', "Welcome back, {$fullName}. Here's today's collection view for {$businessName}.") ?>
 
             <?php if ($systemMessage !== null): ?>
@@ -305,29 +305,7 @@ function cashierDashboardMetricUrl($type) {
             </section>
 
             <?php if ($subscriptionNotice): ?>
-                <section class="content-card">
-                    <h3>Business Subscription</h3>
-                    <p>Your shop can see subscription timing here, while SaaS billing details and controls remain exclusive to the super admin.</p>
-
-                    <div class="dashboard-list compact-list">
-                        <div class="dashboard-list-item">
-                            <div>
-                                <strong>Current Subscription</strong>
-                                <p><?= htmlspecialchars($subscriptionNotice['summary'], ENT_QUOTES, 'UTF-8') ?></p>
-                            </div>
-                            <span class="status-chip <?= htmlspecialchars($subscriptionNotice['class'], ENT_QUOTES, 'UTF-8') ?>">
-                                <?= htmlspecialchars($subscriptionNotice['label'], ENT_QUOTES, 'UTF-8') ?>
-                            </span>
-                        </div>
-                        <div class="dashboard-list-item">
-                            <div>
-                                <strong>Renewal Reminder</strong>
-                                <p><?= htmlspecialchars($subscriptionNotice['detail'], ENT_QUOTES, 'UTF-8') ?></p>
-                            </div>
-                            <span class="metric-pill">Subscription</span>
-                        </div>
-                    </div>
-                </section>
+                <?php include __DIR__ . '/../includes/partials/subscription_notice_card.php'; ?>
             <?php endif; ?>
 
             <section class="content-grid">
@@ -478,6 +456,6 @@ function cashierDashboardMetricUrl($type) {
         </main>
     </div>
 
-    <script src="../assets/js/theme.js"></script>
+    <?= renderTenantAdminFooterScripts() ?>
 </body>
 </html>

@@ -279,7 +279,7 @@ if ($sourcePage === 'cashier_dashboard') {
     <div class="dashboard">
         <?= renderTenantAdminSidebar($businessName, $visibleModuleLinks, 'payments.php', $showAnalytics) ?>
 
-        <main class="dashboard-main">
+        <main class="dashboard-main" id="main-content" tabindex="-1">
             <?= renderTenantAdminTopbar(
                 'Customer Payments',
                 $currentRole === 'cashier'
@@ -318,29 +318,7 @@ if ($sourcePage === 'cashier_dashboard') {
             <?php endif; ?>
 
             <?php if ($subscriptionNotice): ?>
-                <section class="content-card">
-                    <h3>Business Subscription</h3>
-                    <p>Your shop can monitor subscription timing here, while SaaS billing visibility and controls remain exclusive to the super admin.</p>
-
-                    <div class="dashboard-list compact-list">
-                        <div class="dashboard-list-item">
-                            <div>
-                                <strong>Current Subscription</strong>
-                                <p><?= htmlspecialchars($subscriptionNotice['summary'], ENT_QUOTES, 'UTF-8') ?></p>
-                            </div>
-                            <span class="status-chip <?= htmlspecialchars($subscriptionNotice['class'], ENT_QUOTES, 'UTF-8') ?>">
-                                <?= htmlspecialchars($subscriptionNotice['label'], ENT_QUOTES, 'UTF-8') ?>
-                            </span>
-                        </div>
-                        <div class="dashboard-list-item">
-                            <div>
-                                <strong>Renewal Reminder</strong>
-                                <p><?= htmlspecialchars($subscriptionNotice['detail'], ENT_QUOTES, 'UTF-8') ?></p>
-                            </div>
-                            <span class="metric-pill">Subscription</span>
-                        </div>
-                    </div>
-                </section>
+                <?php include __DIR__ . '/../includes/partials/subscription_notice_card.php'; ?>
             <?php endif; ?>
 
             <section class="dashboard-grid">
@@ -442,8 +420,9 @@ if ($sourcePage === 'cashier_dashboard') {
                             <?php endforeach; ?>
                         </div>
                     <?php else: ?>
-                        <div class="table-placeholder">
-                            No customer payments matched your current filter.
+                        <div class="empty-state">
+                            <strong>No payments in this view</strong>
+                            <p>No customer payments matched your current filter.</p>
                         </div>
                     <?php endif; ?>
                 </article>
@@ -532,6 +511,6 @@ if ($sourcePage === 'cashier_dashboard') {
         </main>
     </div>
 
-    <script src="../assets/js/theme.js"></script>
+    <?= renderTenantAdminFooterScripts() ?>
 </body>
 </html>

@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function () {
+﻿document.addEventListener('DOMContentLoaded', function () {
     const root = document.documentElement;
     const toggleButtons = document.querySelectorAll('[data-theme-toggle]');
     const savedTheme = localStorage.getItem('theme');
@@ -13,7 +13,12 @@ document.addEventListener('DOMContentLoaded', function () {
     function applyThemeLabel() {
         const currentTheme = root.getAttribute('data-theme') || 'light';
         toggleButtons.forEach(function (button) {
-            button.textContent = currentTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
+            if (button.querySelector('svg')) {
+                // Icon button — update aria-label only, CSS handles icon visibility
+                button.setAttribute('aria-label', currentTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+            } else {
+                button.textContent = currentTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
+            }
         });
     }
 

@@ -438,7 +438,7 @@ function vehicleContextUrl($vehicleId = 0, $customerId = 0, $search = '') {
     <div class="dashboard">
         <?= renderTenantAdminSidebar($businessName, $visibleModuleLinks, 'vehicles.php', $showAnalytics) ?>
 
-        <main class="dashboard-main">
+        <main class="dashboard-main" id="main-content" tabindex="-1">
             <?= renderTenantAdminTopbar(
                 'Vehicles',
                 "Manage customer-linked vehicles for {$businessName} with tenant-safe records.",
@@ -533,8 +533,9 @@ function vehicleContextUrl($vehicleId = 0, $customerId = 0, $search = '') {
                             <?php endforeach; ?>
                         </div>
                     <?php else: ?>
-                        <div class="table-placeholder">
-                            <?= $selectedCustomerContext ? 'No vehicles matched this customer context and current filter.' : 'No vehicles matched your current filter.' ?>
+                        <div class="empty-state">
+                            <strong>No vehicles in this view</strong>
+                            <p><?= $selectedCustomerContext ? 'No vehicles matched this customer context and current filter.' : 'No vehicles matched your current filter.' ?></p>
                         </div>
                     <?php endif; ?>
                 </article>
@@ -792,6 +793,6 @@ function vehicleContextUrl($vehicleId = 0, $customerId = 0, $search = '') {
         </main>
     </div>
 
-    <script src="../assets/js/theme.js"></script>
+    <?= renderTenantAdminFooterScripts() ?>
 </body>
 </html>

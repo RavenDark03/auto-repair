@@ -361,7 +361,7 @@ $approvedAppointmentLocked = $selectedAppointment && $selectedAppointment['statu
     <div class="dashboard">
         <?= renderTenantAdminSidebar($businessName, $visibleModuleLinks, 'appointments.php', $showAnalytics) ?>
 
-        <main class="dashboard-main">
+        <main class="dashboard-main" id="main-content" tabindex="-1">
             <?= renderTenantAdminTopbar(
                 'Appointments',
                 'Schedule and approve tenant-scoped service appointments linked to the right customer and vehicle.',
@@ -470,8 +470,9 @@ $approvedAppointmentLocked = $selectedAppointment && $selectedAppointment['statu
                             <?php endforeach; ?>
                         </div>
                     <?php else: ?>
-                        <div class="table-placeholder">
-                            <?= ($selectedCustomerContext || $selectedVehicleContext) ? 'No appointments matched this context and current filter.' : 'No appointments matched your current filter.' ?>
+                        <div class="empty-state">
+                            <strong>No appointments in this view</strong>
+                            <p><?= ($selectedCustomerContext || $selectedVehicleContext) ? 'No appointments matched this context and current filter.' : 'No appointments matched your current filter.' ?></p>
                         </div>
                     <?php endif; ?>
                 </article>
@@ -613,7 +614,7 @@ $approvedAppointmentLocked = $selectedAppointment && $selectedAppointment['statu
         </main>
     </div>
 
-    <script src="../assets/js/theme.js"></script>
+    <?= renderTenantAdminFooterScripts() ?>
     <script>
     document.addEventListener('DOMContentLoaded', function () {
         const customerSelect = document.getElementById('customer_id');

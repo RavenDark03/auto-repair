@@ -1,9 +1,10 @@
-<?php
+﻿<?php
 require_once __DIR__ . '/../includes/session.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/feature_access.php';
 require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__ . '/../includes/platform_rules.php';
 
 requireAdmin();
 
@@ -178,263 +179,418 @@ function dashboardDate($date) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - MECHANIX</title>
-    <link rel="stylesheet" href="../assets/css/styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0/dist/css/tabler.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
 </head>
-<body class="page-shell">
-    <div class="dashboard">
-        <?= renderTenantAdminSidebar($businessName, $visibleModuleLinks, 'dashboard.php', $showAnalytics) ?>
+<body class="antialiased">
+<div class="page">
+    <?= renderTenantAdminSidebar($businessName, $visibleModuleLinks, 'dashboard.php', $showAnalytics) ?>
 
-        <main class="dashboard-main">
-            <?= renderTenantAdminTopbar('Dashboard', "Welcome back, {$fullName}. Here's a live overview of {$businessName}.") ?>
+    <div class="page-wrapper">
+        <?= renderTenantAdminTopbar('Dashboard', "Welcome back, {$fullName}. Here's a live overview of {$businessName}.") ?>
 
-            <?php if ($systemMessage !== null): ?>
-                <div class="alert alert-error">
-                    <?= htmlspecialchars($systemMessage, ENT_QUOTES, 'UTF-8') ?>
-                </div>
-            <?php endif; ?>
+        <div class="page-body">
+            <div class="container-xl">
 
-            <?php if ($authErrorMessage !== null): ?>
-                <div class="alert alert-error">
-                    <?= htmlspecialchars($authErrorMessage, ENT_QUOTES, 'UTF-8') ?>
-                </div>
-            <?php endif; ?>
-
-            <section class="dashboard-grid">
-                <?php if ($showCustomerModule): ?>
-                    <article class="metric-card">
-                        <span>Total Customers</span>
-                        <h3><?= number_format((int) $metrics['customers']) ?></h3>
-                    </article>
-                    <article class="metric-card">
-                        <span>Vehicles Tracked</span>
-                        <h3><?= number_format((int) $metrics['vehicles']) ?></h3>
-                    </article>
-                <?php endif; ?>
-                <?php if ($showAppointments): ?>
-                    <article class="metric-card">
-                        <span>Pending Appointments</span>
-                        <h3><?= number_format((int) $metrics['pending_appointments']) ?></h3>
-                    </article>
-                <?php endif; ?>
-                <?php if ($showJobs): ?>
-                    <article class="metric-card">
-                        <span>Ongoing Jobs</span>
-                        <h3><?= number_format((int) $metrics['ongoing_jobs']) ?></h3>
-                    </article>
-                <?php endif; ?>
-            </section>
-
-            <section class="dashboard-grid dashboard-grid-secondary">
-                <?php if ($showJobs): ?>
-                    <article class="metric-card">
-                        <span>Completed Jobs</span>
-                        <h3><?= number_format((int) $metrics['completed_jobs']) ?></h3>
-                    </article>
-                <?php endif; ?>
-                <?php if ($showInvoicing): ?>
-                    <article class="metric-card">
-                        <span>Monthly Invoice Revenue</span>
-                        <h3><?= htmlspecialchars(dashboardCurrency($metrics['monthly_revenue']), ENT_QUOTES, 'UTF-8') ?></h3>
-                    </article>
-                <?php endif; ?>
-                <?php if ($showPayments): ?>
-                    <article class="metric-card">
-                        <span>Payments Received</span>
-                        <h3><?= htmlspecialchars(dashboardCurrency($metrics['payments_received']), ENT_QUOTES, 'UTF-8') ?></h3>
-                    </article>
-                <?php endif; ?>
-                <?php if ($showInventory): ?>
-                    <article class="metric-card">
-                        <span>Low Stock Items</span>
-                        <h3><?= number_format((int) $metrics['low_stock_items']) ?></h3>
-                    </article>
-                <?php endif; ?>
-            </section>
-
-            <?php if ($subscriptionNotice): ?>
-                <section class="content-card">
-                    <h3>Business Subscription</h3>
-                    <p>Your shop can monitor subscription timing here, but SaaS billing controls remain available only to the super admin.</p>
-
-                    <div class="dashboard-list compact-list">
-                        <div class="dashboard-list-item">
-                            <div>
-                                <strong>Current Subscription</strong>
-                                <p><?= htmlspecialchars($subscriptionNotice['summary'], ENT_QUOTES, 'UTF-8') ?></p>
-                            </div>
-                            <span class="status-chip <?= htmlspecialchars($subscriptionNotice['class'], ENT_QUOTES, 'UTF-8') ?>">
-                                <?= htmlspecialchars($subscriptionNotice['label'], ENT_QUOTES, 'UTF-8') ?>
-                            </span>
-                        </div>
-                        <div class="dashboard-list-item">
-                            <div>
-                                <strong>Renewal Reminder</strong>
-                                <p><?= htmlspecialchars($subscriptionNotice['detail'], ENT_QUOTES, 'UTF-8') ?></p>
-                            </div>
-                            <span class="metric-pill">Subscription</span>
+                <?php if ($systemMessage !== null): ?>
+                    <div class="alert alert-danger" role="alert">
+                        <div class="d-flex">
+                            <div><i class="ti ti-alert-circle icon alert-icon"></i></div>
+                            <div><?= htmlspecialchars($systemMessage, ENT_QUOTES, 'UTF-8') ?></div>
                         </div>
                     </div>
-                </section>
-            <?php endif; ?>
+                <?php endif; ?>
 
-            <section class="content-grid">
-                <article class="content-card">
-                    <h3>Operational Snapshot</h3>
-                    <p>Quick checks across staff access, feature flags, and current tenant readiness.</p>
-
-                    <div class="dashboard-list">
-                        <div class="dashboard-list-item">
-                            <div>
-                                <strong>Active Staff Accounts</strong>
-                                <p>Admins, cashiers, and mechanics currently marked active for this tenant.</p>
-                            </div>
-                            <span class="metric-pill"><?= number_format((int) $metrics['active_staff']) ?></span>
-                        </div>
-                        <div class="dashboard-list-item">
-                            <div>
-                                <strong>Enabled Tenant Features</strong>
-                                <p>Effective modules currently available for this tenant in the admin experience.</p>
-                            </div>
-                            <span class="metric-pill"><?= number_format((int) $metrics['enabled_features']) ?></span>
-                        </div>
-                        <div class="dashboard-list-item">
-                            <div>
-                                <strong>Feature Mode</strong>
-                                <p>
-                                    <?= !$hasExplicitFeatureSettings ? 'No feature records found yet, so the tenant is using default access.' : 'Feature toggles are actively controlling visible tenant modules.' ?>
-                                </p>
-                            </div>
-                            <span class="metric-pill"><?= !$hasExplicitFeatureSettings ? 'Default' : 'Custom' ?></span>
-                        </div>
-                        <div class="dashboard-list-item">
-                            <div>
-                                <strong>Tenant Scope</strong>
-                                <p>All numbers on this page are filtered by <code>tenant_id = <?= $tenantId ?></code>.</p>
-                            </div>
-                            <span class="metric-pill">Scoped</span>
+                <?php if ($authErrorMessage !== null): ?>
+                    <div class="alert alert-danger" role="alert">
+                        <div class="d-flex">
+                            <div><i class="ti ti-alert-circle icon alert-icon"></i></div>
+                            <div><?= htmlspecialchars($authErrorMessage, ENT_QUOTES, 'UTF-8') ?></div>
                         </div>
                     </div>
-                </article>
+                <?php endif; ?>
 
-                <article class="content-card">
-                    <h3>Mechanic Workload</h3>
-                    <p>Current job distribution for active mechanics in this tenant.</p>
+                <?= renderTenantAccessModeNotice() ?>
 
-                    <?php if (!$showMechanicModule): ?>
-                        <div class="table-placeholder">
-                            The mechanic module is currently disabled for this tenant.
-                        </div>
-                    <?php elseif (!empty($mechanicWorkload)): ?>
-                        <div class="dashboard-list">
-                            <?php foreach ($mechanicWorkload as $mechanic): ?>
-                                <div class="dashboard-list-item">
-                                    <div>
-                                        <strong><?= htmlspecialchars($mechanic['full_name'], ENT_QUOTES, 'UTF-8') ?></strong>
-                                        <p>
-                                            <?= number_format((int) $mechanic['assigned_jobs']) ?> assigned jobs,
-                                            <?= number_format((int) $mechanic['ongoing_jobs']) ?> ongoing
-                                        </p>
+                <!-- Primary metrics -->
+                <div class="row row-deck row-cards mb-4">
+                    <?php if ($showCustomerModule): ?>
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card card-sm">
+                                <div class="card-body">
+                                    <div class="row align-items-center">
+                                        <div class="col-auto">
+                                            <span class="bg-blue text-white avatar"><i class="ti ti-users icon"></i></span>
+                                        </div>
+                                        <div class="col">
+                                            <div class="font-weight-medium">Total Customers</div>
+                                            <div class="text-muted"><?= number_format((int) $metrics['customers']) ?></div>
+                                        </div>
                                     </div>
-                                    <span class="metric-pill"><?= number_format((int) $mechanic['ongoing_jobs']) ?></span>
                                 </div>
-                            <?php endforeach; ?>
+                            </div>
                         </div>
-                    <?php else: ?>
-                        <div class="table-placeholder">
-                            No active mechanic assignments yet. Once mechanic accounts and jobs are added, workload data will appear here.
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card card-sm">
+                                <div class="card-body">
+                                    <div class="row align-items-center">
+                                        <div class="col-auto">
+                                            <span class="bg-azure text-white avatar"><i class="ti ti-car icon"></i></span>
+                                        </div>
+                                        <div class="col">
+                                            <div class="font-weight-medium">Vehicles Tracked</div>
+                                            <div class="text-muted"><?= number_format((int) $metrics['vehicles']) ?></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     <?php endif; ?>
-                </article>
-            </section>
-
-            <section class="content-grid dashboard-lower-grid">
-                <article class="content-card">
-                    <h3>Recent Appointments</h3>
-                    <p>The latest bookings for this tenant, ordered by schedule date.</p>
-
-                    <?php if (!$showAppointments): ?>
-                        <div class="table-placeholder">
-                            The appointments module is currently disabled for this tenant.
+                    <?php if ($showAppointments): ?>
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card card-sm">
+                                <div class="card-body">
+                                    <div class="row align-items-center">
+                                        <div class="col-auto">
+                                            <span class="bg-orange text-white avatar"><i class="ti ti-calendar icon"></i></span>
+                                        </div>
+                                        <div class="col">
+                                            <div class="font-weight-medium">Pending Appointments</div>
+                                            <div class="text-muted"><?= number_format((int) $metrics['pending_appointments']) ?></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    <?php elseif (!empty($recentAppointments)): ?>
-                        <div class="dashboard-list">
-                            <?php foreach ($recentAppointments as $appointment): ?>
-                                <div class="dashboard-list-item">
-                                    <div>
-                                        <strong>#<?= (int) $appointment['appointment_id'] ?> - <?= htmlspecialchars($appointment['customer_name'], ENT_QUOTES, 'UTF-8') ?></strong>
-                                        <p>
-                                            <?= htmlspecialchars($appointment['vehicle_model'] ?: 'Vehicle pending', ENT_QUOTES, 'UTF-8') ?>
-                                            <?php if (!empty($appointment['plate'])): ?>
-                                                - <?= htmlspecialchars($appointment['plate'], ENT_QUOTES, 'UTF-8') ?>
+                    <?php endif; ?>
+                    <?php if ($showJobs): ?>
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card card-sm">
+                                <div class="card-body">
+                                    <div class="row align-items-center">
+                                        <div class="col-auto">
+                                            <span class="bg-red text-white avatar"><i class="ti ti-tool icon"></i></span>
+                                        </div>
+                                        <div class="col">
+                                            <div class="font-weight-medium">Ongoing Jobs</div>
+                                            <div class="text-muted"><?= number_format((int) $metrics['ongoing_jobs']) ?></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
+                <!-- Secondary metrics -->
+                <div class="row row-deck row-cards mb-4">
+                    <?php if ($showJobs): ?>
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card card-sm">
+                                <div class="card-body">
+                                    <div class="row align-items-center">
+                                        <div class="col-auto">
+                                            <span class="bg-green text-white avatar"><i class="ti ti-circle-check icon"></i></span>
+                                        </div>
+                                        <div class="col">
+                                            <div class="font-weight-medium">Completed Jobs</div>
+                                            <div class="text-muted"><?= number_format((int) $metrics['completed_jobs']) ?></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                    <?php if ($showInvoicing): ?>
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card card-sm">
+                                <div class="card-body">
+                                    <div class="row align-items-center">
+                                        <div class="col-auto">
+                                            <span class="bg-purple text-white avatar"><i class="ti ti-cash icon"></i></span>
+                                        </div>
+                                        <div class="col">
+                                            <div class="font-weight-medium">Monthly Revenue</div>
+                                            <div class="text-muted"><?= htmlspecialchars(dashboardCurrency($metrics['monthly_revenue']), ENT_QUOTES, 'UTF-8') ?></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                    <?php if ($showPayments): ?>
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card card-sm">
+                                <div class="card-body">
+                                    <div class="row align-items-center">
+                                        <div class="col-auto">
+                                            <span class="bg-teal text-white avatar"><i class="ti ti-credit-card icon"></i></span>
+                                        </div>
+                                        <div class="col">
+                                            <div class="font-weight-medium">Payments Received</div>
+                                            <div class="text-muted"><?= htmlspecialchars(dashboardCurrency($metrics['payments_received']), ENT_QUOTES, 'UTF-8') ?></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                    <?php if ($showInventory): ?>
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card card-sm">
+                                <div class="card-body">
+                                    <div class="row align-items-center">
+                                        <div class="col-auto">
+                                            <span class="bg-yellow text-white avatar"><i class="ti ti-alert-triangle icon"></i></span>
+                                        </div>
+                                        <div class="col">
+                                            <div class="font-weight-medium">Low Stock Items</div>
+                                            <div class="text-muted"><?= number_format((int) $metrics['low_stock_items']) ?></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
+                <?php if ($subscriptionNotice): ?>
+                    <?php include __DIR__ . '/../includes/partials/subscription_notice_card.php'; ?>
+                <?php endif; ?>
+
+                <!-- Middle row: Operational Snapshot + Mechanic Workload -->
+                <div class="row row-deck row-cards mb-4">
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="ti ti-info-circle me-2 text-muted"></i>Operational Snapshot</h3>
+                            </div>
+                            <div class="card-body pb-0">
+                                <p class="text-muted small">Quick checks across staff access, feature flags, and current tenant readiness.</p>
+                            </div>
+                            <div class="list-group list-group-flush">
+                                <div class="list-group-item">
+                                    <div class="row align-items-center">
+                                        <div class="col">
+                                            <div class="font-weight-medium">Active Staff Accounts</div>
+                                            <div class="text-muted small">Admins, cashiers, and mechanics currently marked active.</div>
+                                        </div>
+                                        <div class="col-auto"><span class="badge bg-blue-lt text-blue"><?= number_format((int) $metrics['active_staff']) ?></span></div>
+                                    </div>
+                                </div>
+                                <div class="list-group-item">
+                                    <div class="row align-items-center">
+                                        <div class="col">
+                                            <div class="font-weight-medium">Enabled Tenant Features</div>
+                                            <div class="text-muted small">Effective modules currently available for this tenant.</div>
+                                        </div>
+                                        <div class="col-auto"><span class="badge bg-blue-lt text-blue"><?= number_format((int) $metrics['enabled_features']) ?></span></div>
+                                    </div>
+                                </div>
+                                <div class="list-group-item">
+                                    <div class="row align-items-center">
+                                        <div class="col">
+                                            <div class="font-weight-medium">Feature Mode</div>
+                                            <div class="text-muted small"><?= !$hasExplicitFeatureSettings ? 'Using default access (no feature records yet).' : 'Feature toggles are actively controlling visible modules.' ?></div>
+                                        </div>
+                                        <div class="col-auto"><span class="badge bg-secondary-lt"><?= !$hasExplicitFeatureSettings ? 'Default' : 'Custom' ?></span></div>
+                                    </div>
+                                </div>
+                                <div class="list-group-item">
+                                    <div class="row align-items-center">
+                                        <div class="col">
+                                            <div class="font-weight-medium">Tenant Scope</div>
+                                            <div class="text-muted small">All numbers are filtered by <code>tenant_id = <?= $tenantId ?></code>.</div>
+                                        </div>
+                                        <div class="col-auto"><span class="badge bg-secondary-lt">Scoped</span></div>
+                                    </div>
+                                </div>
+                                <div class="list-group-item">
+                                    <div class="row align-items-center">
+                                        <div class="col">
+                                            <div class="font-weight-medium">Workspace Mode</div>
+                                            <div class="text-muted small"><?= (($_SESSION['access_mode'] ?? 'full_access') === 'read_only') ? 'Editing is locked while the tenant is on the Read-Only plan.' : 'The tenant currently has full operational access.' ?></div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <?php if (($_SESSION['access_mode'] ?? 'full_access') === 'read_only'): ?>
+                                                <span class="badge bg-orange-lt text-orange">Read-Only</span>
+                                            <?php else: ?>
+                                                <span class="badge bg-green-lt text-green">Full</span>
                                             <?php endif; ?>
-                                        </p>
-                                    </div>
-                                    <div class="list-meta">
-                                        <span class="status-chip status-<?= htmlspecialchars($appointment['status'], ENT_QUOTES, 'UTF-8') ?>">
-                                            <?= htmlspecialchars(ucfirst($appointment['status']), ENT_QUOTES, 'UTF-8') ?>
-                                        </span>
-                                        <small><?= htmlspecialchars(dashboardDate($appointment['appointment_date']), ENT_QUOTES, 'UTF-8') ?></small>
+                                        </div>
                                     </div>
                                 </div>
-                            <?php endforeach; ?>
+                            </div>
                         </div>
-                    <?php else: ?>
-                        <div class="table-placeholder">
-                            No appointments have been recorded for this tenant yet.
-                        </div>
-                    <?php endif; ?>
-                </article>
-
-                <article class="content-card">
-                    <h3>Build Queue</h3>
-                    <p>Recommended next admin modules based on the current project state.</p>
-
-                    <div class="dashboard-list">
-                        <div class="dashboard-list-item">
-                            <div>
-                                <strong>Staff Management</strong>
-                                <p>Manage tenant users, roles, and active status with tenant-aware queries.</p>
-                            </div>
-                            <span class="metric-pill">1</span>
-                        </div>
-                        <?php if ($showCustomerModule): ?>
-                            <div class="dashboard-list-item">
-                                <div>
-                                    <strong>Customers & Vehicles</strong>
-                                    <p>Create the main CRUD flow for service records and tenant-scoped lookups.</p>
-                                </div>
-                                <span class="metric-pill">2</span>
-                            </div>
-                        <?php endif; ?>
-                        <?php if ($showAppointments || $showJobs): ?>
-                            <div class="dashboard-list-item">
-                                <div>
-                                    <strong>Appointments & Jobs</strong>
-                                    <p>Link booking intake to workshop execution and mechanic assignments.</p>
-                                </div>
-                                <span class="metric-pill">3</span>
-                            </div>
-                        <?php endif; ?>
-                        <?php if ($showAnalytics): ?>
-                            <div class="dashboard-list-item">
-                                <div>
-                                    <strong>Analytics</strong>
-                                    <p>Add From and To filters and compute date-range summaries across core modules.</p>
-                                </div>
-                                <span class="metric-pill">4</span>
-                            </div>
-                        <?php endif; ?>
                     </div>
-                </article>
-            </section>
-        </main>
-    </div>
 
-    <script src="../assets/js/theme.js"></script>
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="ti ti-tool me-2 text-muted"></i>Mechanic Workload</h3>
+                            </div>
+                            <div class="card-body pb-0">
+                                <p class="text-muted small">Current job distribution for active mechanics in this tenant.</p>
+                            </div>
+                            <?php if (!$showMechanicModule): ?>
+                                <div class="card-body">
+                                    <div class="empty empty-sm">
+                                        <p class="empty-title">Mechanic module disabled</p>
+                                        <p class="empty-subtitle text-muted">The mechanic module is currently disabled for this tenant.</p>
+                                    </div>
+                                </div>
+                            <?php elseif (!empty($mechanicWorkload)): ?>
+                                <div class="list-group list-group-flush">
+                                    <?php foreach ($mechanicWorkload as $mechanic): ?>
+                                        <div class="list-group-item">
+                                            <div class="row align-items-center">
+                                                <div class="col">
+                                                    <div class="font-weight-medium"><?= htmlspecialchars($mechanic['full_name'], ENT_QUOTES, 'UTF-8') ?></div>
+                                                    <div class="text-muted small"><?= number_format((int) $mechanic['assigned_jobs']) ?> assigned &middot; <?= number_format((int) $mechanic['ongoing_jobs']) ?> ongoing</div>
+                                                </div>
+                                                <div class="col-auto"><span class="badge bg-red-lt text-red"><?= number_format((int) $mechanic['ongoing_jobs']) ?></span></div>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php else: ?>
+                                <div class="card-body">
+                                    <div class="empty empty-sm">
+                                        <p class="empty-title">No mechanic assignments</p>
+                                        <p class="empty-subtitle text-muted">Workload data will appear once mechanics and jobs are added.</p>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom row: Recent Appointments + Build Queue -->
+                <div class="row row-deck row-cards">
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="ti ti-calendar me-2 text-muted"></i>Recent Appointments</h3>
+                            </div>
+                            <div class="card-body pb-0">
+                                <p class="text-muted small">Latest bookings for this tenant, ordered by schedule date.</p>
+                            </div>
+                            <?php if (!$showAppointments): ?>
+                                <div class="card-body">
+                                    <div class="empty empty-sm">
+                                        <p class="empty-title">Appointments disabled</p>
+                                        <p class="empty-subtitle text-muted">The appointments module is currently disabled for this tenant.</p>
+                                    </div>
+                                </div>
+                            <?php elseif (!empty($recentAppointments)): ?>
+                                <div class="list-group list-group-flush">
+                                    <?php
+                                    $statusBadge = [
+                                        'pending'   => 'bg-orange-lt text-orange',
+                                        'confirmed' => 'bg-blue-lt text-blue',
+                                        'ongoing'   => 'bg-yellow-lt text-yellow',
+                                        'completed' => 'bg-green-lt text-green',
+                                        'cancelled' => 'bg-red-lt text-red',
+                                        'rejected'  => 'bg-red-lt text-red',
+                                    ];
+                                    foreach ($recentAppointments as $appointment):
+                                        $status = $appointment['status'];
+                                        $badgeClass = $statusBadge[$status] ?? 'bg-secondary-lt';
+                                    ?>
+                                        <div class="list-group-item">
+                                            <div class="row align-items-center">
+                                                <div class="col">
+                                                    <div class="font-weight-medium">#<?= (int) $appointment['appointment_id'] ?> &mdash; <?= htmlspecialchars($appointment['customer_name'], ENT_QUOTES, 'UTF-8') ?></div>
+                                                    <div class="text-muted small">
+                                                        <?= htmlspecialchars($appointment['vehicle_model'] ?: 'Vehicle pending', ENT_QUOTES, 'UTF-8') ?>
+                                                        <?php if (!empty($appointment['plate'])): ?> &middot; <?= htmlspecialchars($appointment['plate'], ENT_QUOTES, 'UTF-8') ?><?php endif; ?>
+                                                        &middot; <?= htmlspecialchars(dashboardDate($appointment['appointment_date']), ENT_QUOTES, 'UTF-8') ?>
+                                                    </div>
+                                                </div>
+                                                <div class="col-auto">
+                                                    <span class="badge <?= $badgeClass ?>"><?= htmlspecialchars(ucfirst($status), ENT_QUOTES, 'UTF-8') ?></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php else: ?>
+                                <div class="card-body">
+                                    <div class="empty empty-sm">
+                                        <p class="empty-title">No appointments yet</p>
+                                        <p class="empty-subtitle text-muted">No appointments have been recorded for this tenant yet.</p>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="ti ti-list-check me-2 text-muted"></i>Build Queue</h3>
+                            </div>
+                            <div class="card-body pb-0">
+                                <p class="text-muted small">Recommended next admin modules based on the current project state.</p>
+                            </div>
+                            <div class="list-group list-group-flush">
+                                <div class="list-group-item">
+                                    <div class="row align-items-center">
+                                        <div class="col">
+                                            <div class="font-weight-medium">Staff Management</div>
+                                            <div class="text-muted small">Manage tenant users, roles, and active status with tenant-aware queries.</div>
+                                        </div>
+                                        <div class="col-auto"><span class="badge bg-secondary-lt">1</span></div>
+                                    </div>
+                                </div>
+                                <?php if ($showCustomerModule): ?>
+                                    <div class="list-group-item">
+                                        <div class="row align-items-center">
+                                            <div class="col">
+                                                <div class="font-weight-medium">Customers &amp; Vehicles</div>
+                                                <div class="text-muted small">Create the main CRUD flow for service records and tenant-scoped lookups.</div>
+                                            </div>
+                                            <div class="col-auto"><span class="badge bg-secondary-lt">2</span></div>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+                                <?php if ($showAppointments || $showJobs): ?>
+                                    <div class="list-group-item">
+                                        <div class="row align-items-center">
+                                            <div class="col">
+                                                <div class="font-weight-medium">Appointments &amp; Jobs</div>
+                                                <div class="text-muted small">Link booking intake to workshop execution and mechanic assignments.</div>
+                                            </div>
+                                            <div class="col-auto"><span class="badge bg-secondary-lt">3</span></div>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+                                <?php if ($showAnalytics): ?>
+                                    <div class="list-group-item">
+                                        <div class="row align-items-center">
+                                            <div class="col">
+                                                <div class="font-weight-medium">Analytics</div>
+                                                <div class="text-muted small">Add date-range filters and compute summaries across core modules.</div>
+                                            </div>
+                                            <div class="col-auto"><span class="badge bg-secondary-lt">4</span></div>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<?= renderTenantAdminFooterScripts() ?>
 </body>
 </html>

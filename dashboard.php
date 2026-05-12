@@ -2,7 +2,6 @@
 require_once __DIR__ . '/../includes/session.php';
 require_once __DIR__ . '/../includes/super_admin_auth.php';
 require_once __DIR__ . '/../includes/db.php';
-require_once __DIR__ . '/../includes/platform_rules.php';
 require_once __DIR__ . '/../config/config.php';
 
 requireSuperAdmin();
@@ -104,14 +103,6 @@ $selectedRegistrationEmailLogs = [];
 $planCatalog = [];
 $addonCatalog = [];
 $operationalAlerts = [];
-$earnings = [
-    'current_month' => 0,
-    'last_month' => 0,
-    'all_time' => 0,
-    'paid_requests' => 0,
-];
-$earningsTrend = [];
-$referenceReviewQueue = [];
 $summary = [
     'tenants' => 0,
     'active_tenants' => 0,
@@ -232,55 +223,6 @@ try {
     foreach ($summaryQueries as $key => $sql) {
         $summary[$key] = (int) $pdo->query($sql)->fetchColumn();
     }
-
-    $earningsStmt = $pdo->query("
-        SELECT
-            COALESCE(SUM(CASE WHEN DATE_FORMAT(paid_at, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m') THEN total_amount ELSE 0 END), 0) AS current_month,
-            COALESCE(SUM(CASE WHEN DATE_FORMAT(paid_at, '%Y-%m') = DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 1 MONTH), '%Y-%m') THEN total_amount ELSE 0 END), 0) AS last_month,
-            COALESCE(SUM(total_amount), 0) AS all_time,
-            COUNT(*) AS paid_requests
-        FROM billing_requests
-        WHERE billing_status = 'paid'
-    ");
-    $earningsRow = $earningsStmt->fetch();
-
-    if ($earningsRow) {
-        $earnings['current_month'] = (float) ($earningsRow['current_month'] ?? 0);
-        $earnings['last_month'] = (float) ($earningsRow['last_month'] ?? 0);
-        $earnings['all_time'] = (float) ($earningsRow['all_time'] ?? 0);
-        $earnings['paid_requests'] = (int) ($earningsRow['paid_requests'] ?? 0);
-    }
-
-    $earningsTrendStmt = $pdo->query("
-        SELECT
-            DATE_FORMAT(paid_at, '%Y-%m') AS earnings_month,
-            COALESCE(SUM(total_amount), 0) AS month_total
-        FROM billing_requests
-        WHERE billing_status = 'paid'
-          AND paid_at >= DATE_SUB(CURDATE(), INTERVAL 5 MONTH)
-        GROUP BY DATE_FORMAT(paid_at, '%Y-%m')
-        ORDER BY earnings_month ASC
-    ");
-    $earningsTrend = $earningsTrendStmt->fetchAll();
-
-    $referenceQueueStmt = $pdo->query("
-        SELECT
-            br.billing_request_id,
-            br.registration_id,
-            tr.business_name,
-            br.payment_reference,
-            br.payment_reference_check_status,
-            br.billing_status,
-            br.total_amount,
-            br.currency
-        FROM billing_requests br
-        INNER JOIN tenant_registrations tr
-            ON tr.registration_id = br.registration_id
-        WHERE br.billing_status IN ('sent', 'paid')
-        ORDER BY br.billing_request_id DESC
-        LIMIT 8
-    ");
-    $referenceReviewQueue = $referenceQueueStmt->fetchAll();
 
     $planCatalog = $pdo->query("
         SELECT
@@ -549,9 +491,6 @@ try {
                     paymongo_checkout_session_id,
                     paymongo_checkout_url,
                     paymongo_status,
-                    payment_reference_check_status,
-                    payment_reference_checked_at,
-                    payment_reference_check_notes,
                     paid_at,
                     due_date,
                     created_at,
@@ -563,24 +502,6 @@ try {
             ");
             $selectedBillingRequestStmt->execute(['registration_id' => $selectedRegistrationId]);
             $selectedBillingRequest = $selectedBillingRequestStmt->fetch();
-
-            if ($selectedBillingRequest) {
-                $duplicateReferenceCount = 0;
-                $normalizedReference = normalizePaymentReference($selectedBillingRequest['payment_reference'] ?? '');
-
-                if ($normalizedReference !== '') {
-                    $duplicateReferenceStmt = $pdo->prepare("
-                        SELECT COUNT(*)
-                        FROM billing_requests
-                        WHERE REPLACE(REPLACE(REPLACE(UPPER(COALESCE(payment_reference, '')), '-', ''), ' ', ''), '.', '') = :payment_reference
-                    ");
-                    $duplicateReferenceStmt->execute(['payment_reference' => $normalizedReference]);
-                    $duplicateReferenceCount = (int) $duplicateReferenceStmt->fetchColumn();
-                }
-
-                $selectedBillingRequest['ng_reference_meta'] = evaluateNgReference($selectedBillingRequest, $duplicateReferenceCount);
-                $selectedBillingRequest['duplicate_reference_count'] = $duplicateReferenceCount;
-            }
 
             $selectedRegistrationEmailLogsStmt = $pdo->prepare("
                 SELECT
@@ -611,8 +532,6 @@ try {
                 t.tenant_id,
                 t.business_name,
                 t.status,
-                t.access_mode,
-                t.read_only_source_plan,
                 t.created_at,
                 s.plan,
                 s.start_date,
@@ -880,14 +799,12 @@ try {
             <nav class="sidebar-menu">
                 <a href="#registrations" class="active"><span>Registrations</span><span class="badge"><?= number_format($summary['pending_registrations']) ?></span></a>
                 <a href="#features"><span>Tenant Operations</span><span class="sidebar-hint">Live</span></a>
-                <a href="#catalog"><span>Plan Catalog</span><span class="sidebar-hint">Dynamic</span></a>
             </nav>
 
             <div class="sidebar-section-title">Lifecycle</div>
             <nav class="sidebar-menu">
                 <a href="#features"><span>Tenant Status</span><span class="sidebar-hint">Live</span></a>
                 <a href="#features"><span>Subscriptions</span><span class="sidebar-hint">Live</span></a>
-                <a href="earnings.php"><span>Earnings Reports</span><span class="sidebar-hint">New</span></a>
             </nav>
 
             <div class="sidebar-footer">
@@ -1081,112 +998,25 @@ try {
 
             <section class="content-grid superadmin-grid">
                 <article class="content-card">
-                    <h3>Revenue Snapshot</h3>
-                    <p>Current earnings and paid billing volume from the platform billing ledger.</p>
-
-                    <div class="dashboard-list compact-list">
-                        <div class="dashboard-list-item">
-                            <div>
-                                <strong>This Month</strong>
-                                <p>Paid requests collected during the current month.</p>
-                            </div>
-                            <span class="metric-pill">PHP <?= number_format($earnings['current_month'], 2) ?></span>
-                        </div>
-                        <div class="dashboard-list-item">
-                            <div>
-                                <strong>Last Month</strong>
-                                <p>Use this to compare short-term performance.</p>
-                            </div>
-                            <span class="metric-pill">PHP <?= number_format($earnings['last_month'], 2) ?></span>
-                        </div>
-                        <div class="dashboard-list-item">
-                            <div>
-                                <strong>All-Time Earnings</strong>
-                                <p>Total verified billing collected so far.</p>
-                            </div>
-                            <span class="metric-pill">PHP <?= number_format($earnings['all_time'], 2) ?></span>
-                        </div>
-                        <div class="dashboard-list-item">
-                            <div>
-                                <strong>Paid Billing Requests</strong>
-                                <p>Total payment events already captured in the system.</p>
-                            </div>
-                            <span class="metric-pill"><?= number_format($earnings['paid_requests']) ?></span>
-                        </div>
-                    </div>
-
-                    <div class="approval-actions">
-                        <a href="earnings.php" class="btn btn-primary">Open Earnings Report</a>
-                    </div>
-                </article>
-
-                <article class="content-card">
-                    <h3>Reference Verification Queue</h3>
-                    <p>Cross-check NG references before converting or auditing paid registrations.</p>
-
-                    <?php if (!empty($referenceReviewQueue)): ?>
-                        <div class="dashboard-list compact-list">
-                            <?php foreach ($referenceReviewQueue as $referenceItem): ?>
-                                <?php $referenceMeta = evaluateNgReference($referenceItem); ?>
-                                <a class="dashboard-list-item dashboard-link-card" href="dashboard.php?registration_id=<?= (int) $referenceItem['registration_id'] ?>#registrations">
-                                    <div>
-                                        <strong><?= htmlspecialchars($referenceItem['business_name'], ENT_QUOTES, 'UTF-8') ?></strong>
-                                        <p>
-                                            <?= htmlspecialchars($referenceItem['payment_reference'] ?: 'No reference yet', ENT_QUOTES, 'UTF-8') ?>
-                                            | <?= htmlspecialchars($referenceItem['currency'], ENT_QUOTES, 'UTF-8') ?> <?= number_format((float) $referenceItem['total_amount'], 2) ?>
-                                        </p>
-                                    </div>
-                                    <span class="status-chip <?= htmlspecialchars($referenceMeta['class'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($referenceMeta['label'], ENT_QUOTES, 'UTF-8') ?></span>
-                                </a>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php else: ?>
-                        <div class="table-placeholder">No billing requests are waiting for reference review.</div>
-                    <?php endif; ?>
-                </article>
-            </section>
-
-            <section id="catalog" class="content-grid superadmin-grid">
-                <article class="content-card">
                     <h3>Plan Catalog</h3>
-                    <p>Adjust pricing in real time and keep registration, billing drafts, and future conversions aligned with the latest catalog values.</p>
+                    <p>Reference view of the subscription plans currently used for onboarding and billing.</p>
 
                     <?php if (!empty($planCatalog)): ?>
                         <div class="dashboard-list">
                             <?php foreach ($planCatalog as $plan): ?>
-                                <form action="actions/update_plan_catalog.php" method="POST" class="dashboard-list-item feature-toggle-form">
-                                    <input type="hidden" name="plan_id" value="<?= (int) $plan['plan_id'] ?>">
-                                    <div class="superadmin-plan-editor">
-                                        <div class="form-group">
-                                            <label>Plan Name</label>
-                                            <input class="form-control" type="text" name="plan_name" value="<?= htmlspecialchars($plan['plan_name'], ENT_QUOTES, 'UTF-8') ?>" required>
-                                        </div>
-                                        <div class="form-grid">
-                                            <div class="form-group">
-                                                <label>Monthly Price</label>
-                                                <input class="form-control" type="number" step="0.01" min="0" name="monthly_price" value="<?= htmlspecialchars((string) $plan['monthly_price'], ENT_QUOTES, 'UTF-8') ?>" required>
-                                            </div>
-                                            <div class="form-group">
-                                                <label>Yearly Price</label>
-                                                <input class="form-control" type="number" step="0.01" min="0" name="yearly_price" value="<?= htmlspecialchars((string) $plan['yearly_price'], ENT_QUOTES, 'UTF-8') ?>" required>
-                                            </div>
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Description</label>
-                                            <textarea class="form-control form-textarea" name="description"><?= htmlspecialchars($plan['description'] ?: '', ENT_QUOTES, 'UTF-8') ?></textarea>
-                                        </div>
-                                        <label class="checkbox-inline">
-                                            <input type="checkbox" name="is_active" value="1" <?= (int) $plan['is_active'] === 1 ? 'checked' : '' ?>>
-                                            Active in catalog
-                                        </label>
+                                <div class="dashboard-list-item">
+                                    <div>
+                                        <strong><?= htmlspecialchars($plan['plan_name'], ENT_QUOTES, 'UTF-8') ?></strong>
+                                        <p>
+                                            Monthly: PHP <?= number_format((float) $plan['monthly_price'], 2) ?>
+                                            | Yearly: PHP <?= number_format((float) $plan['yearly_price'], 2) ?>
+                                        </p>
+                                        <p><?= htmlspecialchars($plan['description'] ?: 'No plan description provided.', ENT_QUOTES, 'UTF-8') ?></p>
                                     </div>
-                                    <div class="tenant-directory-meta">
-                                        <span class="status-chip <?= (int) $plan['is_active'] === 1 ? 'status-active' : 'status-inactive' ?>">
-                                            <?= (int) $plan['is_active'] === 1 ? 'Active' : 'Inactive' ?>
-                                        </span>
-                                        <button type="submit" class="btn btn-primary">Save Plan</button>
-                                    </div>
-                                </form>
+                                    <span class="status-chip <?= (int) $plan['is_active'] === 1 ? 'status-active' : 'status-inactive' ?>">
+                                        <?= (int) $plan['is_active'] === 1 ? 'Active' : 'Inactive' ?>
+                                    </span>
+                                </div>
                             <?php endforeach; ?>
                         </div>
                     <?php else: ?>
@@ -1432,16 +1262,7 @@ try {
                                         <strong>Payment Reference</strong>
                                         <p><?= htmlspecialchars($selectedBillingRequest['payment_reference'] ?: 'Not set yet', ENT_QUOTES, 'UTF-8') ?></p>
                                     </div>
-                                    <span class="status-chip <?= htmlspecialchars($selectedBillingRequest['ng_reference_meta']['class'] ?? 'status-pending', ENT_QUOTES, 'UTF-8') ?>">
-                                        <?= htmlspecialchars($selectedBillingRequest['ng_reference_meta']['label'] ?? 'Ref', ENT_QUOTES, 'UTF-8') ?>
-                                    </span>
-                                </div>
-                                <div class="dashboard-list-item">
-                                    <div>
-                                        <strong>NG Reference Review</strong>
-                                        <p><?= htmlspecialchars($selectedBillingRequest['ng_reference_meta']['detail'] ?? 'No reference review recorded yet.', ENT_QUOTES, 'UTF-8') ?></p>
-                                    </div>
-                                    <span class="metric-pill"><?= number_format((int) ($selectedBillingRequest['duplicate_reference_count'] ?? 0)) ?>x</span>
+                                    <span class="metric-pill">Ref</span>
                                 </div>
                                 <div class="dashboard-list-item">
                                     <div>
@@ -1569,28 +1390,6 @@ try {
 
                                     <div class="approval-actions">
                                         <button type="submit" class="btn btn-primary">Update Billing Status</button>
-                                    </div>
-                                </form>
-
-                                <form action="actions/update_billing_verification.php" method="POST" class="feature-toggle-form">
-                                    <input type="hidden" name="registration_id" value="<?= (int) $selectedRegistration['registration_id'] ?>">
-                                    <input type="hidden" name="billing_request_id" value="<?= (int) $selectedBillingRequest['billing_request_id'] ?>">
-                                    <input type="hidden" name="registration_search" value="<?= htmlspecialchars($registrationSearch, ENT_QUOTES, 'UTF-8') ?>">
-                                    <input type="hidden" name="registration_status_filter" value="<?= htmlspecialchars($registrationStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-                                    <input type="hidden" name="registration_billing_status_filter" value="<?= htmlspecialchars($registrationBillingStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-
-                                    <div class="form-group">
-                                        <label for="payment_reference_check_notes">Verification Notes</label>
-                                        <textarea class="form-control form-textarea" id="payment_reference_check_notes" name="payment_reference_check_notes"><?= htmlspecialchars($selectedBillingRequest['payment_reference_check_notes'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
-                                    </div>
-
-                                    <div class="table-placeholder">
-                                        <strong>Reference cross-check</strong><br>
-                                        Review the NG reference format, confirm it is unique, and save the result into the billing record for audit tracking.
-                                    </div>
-
-                                    <div class="approval-actions">
-                                        <button type="submit" class="btn btn-secondary">Save Reference Review</button>
                                     </div>
                                 </form>
                             <?php endif; ?>
@@ -1770,13 +1569,6 @@ try {
                                 </div>
                                 <span class="metric-pill">Live</span>
                             </div>
-                            <div class="dashboard-list-item">
-                                <div>
-                                    <strong>Access Mode</strong>
-                                    <p><?= ($selectedTenant['access_mode'] ?? 'full_access') === 'read_only' ? 'Read-only workspace with editing disabled.' : 'Full workspace access is active.' ?></p>
-                                </div>
-                                <span class="metric-pill"><?= htmlspecialchars(($selectedTenant['access_mode'] ?? 'full_access') === 'read_only' ? 'Read-Only' : 'Full Access', ENT_QUOTES, 'UTF-8') ?></span>
-                            </div>
                         </div>
 
                         <div class="content-grid superadmin-grid">
@@ -1951,33 +1743,6 @@ try {
                             <article class="content-card">
                                 <h3>Subscription Status</h3>
                                 <p>Update the latest subscription state using the current schema-supported values.</p>
-
-                                <form action="actions/update_tenant_access_mode.php" method="POST" class="feature-toggle-form">
-                                    <input type="hidden" name="tenant_id" value="<?= (int) $selectedTenant['tenant_id'] ?>">
-                                    <input type="hidden" name="tenant_search" value="<?= htmlspecialchars($tenantSearch, ENT_QUOTES, 'UTF-8') ?>">
-                                    <input type="hidden" name="tenant_status_filter" value="<?= htmlspecialchars($tenantStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-                                    <input type="hidden" name="subscription_status_filter" value="<?= htmlspecialchars($subscriptionStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-
-                                    <div class="dashboard-list compact-list">
-                                        <div class="dashboard-list-item">
-                                            <div>
-                                                <strong>Read-Only Downgrade</strong>
-                                                <p>Switch this tenant to a read-only plan when they need access to records without operational editing.</p>
-                                            </div>
-                                            <span class="status-chip <?= ($selectedTenant['access_mode'] ?? 'full_access') === 'read_only' ? 'status-warning' : 'status-active' ?>">
-                                                <?= ($selectedTenant['access_mode'] ?? 'full_access') === 'read_only' ? 'Read-Only' : 'Full Access' ?>
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div class="approval-actions">
-                                        <?php if (($selectedTenant['access_mode'] ?? 'full_access') === 'read_only'): ?>
-                                            <button type="submit" name="access_mode" value="full_access" class="btn btn-secondary">Restore Full Access</button>
-                                        <?php else: ?>
-                                            <button type="submit" name="access_mode" value="read_only" class="btn btn-secondary">Downgrade To Read-Only</button>
-                                        <?php endif; ?>
-                                    </div>
-                                </form>
 
                                 <?php if (!empty($selectedTenant['subscription_status'])): ?>
                                     <form action="actions/update_subscription_status.php" method="POST" class="feature-toggle-form">

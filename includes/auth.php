@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/session.php';
+require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/../config/config.php';
 
 function isLoggedIn() {
@@ -51,9 +52,50 @@ function requireTenantRoles(array $allowedRoles, $redirectPath = '../login.php')
         header("Location: " . $redirectPath);
         exit;
     }
+
+    enforceTenantWriteAccess();
 }
 
 function requireAdmin() {
     requireTenantRoles(['admin']);
+}
+
+function enforceTenantWriteAccess() {
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+        return;
+    }
+
+    $tenantId = (int) ($_SESSION['tenant_id'] ?? 0);
+
+    if ($tenantId <= 0) {
+        return;
+    }
+
+    $scriptName = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+    if (strpos($scriptName, '/admin/actions/') === false) {
+        return;
+    }
+
+    try {
+        $pdo = Database::getInstance();
+        $stmt = $pdo->prepare("
+            SELECT access_mode
+            FROM tenants
+            WHERE tenant_id = :tenant_id
+            LIMIT 1
+        ");
+        $stmt->execute(['tenant_id' => $tenantId]);
+        $mode = (string) $stmt->fetchColumn();
+    } catch (PDOException $e) {
+        $mode = 'full_access';
+    }
+
+    $_SESSION['access_mode'] = $mode !== '' ? $mode : 'full_access';
+
+    if ($_SESSION['access_mode'] === 'read_only') {
+        $_SESSION['auth_error'] = 'This tenant is currently on the Read-Only plan. Editing actions are locked.';
+        header('Location: ' . BASE_URL . '/admin/dashboard.php');
+        exit;
+    }
 }
 ?>

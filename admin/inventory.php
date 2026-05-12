@@ -3,6 +3,8 @@ require_once __DIR__ . '/../includes/session.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/feature_access.php';
+require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__ . '/../includes/platform_rules.php';
 
 requireAdmin();
 requireTenantFeature('inventory');
@@ -64,16 +66,12 @@ $summary = [
     'active_suppliers' => 0,
     'outstanding_payables' => 0,
 ];
-
-$moduleLinks = [
-    ['label' => 'Staff Management', 'feature' => null, 'hint' => 'Live', 'href' => 'staff.php'],
-    ['label' => 'Customers', 'feature' => 'customer_module', 'hint' => 'Live', 'href' => 'customers.php'],
-    ['label' => 'Vehicles', 'feature' => 'customer_module', 'hint' => 'Live', 'href' => 'vehicles.php'],
-    ['label' => 'Appointments', 'feature' => 'appointments', 'hint' => 'Live', 'href' => 'appointments.php'],
-    ['label' => 'Jobs', 'feature' => 'jobs', 'hint' => 'Live', 'href' => 'jobs.php'],
-    ['label' => 'Inventory', 'feature' => 'inventory', 'hint' => 'Live', 'href' => 'inventory.php'],
-    ['label' => 'Invoices', 'feature' => 'invoicing', 'hint' => 'Live', 'href' => 'invoices.php'],
-    ['label' => 'Payments', 'feature' => 'payments', 'hint' => 'Live', 'href' => 'payments.php'],
+$inventoryMovement = [
+    'fast_moving' => 0,
+    'slow_moving' => 0,
+    'idle_items' => 0,
+    'tracked_items' => 0,
+    'items' => [],
 ];
 
 try {
@@ -92,6 +90,8 @@ try {
         $businessName = $tenantRow['business_name'];
         $_SESSION['business_name'] = $businessName;
     }
+
+    $inventoryMovement = getInventoryMovementSummary($pdo, $tenantId);
 
     $summaryStmt = $pdo->prepare("
         SELECT
@@ -320,9 +320,7 @@ try {
 }
 
 $showAnalytics = tenantHasFeature('reports', $tenantId);
-$visibleModuleLinks = array_filter($moduleLinks, function ($module) use ($tenantId) {
-    return $module['feature'] === null || tenantHasFeature($module['feature'], $tenantId);
-});
+$visibleModuleLinks = getVisibleTenantAdminModuleLinks($tenantId);
 
 function inventoryDate($date) {
     if (!$date) {
@@ -351,52 +349,13 @@ function inventoryOutstandingAmount($purchase) {
 </head>
 <body class="page-shell">
     <div class="dashboard">
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <div class="brand">
-                    <div class="brand-mark">M</div>
-                    <div class="brand-text">
-                        <h2>MECHANIX</h2>
-                        <p><?= htmlspecialchars($businessName, ENT_QUOTES, 'UTF-8') ?></p>
-                    </div>
-                </div>
-                <p class="sidebar-meta">Tenant admin workspace for daily repair operations.</p>
-            </div>
+        <?= renderTenantAdminSidebar($businessName, $visibleModuleLinks, 'inventory.php', $showAnalytics) ?>
 
-            <div class="sidebar-section-title">Overview</div>
-            <nav class="sidebar-menu">
-                <a href="dashboard.php"><span>Dashboard</span><span class="badge">Now</span></a>
-                <?php if ($showAnalytics): ?>
-                    <a href="reports.php"><span>Analytics</span><span class="sidebar-hint">Live</span></a>
-                <?php endif; ?>
-            </nav>
-
-            <div class="sidebar-section-title">Operations</div>
-            <nav class="sidebar-menu">
-                <?php foreach ($visibleModuleLinks as $module): ?>
-                    <a href="<?= htmlspecialchars($module['href'], ENT_QUOTES, 'UTF-8') ?>"<?= $module['href'] === 'inventory.php' ? ' class="active"' : '' ?>>
-                        <span><?= htmlspecialchars($module['label'], ENT_QUOTES, 'UTF-8') ?></span>
-                        <span class="sidebar-hint"><?= htmlspecialchars($module['hint'], ENT_QUOTES, 'UTF-8') ?></span>
-                    </a>
-                <?php endforeach; ?>
-            </nav>
-
-            <div class="sidebar-footer">
-                <a href="../logout.php" class="btn btn-secondary btn-full">Log Out</a>
-            </div>
-        </aside>
-
-        <main class="dashboard-main">
-            <div class="dashboard-topbar">
-                <div class="dashboard-title">
-                    <h2>Inventory</h2>
-                    <p>Manage parts stock, suppliers, and supplier-side payables for <?= htmlspecialchars($businessName, ENT_QUOTES, 'UTF-8') ?>.</p>
-                </div>
-
-                <div class="nav-actions">
-                    <button type="button" class="theme-toggle" data-theme-toggle>Dark Mode</button>
-                </div>
-            </div>
+        <main class="dashboard-main" id="main-content" tabindex="-1">
+            <?= renderTenantAdminTopbar(
+                'Inventory',
+                'Manage parts stock, suppliers, and supplier-side payables for ' . htmlspecialchars($businessName, ENT_QUOTES, 'UTF-8') . '.'
+            ) ?>
 
             <?php foreach ($flashMessages as $message): ?>
                 <div class="alert alert-success">
@@ -409,6 +368,8 @@ function inventoryOutstandingAmount($purchase) {
                     <?= htmlspecialchars($message, ENT_QUOTES, 'UTF-8') ?>
                 </div>
             <?php endforeach; ?>
+
+            <?= renderTenantAccessModeNotice() ?>
 
             <section class="dashboard-grid">
                 <article class="metric-card">
@@ -426,6 +387,74 @@ function inventoryOutstandingAmount($purchase) {
                 <article class="metric-card">
                     <span>Outstanding Payables</span>
                     <h3><?= htmlspecialchars(inventoryCurrency($summary['outstanding_payables']), ENT_QUOTES, 'UTF-8') ?></h3>
+                </article>
+                <article class="metric-card">
+                    <span>Fast-Moving Items</span>
+                    <h3><?= number_format($inventoryMovement['fast_moving']) ?></h3>
+                </article>
+                <article class="metric-card">
+                    <span>Slow / Idle Items</span>
+                    <h3><?= number_format($inventoryMovement['slow_moving'] + $inventoryMovement['idle_items']) ?></h3>
+                </article>
+            </section>
+
+            <section class="content-grid inventory-grid">
+                <article class="content-card">
+                    <h3>Inventory Analytics</h3>
+                    <p>Movement is based on recent parts usage so the team can react faster to demand and dead stock.</p>
+
+                    <div class="dashboard-list compact-list">
+                        <div class="dashboard-list-item">
+                            <div>
+                                <strong>Fast-moving demand</strong>
+                                <p><?= number_format($inventoryMovement['fast_moving']) ?> item(s) are moving quickly and may need tighter restocking coverage.</p>
+                            </div>
+                            <span class="status-chip status-approved">Fast</span>
+                        </div>
+                        <div class="dashboard-list-item">
+                            <div>
+                                <strong>Slow-moving demand</strong>
+                                <p><?= number_format($inventoryMovement['slow_moving']) ?> item(s) are moving slowly and should be reviewed before reordering.</p>
+                            </div>
+                            <span class="status-chip status-warning">Slow</span>
+                        </div>
+                        <div class="dashboard-list-item">
+                            <div>
+                                <strong>No recent movement</strong>
+                                <p><?= number_format($inventoryMovement['idle_items']) ?> item(s) had no recorded movement in the last 90 days.</p>
+                            </div>
+                            <span class="status-chip status-inactive">Idle</span>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="content-card">
+                    <h3>Availability Guidance</h3>
+                    <p>Use these recommended availability terms to keep stock settings aligned with real usage patterns.</p>
+
+                    <?php if (!empty($inventoryMovement['items'])): ?>
+                        <div class="dashboard-list compact-list">
+                            <?php foreach (array_slice($inventoryMovement['items'], 0, 5) as $movementItem): ?>
+                                <div class="dashboard-list-item">
+                                    <div>
+                                        <strong><?= htmlspecialchars($movementItem['part_name'], ENT_QUOTES, 'UTF-8') ?></strong>
+                                        <p>
+                                            30d: <?= number_format($movementItem['used_last_30_days']) ?>
+                                            | 90d: <?= number_format($movementItem['used_last_90_days']) ?>
+                                            | <?= htmlspecialchars($movementItem['availability_term'], ENT_QUOTES, 'UTF-8') ?>
+                                        </p>
+                                    </div>
+                                    <span class="status-chip status-<?= htmlspecialchars($movementItem['movement_band'] === 'fast' ? 'approved' : ($movementItem['movement_band'] === 'idle' ? 'inactive' : 'warning'), ENT_QUOTES, 'UTF-8') ?>">
+                                        <?= htmlspecialchars(ucfirst($movementItem['movement_band']), ENT_QUOTES, 'UTF-8') ?>
+                                    </span>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else: ?>
+                        <div class="table-placeholder">
+                            Inventory analytics will appear after stock items start getting used in jobs.
+                        </div>
+                    <?php endif; ?>
                 </article>
             </section>
 
@@ -461,6 +490,12 @@ function inventoryOutstandingAmount($purchase) {
                                             | Qty <?= number_format((int) $item['quantity']) ?>
                                             | Reorder at <?= number_format((int) $item['reorder_level']) ?>
                                         </p>
+                                        <?php foreach ($inventoryMovement['items'] as $movementItem): ?>
+                                            <?php if ((int) $movementItem['inventory_id'] === (int) $item['inventory_id']): ?>
+                                                <p><?= htmlspecialchars($movementItem['availability_term'], ENT_QUOTES, 'UTF-8') ?> | 30d usage <?= number_format($movementItem['used_last_30_days']) ?></p>
+                                                <?php break; ?>
+                                            <?php endif; ?>
+                                        <?php endforeach; ?>
                                     </div>
                                     <span class="status-chip status-<?= htmlspecialchars($inventoryChipClass, ENT_QUOTES, 'UTF-8') ?>">
                                         <?= htmlspecialchars($inventoryChipLabel, ENT_QUOTES, 'UTF-8') ?>
@@ -890,6 +925,6 @@ function inventoryOutstandingAmount($purchase) {
         </main>
     </div>
 
-    <script src="../assets/js/theme.js"></script>
+    <?= renderTenantAdminFooterScripts() ?>
 </body>
 </html>

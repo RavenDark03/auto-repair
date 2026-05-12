@@ -3,6 +3,7 @@ require_once __DIR__ . '/../includes/session.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/feature_access.php';
+require_once __DIR__ . '/../includes/functions.php';
 
 requireAdmin();
 
@@ -22,17 +23,6 @@ $staffSummary = [
     'admins' => 0,
     'mechanics' => 0,
     'cashiers' => 0,
-];
-
-$moduleLinks = [
-    ['label' => 'Staff Management', 'feature' => null, 'hint' => 'Live', 'href' => 'staff.php'],
-    ['label' => 'Customers', 'feature' => 'customer_module', 'hint' => 'Live', 'href' => 'customers.php'],
-    ['label' => 'Vehicles', 'feature' => 'customer_module', 'hint' => 'Live', 'href' => 'vehicles.php'],
-    ['label' => 'Appointments', 'feature' => 'appointments', 'hint' => 'Live', 'href' => 'appointments.php'],
-    ['label' => 'Jobs', 'feature' => 'jobs', 'hint' => 'Live', 'href' => 'jobs.php'],
-    ['label' => 'Inventory', 'feature' => 'inventory', 'hint' => 'Live', 'href' => 'inventory.php'],
-    ['label' => 'Invoices', 'feature' => 'invoicing', 'hint' => 'Live', 'href' => 'invoices.php'],
-    ['label' => 'Payments', 'feature' => 'payments', 'hint' => 'Live', 'href' => 'payments.php'],
 ];
 
 try {
@@ -96,9 +86,7 @@ try {
 }
 
 $showAnalytics = tenantHasFeature('reports', $tenantId);
-$visibleModuleLinks = array_filter($moduleLinks, function ($module) use ($tenantId) {
-    return $module['feature'] === null || tenantHasFeature($module['feature'], $tenantId);
-});
+$visibleModuleLinks = getVisibleTenantAdminModuleLinks($tenantId);
 
 function staffDate($date) {
     if (!$date) {
@@ -119,52 +107,13 @@ function staffDate($date) {
 </head>
 <body class="page-shell">
     <div class="dashboard">
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <div class="brand">
-                    <div class="brand-mark">M</div>
-                    <div class="brand-text">
-                        <h2>MECHANIX</h2>
-                        <p><?= htmlspecialchars($businessName, ENT_QUOTES, 'UTF-8') ?></p>
-                    </div>
-                </div>
-                <p class="sidebar-meta">Tenant admin workspace for daily repair operations.</p>
-            </div>
+        <?= renderTenantAdminSidebar($businessName, $visibleModuleLinks, 'staff.php', $showAnalytics) ?>
 
-            <div class="sidebar-section-title">Overview</div>
-            <nav class="sidebar-menu">
-                <a href="dashboard.php"><span>Dashboard</span><span class="badge">Now</span></a>
-                <?php if ($showAnalytics): ?>
-                    <a href="reports.php"><span>Analytics</span><span class="sidebar-hint">Live</span></a>
-                <?php endif; ?>
-            </nav>
-
-            <div class="sidebar-section-title">Operations</div>
-            <nav class="sidebar-menu">
-                <?php foreach ($visibleModuleLinks as $module): ?>
-                    <a href="<?= htmlspecialchars($module['href'], ENT_QUOTES, 'UTF-8') ?>"<?= $module['href'] === 'staff.php' ? ' class="active"' : '' ?>>
-                        <span><?= htmlspecialchars($module['label'], ENT_QUOTES, 'UTF-8') ?></span>
-                        <span class="sidebar-hint"><?= htmlspecialchars($module['hint'], ENT_QUOTES, 'UTF-8') ?></span>
-                    </a>
-                <?php endforeach; ?>
-            </nav>
-
-            <div class="sidebar-footer">
-                <a href="../logout.php" class="btn btn-secondary btn-full">Log Out</a>
-            </div>
-        </aside>
-
-        <main class="dashboard-main">
-            <div class="dashboard-topbar">
-                <div class="dashboard-title">
-                    <h2>Staff Management</h2>
-                    <p>Manage tenant-scoped admins, cashiers, and mechanics for <?= htmlspecialchars($businessName, ENT_QUOTES, 'UTF-8') ?>.</p>
-                </div>
-
-                <div class="nav-actions">
-                    <button type="button" class="theme-toggle" data-theme-toggle>Dark Mode</button>
-                </div>
-            </div>
+        <main class="dashboard-main" id="main-content" tabindex="-1">
+            <?= renderTenantAdminTopbar(
+                'Staff Management',
+                'Manage tenant-scoped admins, cashiers, and mechanics for ' . htmlspecialchars($businessName, ENT_QUOTES, 'UTF-8') . '.'
+            ) ?>
 
             <?php if ($flashMessage !== null): ?>
                 <div class="alert alert-success">
@@ -308,7 +257,7 @@ function staffDate($date) {
         </main>
     </div>
 
-    <script src="../assets/js/theme.js"></script>
+    <?= renderTenantAdminFooterScripts() ?>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const toggle = document.querySelector('[data-password-toggle-group]');

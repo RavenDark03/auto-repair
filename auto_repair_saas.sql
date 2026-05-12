@@ -64,6 +64,10 @@ CREATE TABLE `billing_requests` (
   `currency` varchar(10) NOT NULL DEFAULT 'PHP',
   `billing_status` enum('draft','sent','paid','cancelled') NOT NULL DEFAULT 'draft',
   `payment_reference` varchar(100) DEFAULT NULL,
+  `payment_reference_check_status` varchar(30) DEFAULT 'unchecked',
+  `payment_reference_checked_at` datetime DEFAULT NULL,
+  `payment_reference_check_notes` text DEFAULT NULL,
+  `payment_reference_checked_by` int(11) DEFAULT NULL,
   `paymongo_checkout_session_id` varchar(100) DEFAULT NULL,
   `paymongo_checkout_url` text DEFAULT NULL,
   `paymongo_payment_intent_id` varchar(100) DEFAULT NULL,
@@ -444,7 +448,8 @@ CREATE TABLE `subscription_plans` (
 INSERT INTO `subscription_plans` (`plan_id`, `plan_name`, `monthly_price`, `yearly_price`, `description`, `is_active`, `created_at`) VALUES
 (1, 'Starter', 1999.00, 19990.00, 'Core workflow for small repair shops', 1, '2026-04-20 17:35:05'),
 (2, 'Growth', 3499.00, 34990.00, 'Operations, billing, and inventory for growing shops', 1, '2026-04-20 17:35:05'),
-(3, 'Pro', 5499.00, 54990.00, 'Full platform access for established repair businesses', 1, '2026-04-20 17:35:05');
+(3, 'Pro', 5499.00, 54990.00, 'Full platform access for established repair businesses', 1, '2026-04-20 17:35:05'),
+(4, 'Read-Only', 499.00, 4990.00, 'Access historical records and reports without editing operational data', 1, '2026-04-20 17:35:05');
 
 -- --------------------------------------------------------
 
@@ -512,6 +517,8 @@ CREATE TABLE `tenants` (
   `tenant_id` int(11) NOT NULL,
   `business_name` varchar(150) NOT NULL,
   `status` enum('active','inactive') NOT NULL DEFAULT 'active',
+  `access_mode` enum('full_access','read_only') NOT NULL DEFAULT 'full_access',
+  `read_only_source_plan` varchar(100) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -519,8 +526,8 @@ CREATE TABLE `tenants` (
 -- Dumping data for table `tenants`
 --
 
-INSERT INTO `tenants` (`tenant_id`, `business_name`, `status`, `created_at`) VALUES
-(1, 'Policarpio Auto Shop', 'active', '2026-04-20 04:54:43');
+INSERT INTO `tenants` (`tenant_id`, `business_name`, `status`, `access_mode`, `read_only_source_plan`, `created_at`) VALUES
+(1, 'Policarpio Auto Shop', 'active', 'full_access', NULL, '2026-04-20 04:54:43');
 
 -- --------------------------------------------------------
 
@@ -958,7 +965,7 @@ ALTER TABLE `subscriptions`
 -- AUTO_INCREMENT for table `subscription_plans`
 --
 ALTER TABLE `subscription_plans`
-  MODIFY `plan_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `plan_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `super_admins`

@@ -30,7 +30,8 @@ try {
             u.role,
             u.status AS user_status,
             t.business_name,
-            t.status AS tenant_status
+            t.status AS tenant_status,
+            t.access_mode
         FROM users u
         INNER JOIN tenants t ON u.tenant_id = t.tenant_id
         WHERE u.username = :username
@@ -74,6 +75,7 @@ try {
     $_SESSION['role'] = $user['role'];
     $_SESSION['business_name'] = $user['business_name'];
     $_SESSION['must_change_password'] = (int) $user['must_change_password'] === 1;
+    $_SESSION['access_mode'] = $user['access_mode'] ?? 'full_access';
 
     if ((int) $user['must_change_password'] === 1) {
         header("Location: ../change_password.php");

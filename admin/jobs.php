@@ -555,7 +555,7 @@ $editPartQuantity = (int) ($partEditOldInput['quantity_used'] ?? ($editingPartUs
     <div class="dashboard">
         <?= renderTenantAdminSidebar($businessName, $visibleModuleLinks, 'jobs.php', $showAnalytics) ?>
 
-        <main class="dashboard-main">
+        <main class="dashboard-main" id="main-content" tabindex="-1">
             <?= renderTenantAdminTopbar(
                 'Jobs',
                 'Track approved appointment work, assign mechanics, and update job progress inside the current tenant.',
@@ -589,29 +589,7 @@ $editPartQuantity = (int) ($partEditOldInput['quantity_used'] ?? ($editingPartUs
             <?php endif; ?>
 
             <?php if ($subscriptionNotice): ?>
-                <section class="content-card">
-                    <h3>Business Subscription</h3>
-                    <p>Your shop can monitor subscription timing here, while SaaS billing visibility and controls remain exclusive to the super admin.</p>
-
-                    <div class="dashboard-list compact-list">
-                        <div class="dashboard-list-item">
-                            <div>
-                                <strong>Current Subscription</strong>
-                                <p><?= htmlspecialchars($subscriptionNotice['summary'], ENT_QUOTES, 'UTF-8') ?></p>
-                            </div>
-                            <span class="status-chip <?= htmlspecialchars($subscriptionNotice['class'], ENT_QUOTES, 'UTF-8') ?>">
-                                <?= htmlspecialchars($subscriptionNotice['label'], ENT_QUOTES, 'UTF-8') ?>
-                            </span>
-                        </div>
-                        <div class="dashboard-list-item">
-                            <div>
-                                <strong>Renewal Reminder</strong>
-                                <p><?= htmlspecialchars($subscriptionNotice['detail'], ENT_QUOTES, 'UTF-8') ?></p>
-                            </div>
-                            <span class="metric-pill">Subscription</span>
-                        </div>
-                    </div>
-                </section>
+                <?php include __DIR__ . '/../includes/partials/subscription_notice_card.php'; ?>
             <?php endif; ?>
 
             <section class="dashboard-grid">
@@ -692,8 +670,9 @@ $editPartQuantity = (int) ($partEditOldInput['quantity_used'] ?? ($editingPartUs
                             <?php endforeach; ?>
                         </div>
                     <?php else: ?>
-                        <div class="table-placeholder">
-                            <?= ($selectedCustomerContext || $selectedVehicleContext) ? 'No jobs matched this context and current filter.' : 'No jobs matched your current filter.' ?>
+                        <div class="empty-state">
+                            <strong>No jobs in this view</strong>
+                            <p><?= ($selectedCustomerContext || $selectedVehicleContext) ? 'No jobs matched this context and current filter.' : 'No jobs matched your current filter.' ?></p>
                         </div>
                     <?php endif; ?>
                 </article>
@@ -703,6 +682,17 @@ $editPartQuantity = (int) ($partEditOldInput['quantity_used'] ?? ($editingPartUs
                     <p><?= $selectedJob ? 'Assign or reassign a mechanic, then keep the job status updated as work moves forward.' : 'Approved appointments create jobs automatically, so the next job will appear here once one exists.' ?></p>
 
                     <?php if ($selectedJob): ?>
+                        <div class="job-detail-tabs" data-job-tabs>
+                            <div class="panel-tabs" role="tablist" aria-label="Job sections">
+                                <button type="button" class="panel-tab is-active" role="tab" aria-selected="true" data-job-tab="overview" id="job-tab-overview">Overview</button>
+                                <button type="button" class="panel-tab" role="tab" aria-selected="false" data-job-tab="activity" id="job-tab-activity" tabindex="-1">Activity log</button>
+                                <button type="button" class="panel-tab" role="tab" aria-selected="false" data-job-tab="services" id="job-tab-services" tabindex="-1">Services</button>
+                                <?php if ($showInventory): ?>
+                                    <button type="button" class="panel-tab" role="tab" aria-selected="false" data-job-tab="parts" id="job-tab-parts" tabindex="-1">Parts</button>
+                                <?php endif; ?>
+                            </div>
+                            <div class="panel-tab-panels">
+                                <div class="panel-tab-panel is-active" role="tabpanel" id="job-panel-overview" aria-labelledby="job-tab-overview" data-job-panel="overview">
                         <?php if ($jobSourceAppointmentLocked): ?>
                             <div class="alert alert-error">
                                 This job is linked to an appointment that is no longer in the approved state. Job reassignment and progress updates are locked until the source appointment data is corrected.
@@ -791,6 +781,8 @@ $editPartQuantity = (int) ($partEditOldInput['quantity_used'] ?? ($editingPartUs
                             </form>
                         <?php endif; ?>
 
+                                </div>
+                                <div class="panel-tab-panel" role="tabpanel" id="job-panel-activity" aria-labelledby="job-tab-activity" data-job-panel="activity" hidden>
                         <div class="dashboard-list compact-list">
                             <div class="dashboard-list-item">
                                 <div>
@@ -809,12 +801,15 @@ $editPartQuantity = (int) ($partEditOldInput['quantity_used'] ?? ($editingPartUs
                                     </div>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <div class="table-placeholder">
-                                    No job log entries have been recorded yet.
+                                <div class="empty-state">
+                                    <strong>No activity yet</strong>
+                                    <p>Status changes will appear here once the job is updated.</p>
                                 </div>
                             <?php endif; ?>
                         </div>
 
+                                </div>
+                                <div class="panel-tab-panel" role="tabpanel" id="job-panel-services" aria-labelledby="job-tab-services" data-job-panel="services" hidden>
                         <div class="dashboard-list compact-list">
                             <div class="dashboard-list-item">
                                 <div>
@@ -945,7 +940,9 @@ $editPartQuantity = (int) ($partEditOldInput['quantity_used'] ?? ($editingPartUs
                             </div>
                         <?php endif; ?>
 
+                                </div>
                         <?php if ($showInventory): ?>
+                                <div class="panel-tab-panel" role="tabpanel" id="job-panel-parts" aria-labelledby="job-tab-parts" data-job-panel="parts" hidden>
                             <div class="dashboard-list compact-list">
                                 <div class="dashboard-list-item">
                                     <div>
@@ -1076,11 +1073,14 @@ $editPartQuantity = (int) ($partEditOldInput['quantity_used'] ?? ($editingPartUs
                                     Parts usage is locked because this job is already marked completed.
                                 </div>
                             <?php endif; ?>
+                                </div>
                         <?php endif; ?>
+                        </div>
+                        </div>
                     <?php else: ?>
-                        <div class="table-placeholder">
-                            <strong>Current tenant admin</strong><br>
-                            Signed in as <?= htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8') ?>. Every job on this page is filtered by <code>tenant_id = <?= $tenantId ?></code>.
+                        <div class="empty-state">
+                            <strong>Select a job</strong>
+                            <p>Signed in as <?= htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8') ?>. Choose a job from the queue to view details. Data is scoped to <code>tenant_id = <?= $tenantId ?></code>.</p>
                         </div>
                     <?php endif; ?>
                 </article>
@@ -1088,6 +1088,7 @@ $editPartQuantity = (int) ($partEditOldInput['quantity_used'] ?? ($editingPartUs
         </main>
     </div>
 
-    <script src="../assets/js/theme.js"></script>
+    <?= renderTenantAdminFooterScripts() ?>
+    <script src="../assets/js/job-tabs.js"></script>
 </body>
 </html>

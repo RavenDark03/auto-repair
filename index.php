@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_once __DIR__ . '/includes/session.php';
 require_once __DIR__ . '/includes/db.php';
 
@@ -34,6 +34,7 @@ try {
         LEFT JOIN features f
             ON f.feature_id = pf.feature_id
         WHERE sp.is_active = 1
+          AND sp.plan_name <> 'Read-Only'
         ORDER BY sp.monthly_price ASC, sp.plan_name ASC, f.feature_name ASC
     ")->fetchAll();
 
@@ -85,9 +86,13 @@ function landingFeatureLabel($featureName) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MECHANIX - Multi-Tenant Auto Repair SaaS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap">
     <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body class="page-shell">
+
     <header class="topbar">
         <div class="topbar-inner">
             <div class="brand">
@@ -97,124 +102,138 @@ function landingFeatureLabel($featureName) {
                     <p>Subscription-based auto repair SaaS</p>
                 </div>
             </div>
-
             <div class="nav-actions">
-                <button type="button" class="theme-toggle" data-theme-toggle>Dark Mode</button>
-                <a href="superadmin/login.php" class="btn btn-secondary">Super Admin</a>
-                <a href="login.php" class="btn btn-secondary">Tenant Login</a>
+                <button type="button" class="theme-toggle theme-icon-btn" data-theme-toggle aria-label="Switch to dark mode">
+                    <svg class="theme-icon theme-icon--moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" /></svg>
+                    <svg class="theme-icon theme-icon--sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" /></svg>
+                </button>
+                <a href="login.php" class="btn btn-secondary">Log In</a>
                 <a href="register.php" class="btn btn-primary">Register Business</a>
             </div>
         </div>
     </header>
 
     <main class="landing-main">
-        <section class="hero landing-hero">
-            <div class="container landing-hero-grid">
-                <article class="panel hero-copy landing-copy">
-                    <div class="eyebrow">Auto Repair SaaS for modern shop owners</div>
-                    <h2>One platform to onboard repair businesses, run daily operations, and grow subscriptions with confidence.</h2>
-                    <p class="landing-lead">
-                        MECHANIX combines tenant-safe shop operations, subscription packaging, add-on selling, super admin review,
-                        and billing-ready workflows in one clean SaaS experience built for local auto repair businesses.
-                    </p>
 
+        <!-- ============================================================
+             VERTICAL HERO FLOW
+        ============================================================ -->
+        <section class="landing-hero">
+            <div class="container landing-hero-container">
+
+                <!-- 1. HERO TEXT — centered, no card wrapper -->
+                <div class="hero-center">
+                    <div class="eyebrow">Auto Repair SaaS for modern shop owners</div>
+                    <h2 class="hero-headline">One platform.<br>Every shop. All operations.</h2>
+                    <p class="hero-lead">
+                        MECHANIX combines tenant-safe shop operations, subscription packaging, add-on selling,
+                        super admin review, and billing-ready workflows in one clean SaaS experience built for
+                        local auto repair businesses.
+                    </p>
                     <div class="hero-actions">
-                        <a href="register.php" class="btn btn-primary">Start Registration</a>
+                        <a href="register.php" class="btn btn-primary">Register Business</a>
                         <a href="#pricing" class="btn btn-secondary">View Pricing</a>
                     </div>
+                </div>
 
-                    <div class="landing-proof-strip">
-                        <div class="landing-proof-card">
-                            <strong>Multi-Tenant Safe</strong>
-                            <span>Strict tenant isolation across customers, jobs, stock, invoices, and payments.</span>
+                <!-- 2. STAGE CARD PRIMARY — full-width dark dashboard mockup -->
+                <div class="stage-card stage-card-primary">
+                    <div class="stage-card-head">
+                        <span class="stage-pill">Live Workspace</span>
+                        <strong>Shop Operations Snapshot</strong>
+                    </div>
+                    <div class="dashboard-mock">
+                        <div class="dashboard-mock-sidebar">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
                         </div>
-                        <div class="landing-proof-card">
-                            <strong>Modular Growth</strong>
-                            <span>Start with a plan, then unlock appointments, inventory, invoicing, reports, and more.</span>
-                        </div>
-                        <div class="landing-proof-card">
-                            <strong>Billing Ready</strong>
-                            <span>Prepared for approval, draft billing, and future PayMongo activation.</span>
+                        <div class="dashboard-mock-main">
+                            <div class="dashboard-mock-top"></div>
+                            <div class="dashboard-mock-metrics">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                            <div class="dashboard-mock-table"></div>
                         </div>
                     </div>
-                </article>
+                </div>
 
-                <aside class="landing-stage">
-                    <div class="landing-stage-shell">
-                        <div class="stage-card stage-card-primary">
-                            <div class="stage-card-head">
-                                <span class="stage-pill">Live Workspace</span>
-                                <strong>Shop Operations Snapshot</strong>
-                            </div>
-                            <div class="dashboard-mock">
-                                <div class="dashboard-mock-sidebar">
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
-                                </div>
-                                <div class="dashboard-mock-main">
-                                    <div class="dashboard-mock-top"></div>
-                                    <div class="dashboard-mock-metrics">
-                                        <span></span>
-                                        <span></span>
-                                        <span></span>
-                                    </div>
-                                    <div class="dashboard-mock-table"></div>
-                                </div>
-                            </div>
+                <!-- 3. STAGE CARDS ROW — photo card + stack side by side -->
+                <div class="stage-cards-row">
+                    <div class="stage-card stage-card-photo">
+                        <div class="stage-photo-frame">
+                            <svg viewBox="0 0 520 300" class="stage-photo-svg" aria-hidden="true">
+                                <defs>
+                                    <linearGradient id="shopBg" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="#f1f1f1" />
+                                        <stop offset="100%" stop-color="#d9d9d9" />
+                                    </linearGradient>
+                                    <linearGradient id="carBody" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" stop-color="#0f0f0f" />
+                                        <stop offset="100%" stop-color="#3a3a3a" />
+                                    </linearGradient>
+                                </defs>
+                                <rect width="520" height="300" rx="0" fill="url(#shopBg)" />
+                                <rect x="28" y="28" width="148" height="78" rx="14" fill="#ffffff" opacity="0.75" />
+                                <rect x="196" y="28" width="260" height="22" rx="11" fill="#cfcfcf" />
+                                <rect x="196" y="64" width="200" height="16" rx="8" fill="#b8b8b8" />
+                                <rect x="196" y="94" width="160" height="16" rx="8" fill="#b8b8b8" />
+                                <rect x="28" y="200" width="464" height="16" rx="8" fill="#9b9b9b" opacity="0.5" />
+                                <path d="M118 196h256c20 0 31-7 38-22l18-37c6-12 2-22-11-28l-52-24c-13-6-27-9-41-9H200c-22 0-41 8-58 23l-34 31c-10 9-16 21-16 33v7c0 16 11 26 27 26Z" fill="url(#carBody)" />
+                                <path d="M182 108h137c11 0 21 3 30 9l28 19c7 5 5 13-4 13H160c-9 0-12-7-6-13l18-16c4-4 8-7 12-9Z" fill="#ededed" />
+                                <circle cx="172" cy="203" r="29" fill="#151515" />
+                                <circle cx="172" cy="203" r="13" fill="#d7d7d7" />
+                                <circle cx="366" cy="203" r="29" fill="#151515" />
+                                <circle cx="366" cy="203" r="13" fill="#d7d7d7" />
+                                <rect x="80" y="238" width="360" height="9" rx="4" fill="#777777" opacity="0.45" />
+                            </svg>
                         </div>
-
-                        <div class="stage-card stage-card-photo">
-                            <div class="stage-photo-frame">
-                                <svg viewBox="0 0 520 320" class="stage-photo-svg" aria-hidden="true">
-                                    <defs>
-                                        <linearGradient id="shopBg" x1="0%" y1="0%" x2="100%" y2="100%">
-                                            <stop offset="0%" stop-color="#f1f1f1" />
-                                            <stop offset="100%" stop-color="#d9d9d9" />
-                                        </linearGradient>
-                                        <linearGradient id="carBody" x1="0%" y1="0%" x2="100%" y2="0%">
-                                            <stop offset="0%" stop-color="#0f0f0f" />
-                                            <stop offset="100%" stop-color="#3a3a3a" />
-                                        </linearGradient>
-                                    </defs>
-                                    <rect width="520" height="320" rx="28" fill="url(#shopBg)" />
-                                    <rect x="28" y="34" width="160" height="84" rx="18" fill="#ffffff" opacity="0.75" />
-                                    <rect x="210" y="34" width="282" height="24" rx="12" fill="#cfcfcf" />
-                                    <rect x="210" y="72" width="220" height="18" rx="9" fill="#b8b8b8" />
-                                    <rect x="210" y="102" width="180" height="18" rx="9" fill="#b8b8b8" />
-                                    <rect x="44" y="214" width="434" height="18" rx="9" fill="#9b9b9b" opacity="0.5" />
-                                    <path d="M126 204h250c20 0 31-7 38-22l18-37c6-12 2-22-11-28l-52-24c-13-6-27-9-41-9H207c-22 0-41 8-58 23l-34 31c-10 9-16 21-16 33v7c0 16 11 26 27 26Z" fill="url(#carBody)" />
-                                    <path d="M190 108h137c11 0 21 3 30 9l28 19c7 5 5 13-4 13H166c-9 0-12-7-6-13l18-16c4-4 8-7 12-9Z" fill="#ededed" />
-                                    <circle cx="181" cy="209" r="31" fill="#151515" />
-                                    <circle cx="181" cy="209" r="14" fill="#d7d7d7" />
-                                    <circle cx="375" cy="209" r="31" fill="#151515" />
-                                    <circle cx="375" cy="209" r="14" fill="#d7d7d7" />
-                                    <rect x="88" y="246" width="344" height="10" rx="5" fill="#777777" opacity="0.45" />
-                                </svg>
-                            </div>
-                            <div class="stage-photo-copy">
-                                <strong>Designed for real-world shop flow</strong>
-                                <p>From registration to vehicle intake, repair tracking, billing, and collections.</p>
-                            </div>
-                        </div>
-
-                        <div class="stage-card stage-card-stack">
-                            <div class="stack-mini-card">
-                                <span class="stack-label">Tenant Onboarding</span>
-                                <strong>Plan + add-ons + review</strong>
-                            </div>
-                            <div class="stack-mini-card">
-                                <span class="stack-label">Daily Operations</span>
-                                <strong>Appointments, jobs, stock, invoices</strong>
-                            </div>
-                            <div class="stack-mini-card">
-                                <span class="stack-label">Revenue Control</span>
-                                <strong>Collections, AP prep, analytics, billing-ready flow</strong>
-                            </div>
+                        <div class="stage-photo-copy">
+                            <strong>Designed for real-world shop flow</strong>
+                            <p>From registration to vehicle intake, repair tracking, billing, and collections.</p>
                         </div>
                     </div>
-                </aside>
+
+                    <div class="stage-card stage-card-stack">
+                        <p class="stage-stack-title">What's inside</p>
+                        <div class="stack-mini-card">
+                            <span class="stack-label">Tenant Onboarding</span>
+                            <strong>Plan + add-ons + review</strong>
+                        </div>
+                        <div class="stack-mini-card">
+                            <span class="stack-label">Daily Operations</span>
+                            <strong>Appointments, jobs, stock, invoices</strong>
+                        </div>
+                        <div class="stack-mini-card">
+                            <span class="stack-label">Revenue Control</span>
+                            <strong>Collections, analytics, billing-ready flow</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. PROOF STRIP -->
+                <div class="landing-proof-strip">
+                    <div class="landing-proof-card">
+                        <svg class="proof-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" /></svg>
+                        <strong>Multi-Tenant Safe</strong>
+                        <span>Strict tenant isolation across customers, jobs, stock, invoices, and payments.</span>
+                    </div>
+                    <div class="landing-proof-card">
+                        <svg class="proof-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" /></svg>
+                        <strong>Modular Growth</strong>
+                        <span>Start with a plan, then unlock appointments, inventory, invoicing, reports, and more.</span>
+                    </div>
+                    <div class="landing-proof-card">
+                        <svg class="proof-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" /></svg>
+                        <strong>Billing Ready</strong>
+                        <span>Prepared for approval, draft billing, and future PayMongo activation.</span>
+                    </div>
+                </div>
+
             </div>
         </section>
 
@@ -228,6 +247,9 @@ function landingFeatureLabel($featureName) {
             </section>
         <?php endif; ?>
 
+        <!-- ============================================================
+             MODULES SECTION
+        ============================================================ -->
         <section id="modules" class="section-block">
             <div class="container">
                 <div class="section-heading">
@@ -274,42 +296,92 @@ function landingFeatureLabel($featureName) {
             </div>
         </section>
 
-        <section class="section-block">
-            <div class="container story-grid">
-                <article class="content-card story-card story-card-dark">
-                    <div class="story-card-copy">
-                        <p class="eyebrow">From First Contact</p>
-                        <h3>Turn your pricing page into a conversion path, not just an information page.</h3>
-                        <p>
-                            Business owners can understand the offer, compare plans, choose optional modules,
-                            and move directly into registration without leaving the product story behind.
-                        </p>
-                    </div>
-                </article>
+        <!-- ============================================================
+             STORY SECTION — vertical card flow
+        ============================================================ -->
+        <section class="section-block story-section">
+            <div class="container">
+                <div class="story-flow">
 
-                <article class="content-card story-card">
-                    <div class="story-timeline">
-                        <div class="timeline-step">
-                            <strong>Choose Plan</strong>
-                            <span>Starter, Growth, or Pro</span>
+                    <article class="content-card story-card story-card-dark">
+                        <div class="story-card-copy">
+                            <p class="eyebrow">From First Contact</p>
+                            <h3>Turn your pricing page into a conversion path, not just an information page.</h3>
+                            <p>
+                                Business owners can understand the offer, compare plans, choose optional modules,
+                                and move directly into registration without leaving the product story behind.
+                            </p>
+                            <div class="hero-actions" style="margin-top: 24px; margin-bottom: 0;">
+                                <a href="register.php" class="btn btn-primary" style="background:#fff;color:#111;">Start Free</a>
+                                <a href="#pricing" class="btn btn-secondary" style="border-color:rgba(255,255,255,0.25);color:rgba(255,255,255,0.75);">See Pricing</a>
+                            </div>
                         </div>
-                        <div class="timeline-step">
-                            <strong>Select Add-Ons</strong>
-                            <span>Extend only what the business needs</span>
+                        <div class="story-card-visual">
+                            <div class="story-stat-grid">
+                                <div class="story-stat">
+                                    <strong>3 Plans</strong>
+                                    <span>Starter · Growth · Pro</span>
+                                </div>
+                                <div class="story-stat">
+                                    <strong>100%</strong>
+                                    <span>Tenant isolated</span>
+                                </div>
+                                <div class="story-stat">
+                                    <strong>8+ Modules</strong>
+                                    <span>Unlock as you grow</span>
+                                </div>
+                                <div class="story-stat">
+                                    <strong>1 Platform</strong>
+                                    <span>From sign-up to billing</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="timeline-step">
-                            <strong>Review + Billing</strong>
-                            <span>Admin review and billing flow ready</span>
+                    </article>
+
+                    <article class="content-card story-card story-card-timeline">
+                        <div class="story-card-copy">
+                            <p class="eyebrow">The Journey</p>
+                            <h3>From registration to a fully running repair workspace in four steps.</h3>
                         </div>
-                        <div class="timeline-step">
-                            <strong>Go Live</strong>
-                            <span>Tenant workspace opens with feature control</span>
+                        <div class="story-timeline">
+                            <div class="timeline-step">
+                                <div class="timeline-num">01</div>
+                                <div>
+                                    <strong>Choose Plan</strong>
+                                    <span>Starter, Growth, or Pro</span>
+                                </div>
+                            </div>
+                            <div class="timeline-step">
+                                <div class="timeline-num">02</div>
+                                <div>
+                                    <strong>Select Add-Ons</strong>
+                                    <span>Extend only what the business needs</span>
+                                </div>
+                            </div>
+                            <div class="timeline-step">
+                                <div class="timeline-num">03</div>
+                                <div>
+                                    <strong>Review + Billing</strong>
+                                    <span>Admin review and billing flow ready</span>
+                                </div>
+                            </div>
+                            <div class="timeline-step">
+                                <div class="timeline-num">04</div>
+                                <div>
+                                    <strong>Go Live</strong>
+                                    <span>Tenant workspace opens with feature control</span>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </article>
+                    </article>
+
+                </div>
             </div>
         </section>
 
+        <!-- ============================================================
+             PRICING SECTION
+        ============================================================ -->
         <section id="pricing" class="section-block">
             <div class="container">
                 <div class="section-heading">
@@ -393,13 +465,17 @@ function landingFeatureLabel($featureName) {
                     </div>
                     <div class="landing-cta-actions">
                         <a href="register.php" class="btn btn-primary">Register Your Business</a>
-                        <a href="login.php" class="btn btn-secondary">Tenant Login</a>
+                        <a href="#pricing" class="btn btn-secondary">Compare Plans</a>
                     </div>
                 </div>
             </div>
         </section>
+
     </main>
 
-    <script src="assets/js/theme.js"></script>
+    <script src="assets/js/theme.js?v=2"></script>
 </body>
 </html>
+
+
+

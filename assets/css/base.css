@@ -1,0 +1,177 @@
+﻿
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: "Inter", "Segoe UI", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    transition: background var(--transition), color var(--transition);
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+}
+
+ul {
+    list-style: none;
+}
+
+img {
+    max-width: 100%;
+    display: block;
+}
+
+.page-shell {
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at top left, rgba(127, 127, 127, 0.08), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(127, 127, 127, 0.06), transparent 24%),
+        var(--bg);
+}
+
+.container {
+    width: min(100% - 32px, var(--max-width));
+    margin: 0 auto;
+}
+
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
+    backdrop-filter: blur(16px);
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    border-bottom: 1px solid var(--border);
+}
+
+.topbar-inner {
+    width: min(100% - 32px, var(--max-width));
+    margin: 0 auto;
+    min-height: 76px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.brand-mark {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    background: var(--text);
+    color: var(--bg);
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    box-shadow: var(--shadow-soft);
+}
+
+.brand-text h1,
+.brand-text h2 {
+    font-size: 1rem;
+    line-height: 1.1;
+    letter-spacing: 0.06em;
+}
+
+.brand-text p {
+    color: var(--text-soft);
+    font-size: 0.88rem;
+}
+
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.theme-toggle {
+    border: 1px solid var(--border);
+    background: var(--bg-soft);
+    color: var(--text);
+    height: 44px;
+    min-width: 44px;
+    padding: 0 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all var(--transition);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: var(--shadow-soft);
+}
+
+.theme-toggle:hover {
+    transform: translateY(-1px);
+    border-color: var(--border-strong);
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    height: 48px;
+    padding: 0 20px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all var(--transition);
+    font-weight: 600;
+}
+
+.btn-primary {
+    background: var(--button-bg);
+    color: var(--button-text);
+    box-shadow: var(--shadow-soft);
+}
+
+.btn-primary:hover {
+    background: var(--button-hover);
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: transparent;
+    color: var(--text);
+    border-color: var(--border);
+}
+
+.btn-secondary:hover {
+    border-color: var(--border-strong);
+    background: var(--bg-soft);
+}
+
+.btn-full {
+    width: 100%;
+}
+
+.btn-small {
+    height: 38px;
+    padding: 0 14px;
+    font-size: 0.9rem;
+}
+

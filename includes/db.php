@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/schema.php';
 
 class Database {
     private static $instance = null;
@@ -21,6 +22,7 @@ class Database {
             }
 
             $this->connection = new PDO($dsn, DB_USER, DB_PASS, $opts);
+            ensurePlatformSchema($this->connection);
         } catch (PDOException $e) {
             die('Database connection failed: ' . $e->getMessage());
         }

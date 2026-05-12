@@ -640,7 +640,7 @@ $selectedEditPaymentNotes = $editPaymentOldInput['notes'] ?? ($editingPayment['n
     <div class="dashboard">
         <?= renderTenantAdminSidebar($businessName, $visibleModuleLinks, 'invoices.php', $showAnalytics) ?>
 
-        <main class="dashboard-main">
+        <main class="dashboard-main" id="main-content" tabindex="-1">
             <?= renderTenantAdminTopbar(
                 'Customer Invoices',
                 'Create customer invoices from completed jobs and track tenant-scoped receivables.',
@@ -688,29 +688,7 @@ $selectedEditPaymentNotes = $editPaymentOldInput['notes'] ?? ($editingPayment['n
             <?php endif; ?>
 
             <?php if ($subscriptionNotice): ?>
-                <section class="content-card">
-                    <h3>Business Subscription</h3>
-                    <p>Your shop can monitor subscription timing here, while SaaS billing visibility and controls remain exclusive to the super admin.</p>
-
-                    <div class="dashboard-list compact-list">
-                        <div class="dashboard-list-item">
-                            <div>
-                                <strong>Current Subscription</strong>
-                                <p><?= htmlspecialchars($subscriptionNotice['summary'], ENT_QUOTES, 'UTF-8') ?></p>
-                            </div>
-                            <span class="status-chip <?= htmlspecialchars($subscriptionNotice['class'], ENT_QUOTES, 'UTF-8') ?>">
-                                <?= htmlspecialchars($subscriptionNotice['label'], ENT_QUOTES, 'UTF-8') ?>
-                            </span>
-                        </div>
-                        <div class="dashboard-list-item">
-                            <div>
-                                <strong>Renewal Reminder</strong>
-                                <p><?= htmlspecialchars($subscriptionNotice['detail'], ENT_QUOTES, 'UTF-8') ?></p>
-                            </div>
-                            <span class="metric-pill">Subscription</span>
-                        </div>
-                    </div>
-                </section>
+                <?php include __DIR__ . '/../includes/partials/subscription_notice_card.php'; ?>
             <?php endif; ?>
 
             <section class="dashboard-grid">
@@ -1219,6 +1197,6 @@ $selectedEditPaymentNotes = $editPaymentOldInput['notes'] ?? ($editingPayment['n
         </main>
     </div>
 
-    <script src="../assets/js/theme.js"></script>
+    <?= renderTenantAdminFooterScripts() ?>
 </body>
 </html>

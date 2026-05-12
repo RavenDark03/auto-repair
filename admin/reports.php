@@ -3,6 +3,7 @@ require_once __DIR__ . '/../includes/session.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/feature_access.php';
+require_once __DIR__ . '/../includes/functions.php';
 
 requireAdmin();
 requireTenantFeature('reports');
@@ -36,17 +37,6 @@ $payablesAging = [
 $lowStockItems = [];
 $monthlyCollections = [];
 $monthlyPayables = [];
-
-$moduleLinks = [
-    ['label' => 'Staff Management', 'feature' => null, 'hint' => 'Live', 'href' => 'staff.php'],
-    ['label' => 'Customers', 'feature' => 'customer_module', 'hint' => 'Live', 'href' => 'customers.php'],
-    ['label' => 'Vehicles', 'feature' => 'customer_module', 'hint' => 'Live', 'href' => 'vehicles.php'],
-    ['label' => 'Appointments', 'feature' => 'appointments', 'hint' => 'Live', 'href' => 'appointments.php'],
-    ['label' => 'Jobs', 'feature' => 'jobs', 'hint' => 'Live', 'href' => 'jobs.php'],
-    ['label' => 'Inventory', 'feature' => 'inventory', 'hint' => 'Live', 'href' => 'inventory.php'],
-    ['label' => 'Invoices', 'feature' => 'invoicing', 'hint' => 'Live', 'href' => 'invoices.php'],
-    ['label' => 'Payments', 'feature' => 'payments', 'hint' => 'Live', 'href' => 'payments.php'],
-];
 
 $fromDateObj = DateTime::createFromFormat('Y-m-d', $fromDate);
 $toDateObj = DateTime::createFromFormat('Y-m-d', $toDate);
@@ -212,9 +202,8 @@ try {
     $errorMessage = 'Reports could not be loaded: ' . $e->getMessage();
 }
 
-$visibleModuleLinks = array_filter($moduleLinks, function ($module) use ($tenantId) {
-    return $module['feature'] === null || tenantHasFeature($module['feature'], $tenantId);
-});
+$showAnalytics = tenantHasFeature('reports', $tenantId);
+$visibleModuleLinks = getVisibleTenantAdminModuleLinks($tenantId);
 
 function reportsCurrency($amount) {
     return 'PHP ' . number_format((float) $amount, 2);
@@ -235,50 +224,13 @@ function reportsMonthLabel($monthKey) {
 </head>
 <body class="page-shell">
     <div class="dashboard">
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <div class="brand">
-                    <div class="brand-mark">M</div>
-                    <div class="brand-text">
-                        <h2>MECHANIX</h2>
-                        <p><?= htmlspecialchars($businessName, ENT_QUOTES, 'UTF-8') ?></p>
-                    </div>
-                </div>
-                <p class="sidebar-meta">Tenant admin workspace for daily repair operations.</p>
-            </div>
+        <?= renderTenantAdminSidebar($businessName, $visibleModuleLinks, 'reports.php', $showAnalytics) ?>
 
-            <div class="sidebar-section-title">Overview</div>
-            <nav class="sidebar-menu">
-                <a href="dashboard.php"><span>Dashboard</span><span class="badge">Now</span></a>
-                <a href="reports.php" class="active"><span>Analytics</span><span class="sidebar-hint">Live</span></a>
-            </nav>
-
-            <div class="sidebar-section-title">Operations</div>
-            <nav class="sidebar-menu">
-                <?php foreach ($visibleModuleLinks as $module): ?>
-                    <a href="<?= htmlspecialchars($module['href'], ENT_QUOTES, 'UTF-8') ?>">
-                        <span><?= htmlspecialchars($module['label'], ENT_QUOTES, 'UTF-8') ?></span>
-                        <span class="sidebar-hint"><?= htmlspecialchars($module['hint'], ENT_QUOTES, 'UTF-8') ?></span>
-                    </a>
-                <?php endforeach; ?>
-            </nav>
-
-            <div class="sidebar-footer">
-                <a href="../logout.php" class="btn btn-secondary btn-full">Log Out</a>
-            </div>
-        </aside>
-
-        <main class="dashboard-main">
-            <div class="dashboard-topbar">
-                <div class="dashboard-title">
-                    <h2>Reports</h2>
-                    <p>Date-range analytics for collections, supplier outflows, receivables, payables, and stock health.</p>
-                </div>
-
-                <div class="nav-actions">
-                    <button type="button" class="theme-toggle" data-theme-toggle>Dark Mode</button>
-                </div>
-            </div>
+        <main class="dashboard-main" id="main-content" tabindex="-1">
+            <?= renderTenantAdminTopbar(
+                'Reports',
+                'Date-range analytics for collections, supplier outflows, receivables, payables, and stock health.'
+            ) ?>
 
             <?php if ($errorMessage !== null): ?>
                 <div class="alert alert-error">
@@ -492,6 +444,6 @@ function reportsMonthLabel($monthKey) {
         </main>
     </div>
 
-    <script src="../assets/js/theme.js"></script>
+    <?= renderTenantAdminFooterScripts() ?>
 </body>
 </html>

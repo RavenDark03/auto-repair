@@ -4,6 +4,7 @@ require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/feature_access.php';
 require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__ . '/../includes/platform_rules.php';
 
 requireAdmin();
 requireTenantFeature('customer_module');
@@ -40,10 +41,13 @@ $customerDeactivationWarnings = [
     'ongoing_jobs' => 0,
     'outstanding_balance' => 0,
 ];
+$autoInactivatedCount = 0;
+$selectedCustomerLastActivity = null;
 
 
 try {
     $pdo = Database::getInstance();
+    $autoInactivatedCount = syncInactiveCustomers($pdo, $tenantId);
 
     $tenantStmt = $pdo->prepare("
         SELECT
@@ -96,9 +100,56 @@ try {
     }
 
     $customerSql = "
-        SELECT customer_id, name, contact, email, address, status, created_at
+        SELECT
+            c.customer_id,
+            c.name,
+            c.contact,
+            c.email,
+            c.address,
+            c.status,
+            c.created_at,
+            COALESCE(recent_activity.last_activity_at, c.created_at) AS last_activity_at
         FROM customers
-        WHERE tenant_id = :tenant_id
+        c
+        LEFT JOIN (
+            SELECT
+                customer_id,
+                tenant_id,
+                MAX(activity_date) AS last_activity_at
+            FROM (
+                SELECT customer_id, tenant_id, created_at AS activity_date
+                FROM customers
+                WHERE tenant_id = :tenant_id
+
+                UNION ALL
+
+                SELECT customer_id, tenant_id, CAST(appointment_date AS DATETIME) AS activity_date
+                FROM appointments
+                WHERE tenant_id = :tenant_id
+
+                UNION ALL
+
+                SELECT
+                    a.customer_id,
+                    a.tenant_id,
+                    CAST(p.payment_date AS DATETIME) AS activity_date
+                FROM payments p
+                INNER JOIN invoices i
+                    ON i.invoice_id = p.invoice_id
+                   AND i.tenant_id = p.tenant_id
+                INNER JOIN jobs j
+                    ON j.job_id = i.job_id
+                   AND j.tenant_id = i.tenant_id
+                INNER JOIN appointments a
+                    ON a.appointment_id = j.appointment_id
+                   AND a.tenant_id = j.tenant_id
+                WHERE p.tenant_id = :tenant_id
+            ) customer_activity
+            GROUP BY customer_id, tenant_id
+        ) recent_activity
+            ON recent_activity.customer_id = c.customer_id
+           AND recent_activity.tenant_id = c.tenant_id
+        WHERE c.tenant_id = :tenant_id
     ";
     $params = ['tenant_id' => $tenantId];
 
@@ -114,7 +165,7 @@ try {
         $params['search'] = '%' . $search . '%';
     }
 
-    $customerSql .= " ORDER BY name ASC, customer_id ASC";
+    $customerSql .= " ORDER BY c.status ASC, last_activity_at DESC, c.name ASC, c.customer_id ASC";
     $customerStmt = $pdo->prepare($customerSql);
     $customerStmt->execute($params);
     $customers = $customerStmt->fetchAll();
@@ -135,9 +186,47 @@ try {
             'customer_id' => $selectedCustomerId,
             'tenant_id' => $tenantId,
         ]);
-        $selectedCustomer = $selectedCustomerStmt->fetch();
+            $selectedCustomer = $selectedCustomerStmt->fetch();
 
         if ($selectedCustomer) {
+            $lastActivityStmt = $pdo->prepare("
+                SELECT MAX(activity_date) AS last_activity_at
+                FROM (
+                    SELECT created_at AS activity_date
+                    FROM customers
+                    WHERE tenant_id = :tenant_id
+                      AND customer_id = :customer_id
+
+                    UNION ALL
+
+                    SELECT CAST(appointment_date AS DATETIME) AS activity_date
+                    FROM appointments
+                    WHERE tenant_id = :tenant_id
+                      AND customer_id = :customer_id
+
+                    UNION ALL
+
+                    SELECT CAST(p.payment_date AS DATETIME) AS activity_date
+                    FROM payments p
+                    INNER JOIN invoices i
+                        ON i.invoice_id = p.invoice_id
+                       AND i.tenant_id = p.tenant_id
+                    INNER JOIN jobs j
+                        ON j.job_id = i.job_id
+                       AND j.tenant_id = i.tenant_id
+                    INNER JOIN appointments a
+                        ON a.appointment_id = j.appointment_id
+                       AND a.tenant_id = j.tenant_id
+                    WHERE p.tenant_id = :tenant_id
+                      AND a.customer_id = :customer_id
+                ) customer_activity
+            ");
+            $lastActivityStmt->execute([
+                'tenant_id' => $tenantId,
+                'customer_id' => $selectedCustomerId,
+            ]);
+            $selectedCustomerLastActivity = $lastActivityStmt->fetchColumn() ?: $selectedCustomer['created_at'];
+
             $customerVehiclesStmt = $pdo->prepare("
                 SELECT vehicle_id, make, model, year_model, plate, status
                 FROM vehicles
@@ -372,7 +461,7 @@ function customerContextLabel(array $customer) {
     <div class="dashboard">
         <?= renderTenantAdminSidebar($businessName, $visibleModuleLinks, 'customers.php', $showAnalytics) ?>
 
-        <main class="dashboard-main">
+        <main class="dashboard-main" id="main-content" tabindex="-1">
             <?= renderTenantAdminTopbar(
                 'Customers',
                 "Manage customer profiles for {$businessName} with strict tenant isolation.",
@@ -400,30 +489,16 @@ function customerContextLabel(array $customer) {
                 </div>
             <?php endif; ?>
 
-            <?php if ($subscriptionNotice): ?>
-                <section class="content-card">
-                    <h3>Business Subscription</h3>
-                    <p>Your shop can monitor subscription timing here, while SaaS billing visibility and controls remain exclusive to the super admin.</p>
+            <?= renderTenantAccessModeNotice() ?>
 
-                    <div class="dashboard-list compact-list">
-                        <div class="dashboard-list-item">
-                            <div>
-                                <strong>Current Subscription</strong>
-                                <p><?= htmlspecialchars($subscriptionNotice['summary'], ENT_QUOTES, 'UTF-8') ?></p>
-                            </div>
-                            <span class="status-chip <?= htmlspecialchars($subscriptionNotice['class'], ENT_QUOTES, 'UTF-8') ?>">
-                                <?= htmlspecialchars($subscriptionNotice['label'], ENT_QUOTES, 'UTF-8') ?>
-                            </span>
-                        </div>
-                        <div class="dashboard-list-item">
-                            <div>
-                                <strong>Renewal Reminder</strong>
-                                <p><?= htmlspecialchars($subscriptionNotice['detail'], ENT_QUOTES, 'UTF-8') ?></p>
-                            </div>
-                            <span class="metric-pill">Subscription</span>
-                        </div>
-                    </div>
-                </section>
+            <?php if ($autoInactivatedCount > 0): ?>
+                <div class="alert alert-warning">
+                    <?= number_format($autoInactivatedCount) ?> customer record(s) were automatically marked inactive after more than 3 months without recorded activity.
+                </div>
+            <?php endif; ?>
+
+            <?php if ($subscriptionNotice): ?>
+                <?php include __DIR__ . '/../includes/partials/subscription_notice_card.php'; ?>
             <?php endif; ?>
 
             <section class="dashboard-grid">
@@ -442,6 +517,10 @@ function customerContextLabel(array $customer) {
                 <article class="metric-card">
                     <span>New This Month</span>
                     <h3><?= number_format($customerSummary['new_this_month']) ?></h3>
+                </article>
+                <article class="metric-card">
+                    <span>Auto-Inactivated</span>
+                    <h3><?= number_format($autoInactivatedCount) ?></h3>
                 </article>
             </section>
 
@@ -476,6 +555,7 @@ function customerContextLabel(array $customer) {
                                                 | <?= htmlspecialchars($customer['email'], ENT_QUOTES, 'UTF-8') ?>
                                             <?php endif; ?>
                                         </p>
+                                        <p>Last activity: <?= htmlspecialchars(customerDate($customer['last_activity_at'] ?? $customer['created_at']), ENT_QUOTES, 'UTF-8') ?></p>
                                     </div>
                                     <span class="status-chip status-<?= htmlspecialchars($customer['status'], ENT_QUOTES, 'UTF-8') ?>">
                                         <?= htmlspecialchars(ucfirst($customer['status']), ENT_QUOTES, 'UTF-8') ?>
@@ -563,7 +643,10 @@ function customerContextLabel(array $customer) {
                             <div class="dashboard-list-item">
                                 <div>
                                     <strong>Customer Status</strong>
-                                    <p>Added <?= htmlspecialchars(customerDate($selectedCustomer['created_at']), ENT_QUOTES, 'UTF-8') ?></p>
+                                    <p>
+                                        Added <?= htmlspecialchars(customerDate($selectedCustomer['created_at']), ENT_QUOTES, 'UTF-8') ?>
+                                        | Last activity <?= htmlspecialchars(customerDate($selectedCustomerLastActivity), ENT_QUOTES, 'UTF-8') ?>
+                                    </p>
                                 </div>
                                 <span class="status-chip status-<?= htmlspecialchars($selectedCustomer['status'], ENT_QUOTES, 'UTF-8') ?>">
                                     <?= htmlspecialchars(ucfirst($selectedCustomer['status']), ENT_QUOTES, 'UTF-8') ?>
@@ -736,6 +819,6 @@ function customerContextLabel(array $customer) {
         </main>
     </div>
 
-    <script src="../assets/js/theme.js"></script>
+    <?= renderTenantAdminFooterScripts() ?>
 </body>
 </html>

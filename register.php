@@ -17,6 +17,7 @@ try {
         SELECT plan_id, plan_name, monthly_price, yearly_price, description
         FROM subscription_plans
         WHERE is_active = 1
+          AND plan_name <> 'Read-Only'
         ORDER BY monthly_price ASC, plan_name ASC
     ")->fetchAll();
 
