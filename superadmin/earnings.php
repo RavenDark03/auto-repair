@@ -4,6 +4,8 @@ require_once __DIR__ . '/../includes/super_admin_auth.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/platform_rules.php';
 
+require_once __DIR__ . '/../includes/mechanix_ui.php';
+
 requireSuperAdmin();
 
 $summary = [
@@ -70,7 +72,7 @@ function earningsCurrency($amount): string
 }
 ?>
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="light" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -115,7 +117,7 @@ function earningsCurrency($amount): string
                     <p>Track platform income, monthly trends, and payment-reference health from one dedicated page.</p>
                 </div>
                 <div class="nav-actions">
-                    <button type="button" class="theme-toggle" data-theme-toggle>Dark Mode</button>
+                    <?= mechanix_theme_toggle_button() ?>
                 </div>
             </div>
 

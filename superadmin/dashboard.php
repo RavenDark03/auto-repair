@@ -1,9 +1,11 @@
-<?php
+﻿<?php
 require_once __DIR__ . '/../includes/session.php';
 require_once __DIR__ . '/../includes/super_admin_auth.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/platform_rules.php';
 require_once __DIR__ . '/../config/config.php';
+
+require_once __DIR__ . '/../includes/mechanix_ui.php';
 
 requireSuperAdmin();
 
@@ -853,455 +855,805 @@ try {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="light" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Super Admin Dashboard - MECHANIX</title>
-    <link rel="stylesheet" href="../assets/css/styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0/dist/css/tabler.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap">
+    <link rel="stylesheet" href="../assets/css/tabler-mechanix-bridge.css">
+    <link rel="stylesheet" href="../assets/css/superadmin-landing-theme.css">
 </head>
-<body class="page-shell">
-    <div class="dashboard">
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <div class="brand">
-                    <div class="brand-mark">M</div>
-                    <div class="brand-text">
-                        <h2>MECHANIX</h2>
-                        <p>Platform operations</p>
+<body class="antialiased superadmin-app">
+<div class="page">
+
+    <!-- SIDEBAR -->
+    <aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
+        <div class="container-fluid">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <h1 class="navbar-brand navbar-brand-autodark m-0">
+                <a href="dashboard.php" class="d-flex align-items-center gap-2 text-decoration-none" aria-label="MECHANIX super admin home">
+                    <span class="sa-brand-mark" aria-hidden="true">M</span>
+                    <span class="fw-bold">MECHANIX</span>
+                </a>
+            </h1>
+            <div class="collapse navbar-collapse" id="sidebar-menu">
+                <div class="navbar-nav flex-column">
+                    <p class="navbar-heading text-muted small text-uppercase fw-bold px-1 mt-2 mb-1">Platform</p>
+                </div>
+                <ul class="navbar-nav pt-lg-1">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#registrations">
+                            <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-clipboard-list"></i></span>
+                            <span class="nav-link-title">Registrations</span>
+                            <?php if ($summary['pending_registrations'] > 0): ?>
+                                <span class="badge bg-red ms-auto"><?= number_format($summary['pending_registrations']) ?></span>
+                            <?php endif; ?>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#features">
+                            <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-building-store"></i></span>
+                            <span class="nav-link-title">Tenant Operations</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#catalog">
+                            <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-packages"></i></span>
+                            <span class="nav-link-title">Plan Catalog</span>
+                        </a>
+                    </li>
+                </ul>
+                <div class="navbar-nav flex-column mt-2">
+                    <p class="navbar-heading text-muted small text-uppercase fw-bold px-1 mt-2 mb-1">Lifecycle</p>
+                </div>
+                <ul class="navbar-nav pt-lg-1">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#features">
+                            <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-activity"></i></span>
+                            <span class="nav-link-title">Tenant Status</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#features">
+                            <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-credit-card"></i></span>
+                            <span class="nav-link-title">Subscriptions</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="earnings.php">
+                            <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-chart-bar"></i></span>
+                            <span class="nav-link-title">Earnings Reports</span>
+                        </a>
+                    </li>
+                </ul>
+                <div class="mt-auto p-3">
+                    <div class="text-muted small mb-2">
+                        Logged in as <strong><?= htmlspecialchars($_SESSION['super_admin_username'], ENT_QUOTES, 'UTF-8') ?></strong>
+                    </div>
+                    <a href="../logout.php" class="btn btn-outline-light w-100">
+                        <i class="ti ti-logout me-2"></i>Log Out
+                    </a>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- PAGE WRAPPER -->
+    <div class="page-wrapper">
+        <!-- PAGE HEADER -->
+        <div class="page-header d-print-none">
+            <div class="container-xl">
+                <div class="row g-2 align-items-center">
+                    <div class="col">
+                        <div class="page-pretitle"><span class="sa-eyebrow">Super Admin</span></div>
+                        <h2 class="page-title">Dashboard</h2>
+                        <p class="text-muted mt-1 mb-0 small">Manage registrations, billing, tenant activation, subscriptions, and tenant access from one operational workspace.</p>
+                    </div>
+                    <div class="col-auto ms-auto d-print-none">
+                        <?= mechanix_theme_toggle_button() ?>
                     </div>
                 </div>
-                <p class="sidebar-meta">
-                    Logged in as <?= htmlspecialchars($_SESSION['super_admin_username'], ENT_QUOTES, 'UTF-8') ?>.
-                </p>
             </div>
+        </div>
 
-            <div class="sidebar-section-title">Platform</div>
-            <nav class="sidebar-menu">
-                <a href="#registrations" class="active"><span>Registrations</span><span class="badge"><?= number_format($summary['pending_registrations']) ?></span></a>
-                <a href="#features"><span>Tenant Operations</span><span class="sidebar-hint">Live</span></a>
-                <a href="#catalog"><span>Plan Catalog</span><span class="sidebar-hint">Dynamic</span></a>
-            </nav>
-
-            <div class="sidebar-section-title">Lifecycle</div>
-            <nav class="sidebar-menu">
-                <a href="#features"><span>Tenant Status</span><span class="sidebar-hint">Live</span></a>
-                <a href="#features"><span>Subscriptions</span><span class="sidebar-hint">Live</span></a>
-                <a href="earnings.php"><span>Earnings Reports</span><span class="sidebar-hint">New</span></a>
-            </nav>
-
-            <div class="sidebar-footer">
-                <a href="../logout.php" class="btn btn-secondary btn-full">Log Out</a>
-            </div>
-        </aside>
-
-        <main class="dashboard-main">
-            <div class="dashboard-topbar">
-                <div class="dashboard-title">
-                    <h2>Super Admin Dashboard</h2>
-                    <p>Manage registrations, billing, tenant activation, subscriptions, and tenant access from one operational workspace.</p>
-                </div>
-
-                <div class="nav-actions">
-                    <button type="button" class="theme-toggle" data-theme-toggle>Dark Mode</button>
-                </div>
-            </div>
+        <!-- PAGE BODY -->
+        <div class="page-body">
+            <div class="container-xl">
 
             <?php if ($flashMessage !== null): ?>
-                <div class="alert alert-success">
-                    <?= htmlspecialchars($flashMessage, ENT_QUOTES, 'UTF-8') ?>
+                <div class="alert alert-success" role="alert">
+                    <div class="d-flex">
+                        <div><i class="ti ti-circle-check icon alert-icon"></i></div>
+                        <div><?= htmlspecialchars($flashMessage, ENT_QUOTES, 'UTF-8') ?></div>
+                    </div>
                 </div>
             <?php endif; ?>
 
             <?php if ($errorMessage !== null): ?>
-                <div class="alert alert-error">
-                    <?= htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') ?>
+                <div class="alert alert-danger" role="alert">
+                    <div class="d-flex">
+                        <div><i class="ti ti-alert-circle icon alert-icon"></i></div>
+                        <div><?= htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') ?></div>
+                    </div>
                 </div>
             <?php endif; ?>
 
-            <div class="alert <?= $isPaymongoConfigured ? 'alert-success' : 'alert-error' ?>">
-                <?= htmlspecialchars(
-                    $isPaymongoConfigured
-                        ? 'PayMongo configuration is ready. Checkout creation and webhook verification can be tested from this dashboard.'
-                        : 'PayMongo configuration is incomplete. Manual billing still works, but checkout creation and webhook verification are not fully ready yet.',
-                    ENT_QUOTES,
-                    'UTF-8'
-                ) ?>
+            <div class="alert <?= $isPaymongoConfigured ? 'alert-success' : 'alert-danger' ?>" role="alert">
+                <div class="d-flex">
+                    <div><i class="ti ti-<?= $isPaymongoConfigured ? 'circle-check' : 'alert-circle' ?> icon alert-icon"></i></div>
+                    <div><?= htmlspecialchars(
+                        $isPaymongoConfigured
+                            ? 'PayMongo configuration is ready. Checkout creation and webhook verification can be tested from this dashboard.'
+                            : 'PayMongo configuration is incomplete. Manual billing still works, but checkout creation and webhook verification are not fully ready yet.',
+                        ENT_QUOTES,
+                        'UTF-8'
+                    ) ?></div>
+                </div>
             </div>
 
             <?php if (!empty($operationalAlerts)): ?>
-                <section class="content-card">
-                    <h3>Operational Alerts</h3>
-                    <p>These checks surface tenant, subscription, and registration states that are most likely to cause onboarding, billing, or demo issues.</p>
-
-                    <?php foreach ($operationalAlerts as $alert): ?>
-                        <div class="alert <?= htmlspecialchars($alert['class'], ENT_QUOTES, 'UTF-8') ?>">
-                            <strong><?= htmlspecialchars($alert['title'], ENT_QUOTES, 'UTF-8') ?></strong><br>
-                            <?= htmlspecialchars($alert['detail'], ENT_QUOTES, 'UTF-8') ?>
-                        </div>
-                    <?php endforeach; ?>
-                </section>
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="ti ti-alert-triangle me-2 text-muted"></i>Operational Alerts</h3>
+                    </div>
+                    <div class="card-body pb-0">
+                        <p class="text-muted small">These checks surface tenant, subscription, and registration states that are most likely to cause onboarding, billing, or demo issues.</p>
+                    </div>
+                    <div class="card-body pt-0">
+                        <?php foreach ($operationalAlerts as $alert): ?>
+                            <?php $alertTablerClass = ($alert['class'] === 'alert-error') ? 'alert-danger' : 'alert-success'; ?>
+                            <div class="alert <?= $alertTablerClass ?>" role="alert">
+                                <div class="d-flex">
+                                    <div><i class="ti ti-<?= ($alert['class'] === 'alert-error') ? 'alert-circle' : 'info-circle' ?> icon alert-icon"></i></div>
+                                    <div>
+                                        <strong><?= htmlspecialchars($alert['title'], ENT_QUOTES, 'UTF-8') ?></strong><br>
+                                        <?= htmlspecialchars($alert['detail'], ENT_QUOTES, 'UTF-8') ?>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
             <?php endif; ?>
 
             <?php if (is_array($tenantOnboarding)): ?>
-                <section class="onboarding-panel">
-                    <div class="onboarding-panel-head">
-                        <div>
-                            <h3>Tenant Onboarding Ready</h3>
-                            <p>
-                                <?= htmlspecialchars($tenantOnboarding['business_name'], ENT_QUOTES, 'UTF-8') ?>
-                                is now live and ready for first login testing.
-                            </p>
-                        </div>
-                        <a href="../login.php" class="btn btn-secondary">Open Tenant Login</a>
-                    </div>
-
-                    <div class="onboarding-grid">
-                        <div class="onboarding-card">
-                            <span>Tenant ID</span>
-                            <strong><?= number_format((int) $tenantOnboarding['tenant_id']) ?></strong>
-                        </div>
-                        <div class="onboarding-card">
-                            <span>Admin Username</span>
-                            <strong><?= htmlspecialchars($tenantOnboarding['username'], ENT_QUOTES, 'UTF-8') ?></strong>
-                        </div>
-                        <div class="onboarding-card">
-                            <span>Temporary Password</span>
-                            <strong><?= htmlspecialchars($tenantOnboarding['temporary_password'], ENT_QUOTES, 'UTF-8') ?></strong>
-                        </div>
-                        <div class="onboarding-card">
-                            <span>Subscription Window</span>
-                            <strong>
-                                <?= htmlspecialchars($tenantOnboarding['subscription_start'], ENT_QUOTES, 'UTF-8') ?>
-                                to
-                                <?= htmlspecialchars($tenantOnboarding['subscription_end'], ENT_QUOTES, 'UTF-8') ?>
-                            </strong>
+                <div class="card card-status-top bg-green mb-4">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="ti ti-circle-check me-2 text-green"></i>Tenant Onboarding Ready</h3>
+                        <div class="card-options">
+                            <a href="../login.php" class="btn btn-success btn-sm">Open Tenant Login</a>
                         </div>
                     </div>
-
-                    <div class="dashboard-list compact-list">
-                        <div class="dashboard-list-item">
-                            <div>
-                                <strong>Plan and Billing</strong>
-                                <p>
-                                    <?= htmlspecialchars($tenantOnboarding['plan_name'], ENT_QUOTES, 'UTF-8') ?>
-                                    |
-                                    <?= htmlspecialchars(ucfirst($tenantOnboarding['billing_cycle']), ENT_QUOTES, 'UTF-8') ?>
-                                </p>
+                    <div class="card-body pb-0">
+                        <p class="text-muted small">
+                            <?= htmlspecialchars($tenantOnboarding['business_name'], ENT_QUOTES, 'UTF-8') ?> is now live and ready for first login testing.
+                        </p>
+                    </div>
+                    <div class="row row-cards px-3 pb-3">
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card card-sm">
+                                <div class="card-body">
+                                    <div class="text-muted small">Tenant ID</div>
+                                    <div class="font-weight-medium"><?= number_format((int) $tenantOnboarding['tenant_id']) ?></div>
+                                </div>
                             </div>
-                            <span class="metric-pill">Active</span>
                         </div>
-                        <div class="dashboard-list-item">
-                            <div>
-                                <strong>Primary Admin</strong>
-                                <p><?= htmlspecialchars($tenantOnboarding['admin_name'], ENT_QUOTES, 'UTF-8') ?></p>
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card card-sm">
+                                <div class="card-body">
+                                    <div class="text-muted small">Admin Username</div>
+                                    <div class="font-weight-medium"><?= htmlspecialchars($tenantOnboarding['username'], ENT_QUOTES, 'UTF-8') ?></div>
+                                </div>
                             </div>
-                            <span class="metric-pill">Ready</span>
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card card-sm">
+                                <div class="card-body">
+                                    <div class="text-muted small">Temporary Password</div>
+                                    <div class="font-weight-medium"><?= htmlspecialchars($tenantOnboarding['temporary_password'], ENT_QUOTES, 'UTF-8') ?></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card card-sm">
+                                <div class="card-body">
+                                    <div class="text-muted small">Subscription Window</div>
+                                    <div class="font-weight-medium">
+                                        <?= htmlspecialchars($tenantOnboarding['subscription_start'], ENT_QUOTES, 'UTF-8') ?>
+                                        &mdash;
+                                        <?= htmlspecialchars($tenantOnboarding['subscription_end'], ENT_QUOTES, 'UTF-8') ?>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-
-                    <h3>Assigned Feature Set</h3>
-                    <p>These are the modules applied during conversion from the selected plan and requested add-ons.</p>
-
-                    <div class="addon-list registration-addon-list">
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item">
+                            <div class="row align-items-center">
+                                <div class="col">
+                                    <div class="font-weight-medium">Plan and Billing</div>
+                                    <div class="text-muted small">
+                                        <?= htmlspecialchars($tenantOnboarding['plan_name'], ENT_QUOTES, 'UTF-8') ?>
+                                        &middot;
+                                        <?= htmlspecialchars(ucfirst($tenantOnboarding['billing_cycle']), ENT_QUOTES, 'UTF-8') ?>
+                                    </div>
+                                </div>
+                                <div class="col-auto"><span class="badge bg-green-lt text-green">Active</span></div>
+                            </div>
+                        </div>
+                        <div class="list-group-item">
+                            <div class="row align-items-center">
+                                <div class="col">
+                                    <div class="font-weight-medium">Primary Admin</div>
+                                    <div class="text-muted small"><?= htmlspecialchars($tenantOnboarding['admin_name'], ENT_QUOTES, 'UTF-8') ?></div>
+                                </div>
+                                <div class="col-auto"><span class="badge bg-green-lt text-green">Ready</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-header mt-2">
+                        <h3 class="card-title">Assigned Feature Set</h3>
+                    </div>
+                    <div class="card-body pb-0">
+                        <p class="text-muted small">These are the modules applied during conversion from the selected plan and requested add-ons.</p>
+                    </div>
+                    <div class="list-group list-group-flush">
                         <?php if (!empty($tenantOnboarding['assigned_features']) && is_array($tenantOnboarding['assigned_features'])): ?>
                             <?php foreach ($tenantOnboarding['assigned_features'] as $feature): ?>
-                                <div class="addon-item">
-                                    <div>
-                                        <strong><?= htmlspecialchars(ucwords(str_replace('_', ' ', $feature['feature_name'] ?? '')), ENT_QUOTES, 'UTF-8') ?></strong>
-                                        <p><?= htmlspecialchars(($feature['description'] ?? '') !== '' ? $feature['description'] : 'Enabled during tenant conversion.', ENT_QUOTES, 'UTF-8') ?></p>
+                                <div class="list-group-item">
+                                    <div class="row align-items-center">
+                                        <div class="col">
+                                            <div class="font-weight-medium"><?= htmlspecialchars(ucwords(str_replace('_', ' ', $feature['feature_name'] ?? '')), ENT_QUOTES, 'UTF-8') ?></div>
+                                            <div class="text-muted small"><?= htmlspecialchars(($feature['description'] ?? '') !== '' ? $feature['description'] : 'Enabled during tenant conversion.', ENT_QUOTES, 'UTF-8') ?></div>
+                                        </div>
+                                        <div class="col-auto"><span class="badge bg-blue-lt text-blue"><?= htmlspecialchars(ucwords((string) ($feature['source'] ?? 'enabled')), ENT_QUOTES, 'UTF-8') ?></span></div>
                                     </div>
-                                    <span class="addon-price"><?= htmlspecialchars(ucwords((string) ($feature['source'] ?? 'enabled')), ENT_QUOTES, 'UTF-8') ?></span>
                                 </div>
                             <?php endforeach; ?>
                         <?php else: ?>
-                            <div class="table-placeholder">No plan-linked or add-on features were applied during this conversion.</div>
+                            <div class="list-group-item">
+                                <div class="empty empty-sm">
+                                    <p class="empty-title">No features applied</p>
+                                    <p class="empty-subtitle text-muted">No plan-linked or add-on features were applied during this conversion.</p>
+                                </div>
+                            </div>
                         <?php endif; ?>
                     </div>
-
-                    <div class="table-placeholder">
-                        <strong>Quick Validation Flow</strong><br>
-                        1. Open the tenant login page.<br>
-                        2. Sign in with the admin username and temporary password shown above.<br>
-                        3. Confirm the tenant dashboard opens and only shows the enabled features for this new tenant.
+                    <div class="card-body">
+                        <div class="alert alert-info mb-0" role="alert">
+                            <div class="d-flex">
+                                <div><i class="ti ti-info-circle icon alert-icon"></i></div>
+                                <div>
+                                    <strong>Quick Validation Flow</strong><br>
+                                    1. Open the tenant login page.<br>
+                                    2. Sign in with the admin username and temporary password shown above.<br>
+                                    3. Confirm the tenant dashboard opens and only shows the enabled features for this new tenant.
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </section>
+                </div>
             <?php endif; ?>
 
-            <section class="dashboard-grid">
-                <article class="metric-card">
-                    <span>Pending Registrations</span>
-                    <h3><?= number_format($summary['pending_registrations']) ?></h3>
-                </article>
-                <article class="metric-card">
-                    <span>Total Tenants</span>
-                    <h3><?= number_format($summary['tenants']) ?></h3>
-                </article>
-                <article class="metric-card">
-                    <span>Active Tenants</span>
-                    <h3><?= number_format($summary['active_tenants']) ?></h3>
-                </article>
-                <article class="metric-card">
-                    <span>Inactive Tenants</span>
-                    <h3><?= number_format($summary['inactive_tenants']) ?></h3>
-                </article>
-                <article class="metric-card">
-                    <span>Enabled Feature Links</span>
-                    <h3><?= number_format($summary['enabled_feature_links']) ?></h3>
-                </article>
-                <article class="metric-card">
-                    <span>Active Subscriptions</span>
-                    <h3><?= number_format($summary['subscriptions']) ?></h3>
-                </article>
-                <article class="metric-card">
-                    <span>Expired / Overdue</span>
-                    <h3><?= number_format($summary['subscription_attention']) ?></h3>
-                </article>
-                <article class="metric-card">
-                    <span>Due Within 7 Days</span>
-                    <h3><?= number_format($summary['subscriptions_due_soon']) ?></h3>
-                </article>
-                <article class="metric-card">
-                    <span>No Subscription</span>
-                    <h3><?= number_format($summary['tenants_without_subscription']) ?></h3>
-                </article>
-                <article class="metric-card">
-                    <span>Awaiting Billing</span>
-                    <h3><?= number_format($summary['awaiting_billing_registrations']) ?></h3>
-                </article>
-                <article class="metric-card">
-                    <span>Billing Sent</span>
-                    <h3><?= number_format($summary['billing_sent_registrations']) ?></h3>
-                </article>
-                <article class="metric-card">
-                    <span>Awaiting Conversion</span>
-                    <h3><?= number_format($summary['awaiting_conversion_registrations']) ?></h3>
-                </article>
-            </section>
-
-            <section class="content-grid superadmin-grid">
-                <article class="content-card">
-                    <h3>Revenue Snapshot</h3>
-                    <p>Current earnings and paid billing volume from the platform billing ledger.</p>
-
-                    <div class="dashboard-list compact-list">
-                        <div class="dashboard-list-item">
-                            <div>
-                                <strong>This Month</strong>
-                                <p>Paid requests collected during the current month.</p>
+            <!-- Metric cards row 1: Registrations + Tenants -->
+            <div class="row row-deck row-cards mb-3">
+                <div class="col-sm-6 col-lg-3">
+                    <div class="card card-sm">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    <span class="bg-orange text-white avatar"><i class="ti ti-clock icon"></i></span>
+                                </div>
+                                <div class="col">
+                                    <div class="font-weight-medium">Pending Registrations</div>
+                                    <div class="text-muted"><?= number_format($summary['pending_registrations']) ?></div>
+                                </div>
                             </div>
-                            <span class="metric-pill">PHP <?= number_format($earnings['current_month'], 2) ?></span>
-                        </div>
-                        <div class="dashboard-list-item">
-                            <div>
-                                <strong>Last Month</strong>
-                                <p>Use this to compare short-term performance.</p>
-                            </div>
-                            <span class="metric-pill">PHP <?= number_format($earnings['last_month'], 2) ?></span>
-                        </div>
-                        <div class="dashboard-list-item">
-                            <div>
-                                <strong>All-Time Earnings</strong>
-                                <p>Total verified billing collected so far.</p>
-                            </div>
-                            <span class="metric-pill">PHP <?= number_format($earnings['all_time'], 2) ?></span>
-                        </div>
-                        <div class="dashboard-list-item">
-                            <div>
-                                <strong>Paid Billing Requests</strong>
-                                <p>Total payment events already captured in the system.</p>
-                            </div>
-                            <span class="metric-pill"><?= number_format($earnings['paid_requests']) ?></span>
                         </div>
                     </div>
-
-                    <div class="approval-actions">
-                        <a href="earnings.php" class="btn btn-primary">Open Earnings Report</a>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="card card-sm">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    <span class="bg-blue text-white avatar"><i class="ti ti-building icon"></i></span>
+                                </div>
+                                <div class="col">
+                                    <div class="font-weight-medium">Total Tenants</div>
+                                    <div class="text-muted"><?= number_format($summary['tenants']) ?></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </article>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="card card-sm">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    <span class="bg-green text-white avatar"><i class="ti ti-building-community icon"></i></span>
+                                </div>
+                                <div class="col">
+                                    <div class="font-weight-medium">Active Tenants</div>
+                                    <div class="text-muted"><?= number_format($summary['active_tenants']) ?></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="card card-sm">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    <span class="bg-red text-white avatar"><i class="ti ti-building-off icon"></i></span>
+                                </div>
+                                <div class="col">
+                                    <div class="font-weight-medium">Inactive Tenants</div>
+                                    <div class="text-muted"><?= number_format($summary['inactive_tenants']) ?></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                <article class="content-card">
-                    <h3>Reference Verification Queue</h3>
-                    <p>Cross-check NG references before converting or auditing paid registrations.</p>
+            <!-- Metric cards row 2: Subscriptions + Registration pipeline -->
+            <div class="row row-deck row-cards mb-4">
+                <div class="col-sm-6 col-lg-2">
+                    <div class="card card-sm">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    <span class="bg-azure text-white avatar"><i class="ti ti-toggle-right icon"></i></span>
+                                </div>
+                                <div class="col">
+                                    <div class="font-weight-medium">Feature Links</div>
+                                    <div class="text-muted"><?= number_format($summary['enabled_feature_links']) ?></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-2">
+                    <div class="card card-sm">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    <span class="bg-teal text-white avatar"><i class="ti ti-receipt icon"></i></span>
+                                </div>
+                                <div class="col">
+                                    <div class="font-weight-medium">Active Subs</div>
+                                    <div class="text-muted"><?= number_format($summary['subscriptions']) ?></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-2">
+                    <div class="card card-sm">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    <span class="bg-red text-white avatar"><i class="ti ti-alert-triangle icon"></i></span>
+                                </div>
+                                <div class="col">
+                                    <div class="font-weight-medium">Expired / Overdue</div>
+                                    <div class="text-muted"><?= number_format($summary['subscription_attention']) ?></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-2">
+                    <div class="card card-sm">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    <span class="bg-orange text-white avatar"><i class="ti ti-calendar-due icon"></i></span>
+                                </div>
+                                <div class="col">
+                                    <div class="font-weight-medium">Due 7 Days</div>
+                                    <div class="text-muted"><?= number_format($summary['subscriptions_due_soon']) ?></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-2">
+                    <div class="card card-sm">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    <span class="bg-secondary text-white avatar"><i class="ti ti-receipt-off icon"></i></span>
+                                </div>
+                                <div class="col">
+                                    <div class="font-weight-medium">No Sub</div>
+                                    <div class="text-muted"><?= number_format($summary['tenants_without_subscription']) ?></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-2">
+                    <div class="card card-sm">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    <span class="bg-yellow text-white avatar"><i class="ti ti-file-dollar icon"></i></span>
+                                </div>
+                                <div class="col">
+                                    <div class="font-weight-medium">Awaiting Billing</div>
+                                    <div class="text-muted"><?= number_format($summary['awaiting_billing_registrations']) ?></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                    <?php if (!empty($referenceReviewQueue)): ?>
-                        <div class="dashboard-list compact-list">
-                            <?php foreach ($referenceReviewQueue as $referenceItem): ?>
-                                <?php $referenceMeta = evaluateNgReference($referenceItem); ?>
-                                <a class="dashboard-list-item dashboard-link-card" href="dashboard.php?registration_id=<?= (int) $referenceItem['registration_id'] ?>#registrations">
-                                    <div>
-                                        <strong><?= htmlspecialchars($referenceItem['business_name'], ENT_QUOTES, 'UTF-8') ?></strong>
-                                        <p>
-                                            <?= htmlspecialchars($referenceItem['payment_reference'] ?: 'No reference yet', ENT_QUOTES, 'UTF-8') ?>
-                                            | <?= htmlspecialchars($referenceItem['currency'], ENT_QUOTES, 'UTF-8') ?> <?= number_format((float) $referenceItem['total_amount'], 2) ?>
-                                        </p>
+            <!-- Metric cards row 3: Billing pipeline -->
+            <div class="row row-deck row-cards mb-4">
+                <div class="col-sm-6 col-lg-3">
+                    <div class="card card-sm">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    <span class="bg-blue text-white avatar"><i class="ti ti-send icon"></i></span>
+                                </div>
+                                <div class="col">
+                                    <div class="font-weight-medium">Billing Sent</div>
+                                    <div class="text-muted"><?= number_format($summary['billing_sent_registrations']) ?></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="card card-sm">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    <span class="bg-purple text-white avatar"><i class="ti ti-refresh icon"></i></span>
+                                </div>
+                                <div class="col">
+                                    <div class="font-weight-medium">Awaiting Conversion</div>
+                                    <div class="text-muted"><?= number_format($summary['awaiting_conversion_registrations']) ?></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Revenue Snapshot + Reference Verification Queue -->
+            <div class="row row-deck row-cards mb-4">
+                <div class="col-lg-6">
+                    <div class="card sa-dark-card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="ti ti-currency-peso me-2 text-muted"></i>Revenue Snapshot</h3>
+                        </div>
+                        <div class="card-body pb-0">
+                            <p class="text-muted small">Current earnings and paid billing volume from the platform billing ledger.</p>
+                        </div>
+                        <div class="list-group list-group-flush">
+                            <div class="list-group-item">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <div class="font-weight-medium">This Month</div>
+                                        <div class="text-muted small">Paid requests collected during the current month.</div>
                                     </div>
-                                    <span class="status-chip <?= htmlspecialchars($referenceMeta['class'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($referenceMeta['label'], ENT_QUOTES, 'UTF-8') ?></span>
-                                </a>
-                            <?php endforeach; ?>
+                                    <div class="col-auto"><span class="badge bg-teal-lt text-teal">PHP <?= number_format($earnings['current_month'], 2) ?></span></div>
+                                </div>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <div class="font-weight-medium">Last Month</div>
+                                        <div class="text-muted small">Use this to compare short-term performance.</div>
+                                    </div>
+                                    <div class="col-auto"><span class="badge bg-blue-lt text-blue">PHP <?= number_format($earnings['last_month'], 2) ?></span></div>
+                                </div>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <div class="font-weight-medium">All-Time Earnings</div>
+                                        <div class="text-muted small">Total verified billing collected so far.</div>
+                                    </div>
+                                    <div class="col-auto"><span class="badge bg-green-lt text-green">PHP <?= number_format($earnings['all_time'], 2) ?></span></div>
+                                </div>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <div class="font-weight-medium">Paid Billing Requests</div>
+                                        <div class="text-muted small">Total payment events already captured in the system.</div>
+                                    </div>
+                                    <div class="col-auto"><span class="badge bg-secondary-lt"><?= number_format($earnings['paid_requests']) ?></span></div>
+                                </div>
+                            </div>
                         </div>
-                    <?php else: ?>
-                        <div class="table-placeholder">No billing requests are waiting for reference review.</div>
-                    <?php endif; ?>
-                </article>
-            </section>
+                        <div class="card-footer">
+                            <a href="earnings.php" class="btn btn-primary btn-sm">Open Earnings Report</a>
+                        </div>
+                    </div>
+                </div>
 
-            <section id="catalog" class="content-grid superadmin-grid">
-                <article class="content-card">
-                    <h3>Plan Catalog</h3>
-                    <p>Adjust pricing in real time and keep registration, billing drafts, and future conversions aligned with the latest catalog values.</p>
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="ti ti-scan me-2 text-muted"></i>Reference Verification Queue</h3>
+                        </div>
+                        <div class="card-body pb-0">
+                            <p class="text-muted small">Cross-check NG references before converting or auditing paid registrations.</p>
+                        </div>
+                        <?php if (!empty($referenceReviewQueue)): ?>
+                            <div class="list-group list-group-flush">
+                                <?php foreach ($referenceReviewQueue as $referenceItem): ?>
+                                    <?php $referenceMeta = evaluateNgReference($referenceItem); ?>
+                                    <?php
+                                    $refBadge = match($referenceMeta['class'] ?? '') {
+                                        'status-active', 'status-approved' => 'bg-green-lt text-green',
+                                        'status-pending' => 'bg-orange-lt text-orange',
+                                        'status-rejected', 'status-inactive' => 'bg-red-lt text-red',
+                                        'status-converted', 'status-billing_sent' => 'bg-blue-lt text-blue',
+                                        'status-paid' => 'bg-teal-lt text-teal',
+                                        'status-warning' => 'bg-orange-lt text-orange',
+                                        default => 'bg-secondary-lt',
+                                    };
+                                    ?>
+                                    <a class="list-group-item list-group-item-action" href="dashboard.php?registration_id=<?= (int) $referenceItem['registration_id'] ?>#registrations">
+                                        <div class="row align-items-center">
+                                            <div class="col">
+                                                <div class="font-weight-medium"><?= htmlspecialchars($referenceItem['business_name'], ENT_QUOTES, 'UTF-8') ?></div>
+                                                <div class="text-muted small">
+                                                    <?= htmlspecialchars($referenceItem['payment_reference'] ?: 'No reference yet', ENT_QUOTES, 'UTF-8') ?>
+                                                    &middot; <?= htmlspecialchars($referenceItem['currency'], ENT_QUOTES, 'UTF-8') ?> <?= number_format((float) $referenceItem['total_amount'], 2) ?>
+                                                </div>
+                                            </div>
+                                            <div class="col-auto"><span class="badge <?= $refBadge ?>"><?= htmlspecialchars($referenceMeta['label'], ENT_QUOTES, 'UTF-8') ?></span></div>
+                                        </div>
+                                    </a>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php else: ?>
+                            <div class="card-body">
+                                <div class="empty empty-sm">
+                                    <p class="empty-title">No pending references</p>
+                                    <p class="empty-subtitle text-muted">No billing requests are waiting for reference review.</p>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
 
+            <!-- Plan Catalog + Add-On Catalog -->
+            <div id="catalog" class="row g-3 mb-4 align-items-start">
+                <div class="col-lg-6">
                     <?php if (!empty($planCatalog)): ?>
-                        <div class="dashboard-list">
+                        <div class="sa-catalog-plans d-flex flex-column gap-3">
+                            <div class="card sa-dark-card">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="ti ti-packages me-2 text-muted"></i>Plan Catalog</h3>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted small mb-0">Adjust pricing in real time and keep registration, billing drafts, and future conversions aligned with the latest catalog values.</p>
+                                </div>
+                            </div>
                             <?php foreach ($planCatalog as $plan): ?>
-                                <form action="actions/update_plan_catalog.php" method="POST" class="dashboard-list-item feature-toggle-form">
-                                    <input type="hidden" name="plan_id" value="<?= (int) $plan['plan_id'] ?>">
-                                    <div class="superadmin-plan-editor">
-                                        <div class="form-group">
-                                            <label>Plan Name</label>
-                                            <input class="form-control" type="text" name="plan_name" value="<?= htmlspecialchars($plan['plan_name'], ENT_QUOTES, 'UTF-8') ?>" required>
-                                        </div>
-                                        <div class="form-grid">
-                                            <div class="form-group">
-                                                <label>Monthly Price</label>
-                                                <input class="form-control" type="number" step="0.01" min="0" name="monthly_price" value="<?= htmlspecialchars((string) $plan['monthly_price'], ENT_QUOTES, 'UTF-8') ?>" required>
+                                <div class="card sa-plan-edit-card">
+                                    <div class="card-body">
+                                        <form action="actions/update_plan_catalog.php" method="POST">
+                                            <input type="hidden" name="plan_id" value="<?= (int) $plan['plan_id'] ?>">
+                                            <div class="mb-3">
+                                                <label class="form-label">Plan Name</label>
+                                                <input class="form-control" type="text" name="plan_name" value="<?= htmlspecialchars($plan['plan_name'], ENT_QUOTES, 'UTF-8') ?>" required>
                                             </div>
-                                            <div class="form-group">
-                                                <label>Yearly Price</label>
-                                                <input class="form-control" type="number" step="0.01" min="0" name="yearly_price" value="<?= htmlspecialchars((string) $plan['yearly_price'], ENT_QUOTES, 'UTF-8') ?>" required>
+                                            <div class="row g-2 mb-3">
+                                                <div class="col">
+                                                    <label class="form-label">Monthly Price</label>
+                                                    <input class="form-control" type="number" step="0.01" min="0" name="monthly_price" value="<?= htmlspecialchars((string) $plan['monthly_price'], ENT_QUOTES, 'UTF-8') ?>" required>
+                                                </div>
+                                                <div class="col">
+                                                    <label class="form-label">Yearly Price</label>
+                                                    <input class="form-control" type="number" step="0.01" min="0" name="yearly_price" value="<?= htmlspecialchars((string) $plan['yearly_price'], ENT_QUOTES, 'UTF-8') ?>" required>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Description</label>
-                                            <textarea class="form-control form-textarea" name="description"><?= htmlspecialchars($plan['description'] ?: '', ENT_QUOTES, 'UTF-8') ?></textarea>
-                                        </div>
-                                        <label class="checkbox-inline">
-                                            <input type="checkbox" name="is_active" value="1" <?= (int) $plan['is_active'] === 1 ? 'checked' : '' ?>>
-                                            Active in catalog
-                                        </label>
+                                            <div class="mb-3">
+                                                <label class="form-label">Description</label>
+                                                <textarea class="form-control" rows="2" name="description"><?= htmlspecialchars($plan['description'] ?: '', ENT_QUOTES, 'UTF-8') ?></textarea>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-check">
+                                                    <input type="checkbox" class="form-check-input" name="is_active" value="1" <?= (int) $plan['is_active'] === 1 ? 'checked' : '' ?>>
+                                                    <span class="form-check-label">Active in catalog</span>
+                                                </label>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                <span class="badge <?= (int) $plan['is_active'] === 1 ? 'bg-green-lt text-green' : 'bg-red-lt text-red' ?>">
+                                                    <?= (int) $plan['is_active'] === 1 ? 'Active' : 'Inactive' ?>
+                                                </span>
+                                                <button type="submit" class="btn btn-primary btn-sm ms-auto">Save Plan</button>
+                                            </div>
+                                        </form>
                                     </div>
-                                    <div class="tenant-directory-meta">
-                                        <span class="status-chip <?= (int) $plan['is_active'] === 1 ? 'status-active' : 'status-inactive' ?>">
-                                            <?= (int) $plan['is_active'] === 1 ? 'Active' : 'Inactive' ?>
-                                        </span>
-                                        <button type="submit" class="btn btn-primary">Save Plan</button>
-                                    </div>
-                                </form>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php else: ?>
-                        <div class="table-placeholder">No subscription plans are configured yet.</div>
-                    <?php endif; ?>
-                </article>
-
-                <article class="content-card">
-                    <h3>Add-On Catalog</h3>
-                    <p>Reference view of the optional features currently priced for registrations and billing drafts.</p>
-
-                    <?php if (!empty($addonCatalog)): ?>
-                        <div class="dashboard-list">
-                            <?php foreach ($addonCatalog as $addon): ?>
-                                <div class="dashboard-list-item">
-                                    <div>
-                                        <strong><?= htmlspecialchars(ucwords(str_replace('_', ' ', $addon['feature_name'])), ENT_QUOTES, 'UTF-8') ?></strong>
-                                        <p>
-                                            Monthly: PHP <?= number_format((float) $addon['monthly_addon_price'], 2) ?>
-                                            | Yearly: PHP <?= number_format((float) $addon['yearly_addon_price'], 2) ?>
-                                        </p>
-                                        <p><?= htmlspecialchars($addon['description'] ?: 'No add-on description provided.', ENT_QUOTES, 'UTF-8') ?></p>
-                                    </div>
-                                    <span class="status-chip <?= (int) $addon['is_active'] === 1 ? 'status-active' : 'status-inactive' ?>">
-                                        <?= (int) $addon['is_active'] === 1 ? 'Active' : 'Inactive' ?>
-                                    </span>
                                 </div>
                             <?php endforeach; ?>
                         </div>
                     <?php else: ?>
-                        <div class="table-placeholder">No add-on pricing is configured yet.</div>
-                    <?php endif; ?>
-                </article>
-            </section>
-
-            <section id="registrations" class="content-grid superadmin-grid">
-                <article class="content-card">
-                    <h3>Registration Queue</h3>
-                    <p>Review incoming business applications before billing and tenant activation.</p>
-
-                    <form action="dashboard.php" method="GET" class="feature-toggle-form">
-                        <?php if ($selectedTenantId > 0): ?>
-                            <input type="hidden" name="tenant_id" value="<?= (int) $selectedTenantId ?>">
-                        <?php endif; ?>
-                        <?php if ($tenantSearch !== ''): ?>
-                            <input type="hidden" name="tenant_search" value="<?= htmlspecialchars($tenantSearch, ENT_QUOTES, 'UTF-8') ?>">
-                        <?php endif; ?>
-                        <?php if ($tenantStatusFilter !== ''): ?>
-                            <input type="hidden" name="tenant_status" value="<?= htmlspecialchars($tenantStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-                        <?php endif; ?>
-                        <?php if ($subscriptionStatusFilter !== ''): ?>
-                            <input type="hidden" name="subscription_status" value="<?= htmlspecialchars($subscriptionStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-                        <?php endif; ?>
-
-                        <div class="form-grid customer-search-grid">
-                            <div class="form-group">
-                                <label for="registration_search">Search Registration</label>
-                                <input class="form-control" type="text" id="registration_search" name="registration_search" value="<?= htmlspecialchars($registrationSearch, ENT_QUOTES, 'UTF-8') ?>" placeholder="Business, owner, or email">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="ti ti-packages me-2 text-muted"></i>Plan Catalog</h3>
                             </div>
-                            <div class="form-group">
-                                <label for="registration_status_filter">Registration Status</label>
-                                <select class="form-control" id="registration_status_filter" name="registration_status">
-                                    <option value="">All registration statuses</option>
-                                    <option value="pending"<?= $registrationStatusFilter === 'pending' ? ' selected' : '' ?>>Pending</option>
-                                    <option value="approved"<?= $registrationStatusFilter === 'approved' ? ' selected' : '' ?>>Approved</option>
-                                    <option value="billing_sent"<?= $registrationStatusFilter === 'billing_sent' ? ' selected' : '' ?>>Billing Sent</option>
-                                    <option value="paid"<?= $registrationStatusFilter === 'paid' ? ' selected' : '' ?>>Paid</option>
-                                    <option value="converted"<?= $registrationStatusFilter === 'converted' ? ' selected' : '' ?>>Converted</option>
-                                    <option value="rejected"<?= $registrationStatusFilter === 'rejected' ? ' selected' : '' ?>>Rejected</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="registration_billing_status_filter">Billing Status</label>
-                                <select class="form-control" id="registration_billing_status_filter" name="registration_billing_status">
-                                    <option value="">All billing statuses</option>
-                                    <option value="draft"<?= $registrationBillingStatusFilter === 'draft' ? ' selected' : '' ?>>Draft</option>
-                                    <option value="sent"<?= $registrationBillingStatusFilter === 'sent' ? ' selected' : '' ?>>Sent</option>
-                                    <option value="paid"<?= $registrationBillingStatusFilter === 'paid' ? ' selected' : '' ?>>Paid</option>
-                                    <option value="cancelled"<?= $registrationBillingStatusFilter === 'cancelled' ? ' selected' : '' ?>>Cancelled</option>
-                                    <option value="none"<?= $registrationBillingStatusFilter === 'none' ? ' selected' : '' ?>>No billing request</option>
-                                </select>
-                            </div>
-                            <div class="feature-toggle-actions">
-                                <button type="submit" class="btn btn-primary">Filter</button>
-                                <a href="dashboard.php<?= $selectedTenantId > 0 ? '?tenant_id=' . (int) $selectedTenantId . '#registrations' : '#registrations' ?>" class="btn btn-secondary">Reset</a>
+                            <div class="card-body">
+                                <div class="empty empty-sm">
+                                    <p class="empty-title">No plans configured</p>
+                                    <p class="empty-subtitle text-muted">No subscription plans are configured yet.</p>
+                                </div>
                             </div>
                         </div>
-                    </form>
+                    <?php endif; ?>
+                </div>
 
-                    <?php if (!empty($registrations)): ?>
-                        <div class="dashboard-list">
-                            <?php foreach ($registrations as $registration): ?>
-                                <?php $isSelectedRegistration = (int) $registration['registration_id'] === $selectedRegistrationId; ?>
-                                <a class="dashboard-list-item dashboard-link-card<?= $isSelectedRegistration ? ' is-selected' : '' ?>" href="dashboard.php?registration_id=<?= (int) $registration['registration_id'] ?><?= $registrationSearch !== '' ? '&registration_search=' . urlencode($registrationSearch) : '' ?><?= $registrationStatusFilter !== '' ? '&registration_status=' . urlencode($registrationStatusFilter) : '' ?><?= $registrationBillingStatusFilter !== '' ? '&registration_billing_status=' . urlencode($registrationBillingStatusFilter) : '' ?><?= $selectedTenantId > 0 ? '&tenant_id=' . (int) $selectedTenantId : '' ?><?= $tenantSearch !== '' ? '&tenant_search=' . urlencode($tenantSearch) : '' ?><?= $tenantStatusFilter !== '' ? '&tenant_status=' . urlencode($tenantStatusFilter) : '' ?><?= $subscriptionStatusFilter !== '' ? '&subscription_status=' . urlencode($subscriptionStatusFilter) : '' ?>#registrations">
-                                    <div>
-                                        <strong><?= htmlspecialchars($registration['business_name'], ENT_QUOTES, 'UTF-8') ?></strong>
-                                        <p>
-                                            <?= htmlspecialchars($registration['plan_name'], ENT_QUOTES, 'UTF-8') ?> |
-                                            <?= htmlspecialchars($registration['owner_full_name'], ENT_QUOTES, 'UTF-8') ?> |
-                                            Billing: <?= htmlspecialchars($registration['latest_billing_status'] ?: 'none', ENT_QUOTES, 'UTF-8') ?>
-                                        </p>
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="ti ti-puzzle me-2 text-muted"></i>Add-On Catalog</h3>
+                        </div>
+                        <div class="card-body pb-0">
+                            <p class="text-muted small">Reference view of the optional features currently priced for registrations and billing drafts.</p>
+                        </div>
+                        <?php if (!empty($addonCatalog)): ?>
+                            <div class="list-group list-group-flush">
+                                <?php foreach ($addonCatalog as $addon): ?>
+                                    <div class="list-group-item">
+                                        <div class="row align-items-center">
+                                            <div class="col">
+                                                <div class="font-weight-medium"><?= htmlspecialchars(ucwords(str_replace('_', ' ', $addon['feature_name'])), ENT_QUOTES, 'UTF-8') ?></div>
+                                                <div class="text-muted small">
+                                                    Monthly: PHP <?= number_format((float) $addon['monthly_addon_price'], 2) ?>
+                                                    &middot; Yearly: PHP <?= number_format((float) $addon['yearly_addon_price'], 2) ?>
+                                                </div>
+                                                <div class="text-muted small"><?= htmlspecialchars($addon['description'] ?: 'No add-on description provided.', ENT_QUOTES, 'UTF-8') ?></div>
+                                            </div>
+                                            <div class="col-auto">
+                                                <span class="badge <?= (int) $addon['is_active'] === 1 ? 'bg-green-lt text-green' : 'bg-red-lt text-red' ?>">
+                                                    <?= (int) $addon['is_active'] === 1 ? 'Active' : 'Inactive' ?>
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <span class="status-chip status-<?= htmlspecialchars($registration['registration_status'], ENT_QUOTES, 'UTF-8') ?>">
-                                        <?= htmlspecialchars(ucfirst($registration['registration_status']), ENT_QUOTES, 'UTF-8') ?>
-                                    </span>
-                                </a>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php else: ?>
-                        <div class="table-placeholder">No registrations matched the current filters.</div>
-                    <?php endif; ?>
-                </article>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php else: ?>
+                            <div class="card-body">
+                                <div class="empty empty-sm">
+                                    <p class="empty-title">No add-ons configured</p>
+                                    <p class="empty-subtitle text-muted">No add-on pricing is configured yet.</p>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
 
-                <article class="content-card">
-                    <h3>Registration Details</h3>
+            <!-- Registration Queue + Registration Details -->
+            <div id="registrations" class="row row-deck row-cards mb-4">
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="ti ti-clipboard-list me-2 text-muted"></i>Registration Queue</h3>
+                        </div>
+                        <div class="card-body pb-0">
+                            <p class="text-muted small">Review incoming business applications before billing and tenant activation.</p>
+                        </div>
+                        <div class="card-body border-top">
+                            <form action="dashboard.php" method="GET">
+                                <?php if ($selectedTenantId > 0): ?>
+                                    <input type="hidden" name="tenant_id" value="<?= (int) $selectedTenantId ?>">
+                                <?php endif; ?>
+                                <?php if ($tenantSearch !== ''): ?>
+                                    <input type="hidden" name="tenant_search" value="<?= htmlspecialchars($tenantSearch, ENT_QUOTES, 'UTF-8') ?>">
+                                <?php endif; ?>
+                                <?php if ($tenantStatusFilter !== ''): ?>
+                                    <input type="hidden" name="tenant_status" value="<?= htmlspecialchars($tenantStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
+                                <?php endif; ?>
+                                <?php if ($subscriptionStatusFilter !== ''): ?>
+                                    <input type="hidden" name="subscription_status" value="<?= htmlspecialchars($subscriptionStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
+                                <?php endif; ?>
+                                <div class="row g-2 mb-2">
+                                    <div class="col-12">
+                                        <label class="form-label" for="registration_search">Search Registration</label>
+                                        <input class="form-control" type="text" id="registration_search" name="registration_search" value="<?= htmlspecialchars($registrationSearch, ENT_QUOTES, 'UTF-8') ?>" placeholder="Business, owner, or email">
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <label class="form-label" for="registration_status_filter">Registration Status</label>
+                                        <select class="form-control" id="registration_status_filter" name="registration_status">
+                                            <option value="">All registration statuses</option>
+                                            <option value="pending"<?= $registrationStatusFilter === 'pending' ? ' selected' : '' ?>>Pending</option>
+                                            <option value="approved"<?= $registrationStatusFilter === 'approved' ? ' selected' : '' ?>>Approved</option>
+                                            <option value="billing_sent"<?= $registrationStatusFilter === 'billing_sent' ? ' selected' : '' ?>>Billing Sent</option>
+                                            <option value="paid"<?= $registrationStatusFilter === 'paid' ? ' selected' : '' ?>>Paid</option>
+                                            <option value="converted"<?= $registrationStatusFilter === 'converted' ? ' selected' : '' ?>>Converted</option>
+                                            <option value="rejected"<?= $registrationStatusFilter === 'rejected' ? ' selected' : '' ?>>Rejected</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <label class="form-label" for="registration_billing_status_filter">Billing Status</label>
+                                        <select class="form-control" id="registration_billing_status_filter" name="registration_billing_status">
+                                            <option value="">All billing statuses</option>
+                                            <option value="draft"<?= $registrationBillingStatusFilter === 'draft' ? ' selected' : '' ?>>Draft</option>
+                                            <option value="sent"<?= $registrationBillingStatusFilter === 'sent' ? ' selected' : '' ?>>Sent</option>
+                                            <option value="paid"<?= $registrationBillingStatusFilter === 'paid' ? ' selected' : '' ?>>Paid</option>
+                                            <option value="cancelled"<?= $registrationBillingStatusFilter === 'cancelled' ? ' selected' : '' ?>>Cancelled</option>
+                                            <option value="none"<?= $registrationBillingStatusFilter === 'none' ? ' selected' : '' ?>>No billing request</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12 d-flex gap-2">
+                                        <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+                                        <a href="dashboard.php<?= $selectedTenantId > 0 ? '?tenant_id=' . (int) $selectedTenantId . '#registrations' : '#registrations' ?>" class="btn btn-secondary btn-sm">Reset</a>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <?php if (!empty($registrations)): ?>
+                            <div class="list-group list-group-flush">
+                                <?php
+                                $regStatusBadge = [
+                                    'pending'      => 'bg-orange-lt text-orange',
+                                    'approved'     => 'bg-green-lt text-green',
+                                    'billing_sent' => 'bg-blue-lt text-blue',
+                                    'paid'         => 'bg-teal-lt text-teal',
+                                    'converted'    => 'bg-blue-lt text-blue',
+                                    'rejected'     => 'bg-red-lt text-red',
+                                ];
+                                foreach ($registrations as $registration):
+                                    $isSelectedRegistration = (int) $registration['registration_id'] === $selectedRegistrationId;
+                                    $regBadge = $regStatusBadge[$registration['registration_status']] ?? 'bg-secondary-lt';
+                                ?>
+                                    <a class="list-group-item list-group-item-action<?= $isSelectedRegistration ? ' active' : '' ?>" href="dashboard.php?registration_id=<?= (int) $registration['registration_id'] ?><?= $registrationSearch !== '' ? '&registration_search=' . urlencode($registrationSearch) : '' ?><?= $registrationStatusFilter !== '' ? '&registration_status=' . urlencode($registrationStatusFilter) : '' ?><?= $registrationBillingStatusFilter !== '' ? '&registration_billing_status=' . urlencode($registrationBillingStatusFilter) : '' ?><?= $selectedTenantId > 0 ? '&tenant_id=' . (int) $selectedTenantId : '' ?><?= $tenantSearch !== '' ? '&tenant_search=' . urlencode($tenantSearch) : '' ?><?= $tenantStatusFilter !== '' ? '&tenant_status=' . urlencode($tenantStatusFilter) : '' ?><?= $subscriptionStatusFilter !== '' ? '&subscription_status=' . urlencode($subscriptionStatusFilter) : '' ?>#registrations">
+                                        <div class="row align-items-center">
+                                            <div class="col">
+                                                <div class="font-weight-medium"><?= htmlspecialchars($registration['business_name'], ENT_QUOTES, 'UTF-8') ?></div>
+                                                <div class="text-muted small">
+                                                    <?= htmlspecialchars($registration['plan_name'], ENT_QUOTES, 'UTF-8') ?>
+                                                    &middot; <?= htmlspecialchars($registration['owner_full_name'], ENT_QUOTES, 'UTF-8') ?>
+                                                    &middot; Billing: <?= htmlspecialchars($registration['latest_billing_status'] ?: 'none', ENT_QUOTES, 'UTF-8') ?>
+                                                </div>
+                                            </div>
+                                            <div class="col-auto">
+                                                <span class="badge <?= $regBadge ?>">
+                                                    <?= htmlspecialchars(ucfirst($registration['registration_status']), ENT_QUOTES, 'UTF-8') ?>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </a>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php else: ?>
+                            <div class="card-body">
+                                <div class="empty empty-sm">
+                                    <p class="empty-title">No registrations</p>
+                                    <p class="empty-subtitle text-muted">No registrations matched the current filters.</p>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="ti ti-file-description me-2 text-muted"></i>Registration Details</h3>
+                        </div>
                     <?php if ($selectedRegistration): ?>
                         <?php
                         $registrationStatus = (string) ($selectedRegistration['registration_status'] ?? '');
@@ -1313,785 +1665,837 @@ try {
                         $canApproveRegistration = in_array($registrationStatus, ['pending', 'rejected'], true);
                         $canMarkBillingSent = $selectedBillingRequest && in_array($registrationStatus, ['approved', 'billing_sent'], true);
                         $canRejectRegistration = in_array($registrationStatus, ['pending', 'approved', 'billing_sent'], true);
+                        $regDetailBadge = $regStatusBadge[$registrationStatus] ?? 'bg-secondary-lt';
                         ?>
-                        <p>
-                            Reviewing <?= htmlspecialchars($selectedRegistration['business_name'], ENT_QUOTES, 'UTF-8') ?> for the
-                            <?= htmlspecialchars($selectedRegistration['plan_name'], ENT_QUOTES, 'UTF-8') ?> plan.
-                        </p>
-
-                        <div class="dashboard-list compact-list">
-                            <div class="dashboard-list-item">
-                                <div>
-                                    <strong>Primary Contact</strong>
-                                    <p><?= htmlspecialchars($selectedRegistration['owner_full_name'], ENT_QUOTES, 'UTF-8') ?> | <?= htmlspecialchars($selectedRegistration['email'], ENT_QUOTES, 'UTF-8') ?></p>
+                        <div class="card-body pb-0">
+                            <p class="text-muted small">
+                                Reviewing <strong><?= htmlspecialchars($selectedRegistration['business_name'], ENT_QUOTES, 'UTF-8') ?></strong> for the <?= htmlspecialchars($selectedRegistration['plan_name'], ENT_QUOTES, 'UTF-8') ?> plan.
+                            </p>
+                        </div>
+                        <div class="list-group list-group-flush">
+                            <div class="list-group-item">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <div class="font-weight-medium">Primary Contact</div>
+                                        <div class="text-muted small"><?= htmlspecialchars($selectedRegistration['owner_full_name'], ENT_QUOTES, 'UTF-8') ?> &middot; <?= htmlspecialchars($selectedRegistration['email'], ENT_QUOTES, 'UTF-8') ?></div>
+                                    </div>
+                                    <div class="col-auto"><span class="badge <?= $regDetailBadge ?>"><?= htmlspecialchars(ucfirst($registrationStatus), ENT_QUOTES, 'UTF-8') ?></span></div>
                                 </div>
-                                <span class="status-chip status-<?= htmlspecialchars($selectedRegistration['registration_status'], ENT_QUOTES, 'UTF-8') ?>">
-                                    <?= htmlspecialchars(ucfirst($selectedRegistration['registration_status']), ENT_QUOTES, 'UTF-8') ?>
-                                </span>
                             </div>
-                            <div class="dashboard-list-item">
-                                <div>
-                                    <strong>Billing Cycle</strong>
-                                    <p><?= htmlspecialchars(ucfirst($selectedRegistration['billing_cycle']), ENT_QUOTES, 'UTF-8') ?> | Preferred username: <?= htmlspecialchars($selectedRegistration['preferred_username'] ?: 'Not provided', ENT_QUOTES, 'UTF-8') ?></p>
+                            <div class="list-group-item">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <div class="font-weight-medium">Billing Cycle</div>
+                                        <div class="text-muted small">Preferred username: <?= htmlspecialchars($selectedRegistration['preferred_username'] ?: 'Not provided', ENT_QUOTES, 'UTF-8') ?></div>
+                                    </div>
+                                    <div class="col-auto"><span class="badge bg-secondary-lt"><?= htmlspecialchars($selectedRegistration['billing_cycle'] === 'yearly' ? 'Yearly' : 'Monthly', ENT_QUOTES, 'UTF-8') ?></span></div>
                                 </div>
-                                <span class="metric-pill">
-                                    <?= htmlspecialchars($selectedRegistration['billing_cycle'] === 'yearly' ? 'Yearly' : 'Monthly', ENT_QUOTES, 'UTF-8') ?>
-                                </span>
                             </div>
-                            <div class="dashboard-list-item">
-                                <div>
-                                    <strong>Plan Price</strong>
-                                    <p>
-                                        Monthly: PHP <?= number_format((float) $selectedRegistration['monthly_price'], 2) ?> |
-                                        Yearly: PHP <?= number_format((float) $selectedRegistration['yearly_price'], 2) ?>
-                                    </p>
+                            <div class="list-group-item">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <div class="font-weight-medium">Plan Price</div>
+                                        <div class="text-muted small">Monthly: PHP <?= number_format((float) $selectedRegistration['monthly_price'], 2) ?> &middot; Yearly: PHP <?= number_format((float) $selectedRegistration['yearly_price'], 2) ?></div>
+                                    </div>
+                                    <div class="col-auto"><span class="badge bg-blue-lt text-blue"><?= htmlspecialchars($selectedRegistration['plan_name'], ENT_QUOTES, 'UTF-8') ?></span></div>
                                 </div>
-                                <span class="metric-pill"><?= htmlspecialchars($selectedRegistration['plan_name'], ENT_QUOTES, 'UTF-8') ?></span>
                             </div>
-                            <div class="dashboard-list-item">
-                                <div>
-                                    <strong>Estimated Add-On Total</strong>
-                                    <p>Calculated from requested add-ons for the selected billing cycle.</p>
+                            <div class="list-group-item">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <div class="font-weight-medium">Estimated Add-On Total</div>
+                                        <div class="text-muted small">Calculated from requested add-ons for the selected billing cycle.</div>
+                                    </div>
+                                    <div class="col-auto"><span class="badge bg-secondary-lt">PHP <?= number_format((float) $selectedRegistration['estimated_addon_amount'], 2) ?></span></div>
                                 </div>
-                                <span class="metric-pill">PHP <?= number_format((float) $selectedRegistration['estimated_addon_amount'], 2) ?></span>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="font-weight-medium">Address</div>
+                                <div class="text-muted small"><?= nl2br(htmlspecialchars($selectedRegistration['address'] ?: 'No address provided.', ENT_QUOTES, 'UTF-8')) ?></div>
                             </div>
                         </div>
 
-                        <div class="table-placeholder">
-                            <strong>Address</strong><br>
-                            <?= nl2br(htmlspecialchars($selectedRegistration['address'] ?: 'No address provided.', ENT_QUOTES, 'UTF-8')) ?>
+                        <div class="card-header mt-2">
+                            <h3 class="card-title">Included Plan Features</h3>
                         </div>
-
-                        <h3>Included Plan Features</h3>
-                        <p>These features will be auto-enabled for the tenant when the paid registration is converted into a live tenant.</p>
-
-                        <div class="addon-list registration-addon-list">
+                        <div class="card-body pb-0">
+                            <p class="text-muted small">These features will be auto-enabled for the tenant when the paid registration is converted into a live tenant.</p>
+                        </div>
+                        <div class="list-group list-group-flush">
                             <?php if (!empty($selectedRegistrationPlanFeatures)): ?>
                                 <?php foreach ($selectedRegistrationPlanFeatures as $planFeature): ?>
-                                    <div class="addon-item">
-                                        <div>
-                                            <strong><?= htmlspecialchars(ucwords(str_replace('_', ' ', $planFeature['feature_name'])), ENT_QUOTES, 'UTF-8') ?></strong>
-                                            <p><?= htmlspecialchars($planFeature['description'] ?: 'Included in the selected subscription plan.', ENT_QUOTES, 'UTF-8') ?></p>
+                                    <div class="list-group-item">
+                                        <div class="row align-items-center">
+                                            <div class="col">
+                                                <div class="font-weight-medium"><?= htmlspecialchars(ucwords(str_replace('_', ' ', $planFeature['feature_name'])), ENT_QUOTES, 'UTF-8') ?></div>
+                                                <div class="text-muted small"><?= htmlspecialchars($planFeature['description'] ?: 'Included in the selected subscription plan.', ENT_QUOTES, 'UTF-8') ?></div>
+                                            </div>
+                                            <div class="col-auto"><span class="badge bg-green-lt text-green">Included</span></div>
                                         </div>
-                                        <span class="addon-price">Included</span>
                                     </div>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <div class="table-placeholder">No plan-linked features are configured for this subscription plan yet.</div>
+                                <div class="list-group-item text-muted small">No plan-linked features are configured for this subscription plan yet.</div>
                             <?php endif; ?>
-                        </div>
-
-                        <div class="addon-list registration-addon-list">
                             <?php if (!empty($selectedRegistrationFeatures)): ?>
                                 <?php foreach ($selectedRegistrationFeatures as $addon): ?>
-                                    <div class="addon-item">
-                                        <div>
-                                            <strong><?= htmlspecialchars(ucwords(str_replace('_', ' ', $addon['feature_name'])), ENT_QUOTES, 'UTF-8') ?></strong>
-                                            <p><?= htmlspecialchars($addon['description'] ?: 'Requested add-on feature.', ENT_QUOTES, 'UTF-8') ?></p>
+                                    <div class="list-group-item">
+                                        <div class="row align-items-center">
+                                            <div class="col">
+                                                <div class="font-weight-medium"><?= htmlspecialchars(ucwords(str_replace('_', ' ', $addon['feature_name'])), ENT_QUOTES, 'UTF-8') ?></div>
+                                                <div class="text-muted small"><?= htmlspecialchars($addon['description'] ?: 'Requested add-on feature.', ENT_QUOTES, 'UTF-8') ?></div>
+                                            </div>
+                                            <div class="col-auto"><span class="badge bg-blue-lt text-blue">PHP <?= number_format((float) $addon['monthly_addon_price'], 2) ?>/mo</span></div>
                                         </div>
-                                        <span class="addon-price">PHP <?= number_format((float) $addon['monthly_addon_price'], 2) ?>/mo</span>
                                     </div>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <div class="table-placeholder">No add-on features requested for this registration.</div>
+                                <div class="list-group-item text-muted small">No add-on features requested for this registration.</div>
                             <?php endif; ?>
                         </div>
 
-                        <div class="dashboard-list compact-list">
-                            <div class="dashboard-list-item">
-                                <div>
-                                    <strong>Billing Draft</strong>
-                                    <p>
-                                        <?= $selectedBillingRequest ? 'Latest billing request is ready for review.' : 'No billing request generated yet.' ?>
-                                    </p>
+                        <div class="card-header mt-2">
+                            <h3 class="card-title">Billing</h3>
+                        </div>
+                        <div class="list-group list-group-flush">
+                            <div class="list-group-item">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <div class="font-weight-medium">Billing Draft</div>
+                                        <div class="text-muted small"><?= $selectedBillingRequest ? 'Latest billing request is ready for review.' : 'No billing request generated yet.' ?></div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <span class="badge <?= $selectedBillingRequest ? 'bg-blue-lt text-blue' : 'bg-orange-lt text-orange' ?>">
+                                            <?= htmlspecialchars(ucfirst($selectedBillingRequest['billing_status'] ?? 'none'), ENT_QUOTES, 'UTF-8') ?>
+                                        </span>
+                                    </div>
                                 </div>
-                                <span class="status-chip<?= $selectedBillingRequest ? '' : ' status-pending' ?>">
-                                    <?= htmlspecialchars(ucfirst($selectedBillingRequest['billing_status'] ?? 'none'), ENT_QUOTES, 'UTF-8') ?>
-                                </span>
                             </div>
                             <?php if ($selectedBillingRequest): ?>
-                                <div class="dashboard-list-item">
-                                    <div>
-                                        <strong>Amounts</strong>
-                                        <p>
-                                            Plan: <?= htmlspecialchars($selectedBillingRequest['currency'], ENT_QUOTES, 'UTF-8') ?> <?= number_format((float) $selectedBillingRequest['plan_amount'], 2) ?> |
-                                            Add-ons: <?= htmlspecialchars($selectedBillingRequest['currency'], ENT_QUOTES, 'UTF-8') ?> <?= number_format((float) $selectedBillingRequest['addon_amount'], 2) ?>
-                                        </p>
+                                <div class="list-group-item">
+                                    <div class="row align-items-center">
+                                        <div class="col">
+                                            <div class="font-weight-medium">Amounts</div>
+                                            <div class="text-muted small">Plan: <?= htmlspecialchars($selectedBillingRequest['currency'], ENT_QUOTES, 'UTF-8') ?> <?= number_format((float) $selectedBillingRequest['plan_amount'], 2) ?> &middot; Add-ons: <?= htmlspecialchars($selectedBillingRequest['currency'], ENT_QUOTES, 'UTF-8') ?> <?= number_format((float) $selectedBillingRequest['addon_amount'], 2) ?></div>
+                                        </div>
+                                        <div class="col-auto"><span class="badge bg-teal-lt text-teal"><?= htmlspecialchars($selectedBillingRequest['currency'], ENT_QUOTES, 'UTF-8') ?> <?= number_format((float) $selectedBillingRequest['total_amount'], 2) ?></span></div>
                                     </div>
-                                    <span class="metric-pill"><?= htmlspecialchars($selectedBillingRequest['currency'], ENT_QUOTES, 'UTF-8') ?> <?= number_format((float) $selectedBillingRequest['total_amount'], 2) ?></span>
                                 </div>
-                                <div class="dashboard-list-item">
-                                    <div>
-                                        <strong>Due Date</strong>
-                                        <p><?= htmlspecialchars($selectedBillingRequest['due_date'] ?: 'Not set', ENT_QUOTES, 'UTF-8') ?></p>
+                                <div class="list-group-item">
+                                    <div class="row align-items-center">
+                                        <div class="col">
+                                            <div class="font-weight-medium">Due Date</div>
+                                            <div class="text-muted small"><?= htmlspecialchars($selectedBillingRequest['due_date'] ?: 'Not set', ENT_QUOTES, 'UTF-8') ?></div>
+                                        </div>
+                                        <div class="col-auto"><span class="badge bg-secondary-lt"><?= htmlspecialchars(ucfirst($selectedBillingRequest['billing_status']), ENT_QUOTES, 'UTF-8') ?></span></div>
                                     </div>
-                                    <span class="metric-pill"><?= htmlspecialchars(ucfirst($selectedBillingRequest['billing_status']), ENT_QUOTES, 'UTF-8') ?></span>
                                 </div>
-                                <div class="dashboard-list-item">
-                                    <div>
-                                        <strong>Payment Reference</strong>
-                                        <p><?= htmlspecialchars($selectedBillingRequest['payment_reference'] ?: 'Not set yet', ENT_QUOTES, 'UTF-8') ?></p>
+                                <?php
+                                $ngRefClass = match($selectedBillingRequest['ng_reference_meta']['class'] ?? '') {
+                                    'status-active', 'status-approved' => 'bg-green-lt text-green',
+                                    'status-rejected', 'status-inactive' => 'bg-red-lt text-red',
+                                    'status-warning' => 'bg-orange-lt text-orange',
+                                    default => 'bg-orange-lt text-orange',
+                                };
+                                ?>
+                                <div class="list-group-item">
+                                    <div class="row align-items-center">
+                                        <div class="col">
+                                            <div class="font-weight-medium">Payment Reference</div>
+                                            <div class="text-muted small"><?= htmlspecialchars($selectedBillingRequest['payment_reference'] ?: 'Not set yet', ENT_QUOTES, 'UTF-8') ?></div>
+                                        </div>
+                                        <div class="col-auto"><span class="badge <?= $ngRefClass ?>"><?= htmlspecialchars($selectedBillingRequest['ng_reference_meta']['label'] ?? 'Ref', ENT_QUOTES, 'UTF-8') ?></span></div>
                                     </div>
-                                    <span class="status-chip <?= htmlspecialchars($selectedBillingRequest['ng_reference_meta']['class'] ?? 'status-pending', ENT_QUOTES, 'UTF-8') ?>">
-                                        <?= htmlspecialchars($selectedBillingRequest['ng_reference_meta']['label'] ?? 'Ref', ENT_QUOTES, 'UTF-8') ?>
-                                    </span>
                                 </div>
-                                <div class="dashboard-list-item">
-                                    <div>
-                                        <strong>NG Reference Review</strong>
-                                        <p><?= htmlspecialchars($selectedBillingRequest['ng_reference_meta']['detail'] ?? 'No reference review recorded yet.', ENT_QUOTES, 'UTF-8') ?></p>
+                                <div class="list-group-item">
+                                    <div class="row align-items-center">
+                                        <div class="col">
+                                            <div class="font-weight-medium">NG Reference Review</div>
+                                            <div class="text-muted small"><?= htmlspecialchars($selectedBillingRequest['ng_reference_meta']['detail'] ?? 'No reference review recorded yet.', ENT_QUOTES, 'UTF-8') ?></div>
+                                        </div>
+                                        <div class="col-auto"><span class="badge bg-secondary-lt"><?= number_format((int) ($selectedBillingRequest['duplicate_reference_count'] ?? 0)) ?>x</span></div>
                                     </div>
-                                    <span class="metric-pill"><?= number_format((int) ($selectedBillingRequest['duplicate_reference_count'] ?? 0)) ?>x</span>
                                 </div>
-                                <div class="dashboard-list-item">
-                                    <div>
-                                        <strong>Paid At</strong>
-                                        <p><?= htmlspecialchars($selectedBillingRequest['paid_at'] ?: 'Not paid yet', ENT_QUOTES, 'UTF-8') ?></p>
+                                <div class="list-group-item">
+                                    <div class="row align-items-center">
+                                        <div class="col">
+                                            <div class="font-weight-medium">Paid At</div>
+                                            <div class="text-muted small"><?= htmlspecialchars($selectedBillingRequest['paid_at'] ?: 'Not paid yet', ENT_QUOTES, 'UTF-8') ?></div>
+                                        </div>
+                                        <div class="col-auto"><span class="badge bg-secondary-lt">Payment</span></div>
                                     </div>
-                                    <span class="metric-pill">Payment</span>
                                 </div>
-                                <div class="dashboard-list-item">
-                                    <div>
-                                        <strong>PayMongo Checkout</strong>
-                                        <p><?= htmlspecialchars($selectedBillingRequest['paymongo_checkout_session_id'] ?? 'Not created yet', ENT_QUOTES, 'UTF-8') ?></p>
+                                <div class="list-group-item">
+                                    <div class="row align-items-center">
+                                        <div class="col">
+                                            <div class="font-weight-medium">PayMongo Checkout</div>
+                                            <div class="text-muted small"><?= htmlspecialchars($selectedBillingRequest['paymongo_checkout_session_id'] ?? 'Not created yet', ENT_QUOTES, 'UTF-8') ?></div>
+                                        </div>
+                                        <div class="col-auto"><span class="badge bg-secondary-lt"><?= htmlspecialchars(ucfirst($selectedBillingRequest['paymongo_status'] ?? 'none'), ENT_QUOTES, 'UTF-8') ?></span></div>
                                     </div>
-                                    <span class="metric-pill"><?= htmlspecialchars(ucfirst($selectedBillingRequest['paymongo_status'] ?? 'none'), ENT_QUOTES, 'UTF-8') ?></span>
                                 </div>
                             <?php endif; ?>
                         </div>
 
-                        <?php if ($canGenerateBillingDraft): ?>
-                            <form action="actions/generate_billing_request.php" method="POST" class="feature-toggle-form">
+                        <div class="card-body">
+                            <?php if ($canGenerateBillingDraft): ?>
+                                <form action="actions/generate_billing_request.php" method="POST" class="mb-3">
+                                    <input type="hidden" name="registration_id" value="<?= (int) $selectedRegistration['registration_id'] ?>">
+                                    <input type="hidden" name="registration_search" value="<?= htmlspecialchars($registrationSearch, ENT_QUOTES, 'UTF-8') ?>">
+                                    <input type="hidden" name="registration_status_filter" value="<?= htmlspecialchars($registrationStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
+                                    <input type="hidden" name="registration_billing_status_filter" value="<?= htmlspecialchars($registrationBillingStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
+                                    <div class="mb-2">
+                                        <label class="form-label" for="due_date">Billing Due Date</label>
+                                        <input class="form-control" type="date" id="due_date" name="due_date" value="<?= htmlspecialchars($selectedBillingRequest['due_date'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                                    </div>
+                                    <button type="submit" class="btn btn-primary btn-sm"><?= $selectedBillingRequest ? 'Update Billing Draft' : 'Generate Billing Draft' ?></button>
+                                </form>
+                            <?php else: ?>
+                                <div class="alert alert-warning mb-3" role="alert">
+                                    <div class="d-flex">
+                                        <div><i class="ti ti-lock icon alert-icon"></i></div>
+                                        <div><strong>Billing Draft Locked</strong><br>Approve the registration first before preparing billing, and stop billing changes once conversion is complete.</div>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+
+                            <?php if ($selectedBillingRequest): ?>
+                                <?php if ($canCreateCheckout): ?>
+                                    <form action="actions/create_paymongo_checkout.php" method="POST" class="mb-3">
+                                        <input type="hidden" name="registration_id" value="<?= (int) $selectedRegistration['registration_id'] ?>">
+                                        <input type="hidden" name="billing_request_id" value="<?= (int) $selectedBillingRequest['billing_request_id'] ?>">
+                                        <input type="hidden" name="registration_search" value="<?= htmlspecialchars($registrationSearch, ENT_QUOTES, 'UTF-8') ?>">
+                                        <input type="hidden" name="registration_status_filter" value="<?= htmlspecialchars($registrationStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
+                                        <input type="hidden" name="registration_billing_status_filter" value="<?= htmlspecialchars($registrationBillingStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
+                                        <div class="d-flex gap-2">
+                                            <button type="submit" class="btn btn-primary btn-sm">Create PayMongo Checkout</button>
+                                            <?php if (!empty($selectedBillingRequest['paymongo_checkout_url'])): ?>
+                                                <a href="<?= htmlspecialchars($selectedBillingRequest['paymongo_checkout_url'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm">Open Checkout</a>
+                                            <?php endif; ?>
+                                        </div>
+                                    </form>
+                                <?php elseif (!empty($selectedBillingRequest['paymongo_checkout_url'])): ?>
+                                    <div class="mb-3">
+                                        <a href="<?= htmlspecialchars($selectedBillingRequest['paymongo_checkout_url'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm">Open Checkout</a>
+                                    </div>
+                                <?php endif; ?>
+
+                                <?php if ($canConvertTenant): ?>
+                                    <form action="actions/convert_registration_to_tenant.php" method="POST" class="mb-3">
+                                        <input type="hidden" name="registration_id" value="<?= (int) $selectedRegistration['registration_id'] ?>">
+                                        <input type="hidden" name="registration_search" value="<?= htmlspecialchars($registrationSearch, ENT_QUOTES, 'UTF-8') ?>">
+                                        <input type="hidden" name="registration_status_filter" value="<?= htmlspecialchars($registrationStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
+                                        <input type="hidden" name="registration_billing_status_filter" value="<?= htmlspecialchars($registrationBillingStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
+                                        <div class="alert alert-info mb-2" role="alert">
+                                            <div class="d-flex">
+                                                <div><i class="ti ti-info-circle icon alert-icon"></i></div>
+                                                <div>This creates the live tenant record, the active subscription, the enabled tenant features, and the initial tenant admin account.</div>
+                                            </div>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary btn-sm">Convert Paid Registration to Tenant</button>
+                                    </form>
+                                <?php elseif ($registrationStatus === 'converted'): ?>
+                                    <div class="alert alert-success mb-3" role="alert">
+                                        <div class="d-flex">
+                                            <div><i class="ti ti-circle-check icon alert-icon"></i></div>
+                                            <div><strong>Tenant Conversion Complete</strong><br>This registration has already been converted into a live tenant account.</div>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+
+                                <?php if ($canUpdateBillingStatus): ?>
+                                    <form action="actions/update_billing_status.php" method="POST" class="mb-3">
+                                        <input type="hidden" name="registration_id" value="<?= (int) $selectedRegistration['registration_id'] ?>">
+                                        <input type="hidden" name="billing_request_id" value="<?= (int) $selectedBillingRequest['billing_request_id'] ?>">
+                                        <input type="hidden" name="registration_search" value="<?= htmlspecialchars($registrationSearch, ENT_QUOTES, 'UTF-8') ?>">
+                                        <input type="hidden" name="registration_status_filter" value="<?= htmlspecialchars($registrationStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
+                                        <input type="hidden" name="registration_billing_status_filter" value="<?= htmlspecialchars($registrationBillingStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
+                                        <div class="row g-2 mb-2">
+                                            <div class="col-sm-6">
+                                                <label class="form-label" for="billing_status">Billing Status</label>
+                                                <select class="form-control" id="billing_status" name="billing_status" required>
+                                                    <option value="draft"<?= ($selectedBillingRequest['billing_status'] === 'draft') ? ' selected' : '' ?>>Draft</option>
+                                                    <option value="sent"<?= ($selectedBillingRequest['billing_status'] === 'sent') ? ' selected' : '' ?>>Sent</option>
+                                                    <option value="paid"<?= ($selectedBillingRequest['billing_status'] === 'paid') ? ' selected' : '' ?>>Paid</option>
+                                                    <option value="cancelled"<?= ($selectedBillingRequest['billing_status'] === 'cancelled') ? ' selected' : '' ?>>Cancelled</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-sm-6">
+                                                <label class="form-label" for="payment_reference">Payment / External Reference</label>
+                                                <input class="form-control" type="text" id="payment_reference" name="payment_reference" value="<?= htmlspecialchars($selectedBillingRequest['payment_reference'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                                            </div>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary btn-sm">Update Billing Status</button>
+                                    </form>
+
+                                    <form action="actions/update_billing_verification.php" method="POST" class="mb-3">
+                                        <input type="hidden" name="registration_id" value="<?= (int) $selectedRegistration['registration_id'] ?>">
+                                        <input type="hidden" name="billing_request_id" value="<?= (int) $selectedBillingRequest['billing_request_id'] ?>">
+                                        <input type="hidden" name="registration_search" value="<?= htmlspecialchars($registrationSearch, ENT_QUOTES, 'UTF-8') ?>">
+                                        <input type="hidden" name="registration_status_filter" value="<?= htmlspecialchars($registrationStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
+                                        <input type="hidden" name="registration_billing_status_filter" value="<?= htmlspecialchars($registrationBillingStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
+                                        <div class="mb-2">
+                                            <label class="form-label" for="payment_reference_check_notes">Verification Notes</label>
+                                            <textarea class="form-control" rows="3" id="payment_reference_check_notes" name="payment_reference_check_notes"><?= htmlspecialchars($selectedBillingRequest['payment_reference_check_notes'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
+                                        </div>
+                                        <div class="alert alert-info mb-2" role="alert">
+                                            <div class="d-flex">
+                                                <div><i class="ti ti-info-circle icon alert-icon"></i></div>
+                                                <div>Review the NG reference format, confirm it is unique, and save the result into the billing record for audit tracking.</div>
+                                            </div>
+                                        </div>
+                                        <button type="submit" class="btn btn-secondary btn-sm">Save Reference Review</button>
+                                    </form>
+                                <?php endif; ?>
+                            <?php endif; ?>
+
+                            <form action="actions/review_registration.php" method="POST">
                                 <input type="hidden" name="registration_id" value="<?= (int) $selectedRegistration['registration_id'] ?>">
                                 <input type="hidden" name="registration_search" value="<?= htmlspecialchars($registrationSearch, ENT_QUOTES, 'UTF-8') ?>">
                                 <input type="hidden" name="registration_status_filter" value="<?= htmlspecialchars($registrationStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
                                 <input type="hidden" name="registration_billing_status_filter" value="<?= htmlspecialchars($registrationBillingStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-
-                                <div class="form-group">
-                                    <label for="due_date">Billing Due Date</label>
-                                    <input
-                                        class="form-control"
-                                        type="date"
-                                        id="due_date"
-                                        name="due_date"
-                                        value="<?= htmlspecialchars($selectedBillingRequest['due_date'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                                    >
+                                <div class="mb-2">
+                                    <label class="form-label" for="notes">Review Notes</label>
+                                    <textarea class="form-control" rows="3" id="notes" name="notes"><?= htmlspecialchars($selectedRegistration['notes'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
                                 </div>
-
-                                <div class="feature-toggle-actions">
-                                    <button type="submit" class="btn btn-primary">
-                                        <?= $selectedBillingRequest ? 'Update Billing Draft' : 'Generate Billing Draft' ?>
-                                    </button>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <?php if ($canApproveRegistration): ?>
+                                        <button type="submit" class="btn btn-primary btn-sm" name="decision" value="approve">Approve Registration</button>
+                                    <?php endif; ?>
+                                    <?php if ($canMarkBillingSent): ?>
+                                        <button type="submit" class="btn btn-secondary btn-sm" name="decision" value="billing_sent">Mark Billing Sent</button>
+                                    <?php endif; ?>
+                                    <?php if ($canRejectRegistration): ?>
+                                        <button type="submit" class="btn btn-secondary btn-sm" name="decision" value="reject">Reject Registration</button>
+                                    <?php endif; ?>
                                 </div>
                             </form>
-                        <?php else: ?>
-                            <div class="table-placeholder">
-                                <strong>Billing Draft Locked</strong><br>
-                                Approve the registration first before preparing billing, and stop billing changes once conversion is complete.
-                            </div>
-                        <?php endif; ?>
+                        </div>
 
-                        <?php if ($selectedBillingRequest): ?>
-                            <?php if ($canCreateCheckout): ?>
-                                <form action="actions/create_paymongo_checkout.php" method="POST" class="feature-toggle-form">
-                                    <input type="hidden" name="registration_id" value="<?= (int) $selectedRegistration['registration_id'] ?>">
-                                    <input type="hidden" name="billing_request_id" value="<?= (int) $selectedBillingRequest['billing_request_id'] ?>">
-                                    <input type="hidden" name="registration_search" value="<?= htmlspecialchars($registrationSearch, ENT_QUOTES, 'UTF-8') ?>">
-                                    <input type="hidden" name="registration_status_filter" value="<?= htmlspecialchars($registrationStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-                                    <input type="hidden" name="registration_billing_status_filter" value="<?= htmlspecialchars($registrationBillingStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-
-                                    <div class="approval-actions">
-                                        <button type="submit" class="btn btn-primary">Create PayMongo Checkout</button>
-                                        <?php if (!empty($selectedBillingRequest['paymongo_checkout_url'])): ?>
-                                            <a href="<?= htmlspecialchars($selectedBillingRequest['paymongo_checkout_url'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">Open Checkout</a>
-                                        <?php endif; ?>
-                                    </div>
-                                </form>
-                            <?php elseif (!empty($selectedBillingRequest['paymongo_checkout_url'])): ?>
-                                <div class="approval-actions">
-                                    <a href="<?= htmlspecialchars($selectedBillingRequest['paymongo_checkout_url'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">Open Checkout</a>
-                                </div>
-                            <?php endif; ?>
-
-                            <?php if ($canConvertTenant): ?>
-                                <form action="actions/convert_registration_to_tenant.php" method="POST" class="feature-toggle-form">
-                                    <input type="hidden" name="registration_id" value="<?= (int) $selectedRegistration['registration_id'] ?>">
-                                    <input type="hidden" name="registration_search" value="<?= htmlspecialchars($registrationSearch, ENT_QUOTES, 'UTF-8') ?>">
-                                    <input type="hidden" name="registration_status_filter" value="<?= htmlspecialchars($registrationStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-                                    <input type="hidden" name="registration_billing_status_filter" value="<?= htmlspecialchars($registrationBillingStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-
-                                    <div class="table-placeholder">
-                                        <strong>Tenant Conversion</strong><br>
-                                        This creates the live tenant record, the active subscription, the enabled tenant features, and the initial tenant admin account.
-                                    </div>
-
-                                    <div class="approval-actions">
-                                        <button type="submit" class="btn btn-primary">Convert Paid Registration to Tenant</button>
-                                    </div>
-                                </form>
-                            <?php elseif ($registrationStatus === 'converted'): ?>
-                                <div class="table-placeholder">
-                                    <strong>Tenant Conversion Complete</strong><br>
-                                    This registration has already been converted into a live tenant account.
-                                </div>
-                            <?php endif; ?>
-
-                            <?php if ($canUpdateBillingStatus): ?>
-                                <form action="actions/update_billing_status.php" method="POST" class="feature-toggle-form">
-                                    <input type="hidden" name="registration_id" value="<?= (int) $selectedRegistration['registration_id'] ?>">
-                                    <input type="hidden" name="billing_request_id" value="<?= (int) $selectedBillingRequest['billing_request_id'] ?>">
-                                    <input type="hidden" name="registration_search" value="<?= htmlspecialchars($registrationSearch, ENT_QUOTES, 'UTF-8') ?>">
-                                    <input type="hidden" name="registration_status_filter" value="<?= htmlspecialchars($registrationStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-                                    <input type="hidden" name="registration_billing_status_filter" value="<?= htmlspecialchars($registrationBillingStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-
-                                    <div class="form-grid">
-                                        <div class="form-group">
-                                            <label for="billing_status">Billing Status</label>
-                                            <select class="form-control" id="billing_status" name="billing_status" required>
-                                                <option value="draft"<?= ($selectedBillingRequest['billing_status'] === 'draft') ? ' selected' : '' ?>>Draft</option>
-                                                <option value="sent"<?= ($selectedBillingRequest['billing_status'] === 'sent') ? ' selected' : '' ?>>Sent</option>
-                                                <option value="paid"<?= ($selectedBillingRequest['billing_status'] === 'paid') ? ' selected' : '' ?>>Paid</option>
-                                                <option value="cancelled"<?= ($selectedBillingRequest['billing_status'] === 'cancelled') ? ' selected' : '' ?>>Cancelled</option>
-                                            </select>
-                                        </div>
-
-                                        <div class="form-group">
-                                            <label for="payment_reference">Payment / External Reference</label>
-                                            <input
-                                                class="form-control"
-                                                type="text"
-                                                id="payment_reference"
-                                                name="payment_reference"
-                                                value="<?= htmlspecialchars($selectedBillingRequest['payment_reference'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                                            >
-                                        </div>
-                                    </div>
-
-                                    <div class="approval-actions">
-                                        <button type="submit" class="btn btn-primary">Update Billing Status</button>
-                                    </div>
-                                </form>
-
-                                <form action="actions/update_billing_verification.php" method="POST" class="feature-toggle-form">
-                                    <input type="hidden" name="registration_id" value="<?= (int) $selectedRegistration['registration_id'] ?>">
-                                    <input type="hidden" name="billing_request_id" value="<?= (int) $selectedBillingRequest['billing_request_id'] ?>">
-                                    <input type="hidden" name="registration_search" value="<?= htmlspecialchars($registrationSearch, ENT_QUOTES, 'UTF-8') ?>">
-                                    <input type="hidden" name="registration_status_filter" value="<?= htmlspecialchars($registrationStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-                                    <input type="hidden" name="registration_billing_status_filter" value="<?= htmlspecialchars($registrationBillingStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-
-                                    <div class="form-group">
-                                        <label for="payment_reference_check_notes">Verification Notes</label>
-                                        <textarea class="form-control form-textarea" id="payment_reference_check_notes" name="payment_reference_check_notes"><?= htmlspecialchars($selectedBillingRequest['payment_reference_check_notes'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
-                                    </div>
-
-                                    <div class="table-placeholder">
-                                        <strong>Reference cross-check</strong><br>
-                                        Review the NG reference format, confirm it is unique, and save the result into the billing record for audit tracking.
-                                    </div>
-
-                                    <div class="approval-actions">
-                                        <button type="submit" class="btn btn-secondary">Save Reference Review</button>
-                                    </div>
-                                </form>
-                            <?php endif; ?>
-                        <?php endif; ?>
-
-                        <form action="actions/review_registration.php" method="POST" class="feature-toggle-form">
-                            <input type="hidden" name="registration_id" value="<?= (int) $selectedRegistration['registration_id'] ?>">
-                            <input type="hidden" name="registration_search" value="<?= htmlspecialchars($registrationSearch, ENT_QUOTES, 'UTF-8') ?>">
-                            <input type="hidden" name="registration_status_filter" value="<?= htmlspecialchars($registrationStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-                            <input type="hidden" name="registration_billing_status_filter" value="<?= htmlspecialchars($registrationBillingStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-
-                            <div class="form-group">
-                                <label for="notes">Review Notes</label>
-                                <textarea class="form-control form-textarea" id="notes" name="notes"><?= htmlspecialchars($selectedRegistration['notes'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
-                            </div>
-
-                            <div class="approval-actions">
-                                <?php if ($canApproveRegistration): ?>
-                                    <button type="submit" class="btn btn-primary" name="decision" value="approve">Approve Registration</button>
-                                <?php endif; ?>
-                                <?php if ($canMarkBillingSent): ?>
-                                    <button type="submit" class="btn btn-secondary" name="decision" value="billing_sent">Mark Billing Sent</button>
-                                <?php endif; ?>
-                                <?php if ($canRejectRegistration): ?>
-                                    <button type="submit" class="btn btn-secondary" name="decision" value="reject">Reject Registration</button>
-                                <?php endif; ?>
-                            </div>
-                        </form>
-
-                        <h3>Communication Activity</h3>
-                        <p>Current system communication is tracked through `email_logs`, even when live email delivery is not configured yet.</p>
-
+                        <div class="card-header">
+                            <h3 class="card-title">Communication Activity</h3>
+                        </div>
+                        <div class="card-body pb-0">
+                            <p class="text-muted small">System communication is tracked through email_logs, even when live email delivery is not configured yet.</p>
+                        </div>
                         <?php if (!empty($selectedRegistrationEmailLogs)): ?>
-                            <div class="dashboard-list compact-list">
+                            <div class="list-group list-group-flush">
                                 <?php foreach ($selectedRegistrationEmailLogs as $emailLog): ?>
-                                    <div class="dashboard-list-item">
-                                        <div>
-                                            <strong><?= htmlspecialchars($emailLog['subject'], ENT_QUOTES, 'UTF-8') ?></strong>
-                                            <p>
-                                                <?= htmlspecialchars($emailLog['recipient_email'], ENT_QUOTES, 'UTF-8') ?>
-                                                | Type: <?= htmlspecialchars($emailLog['email_type'], ENT_QUOTES, 'UTF-8') ?>
-                                            </p>
-                                            <p>
-                                                Created: <?= htmlspecialchars($emailLog['created_at'] ?: 'Not set', ENT_QUOTES, 'UTF-8') ?>
-                                                | Sent: <?= htmlspecialchars($emailLog['sent_at'] ?: 'Pending', ENT_QUOTES, 'UTF-8') ?>
-                                            </p>
+                                    <?php $emailBadge = ($emailLog['send_status'] === 'sent') ? 'bg-green-lt text-green' : (($emailLog['send_status'] === 'failed') ? 'bg-red-lt text-red' : 'bg-orange-lt text-orange'); ?>
+                                    <div class="list-group-item">
+                                        <div class="row align-items-center">
+                                            <div class="col">
+                                                <div class="font-weight-medium"><?= htmlspecialchars($emailLog['subject'], ENT_QUOTES, 'UTF-8') ?></div>
+                                                <div class="text-muted small"><?= htmlspecialchars($emailLog['recipient_email'], ENT_QUOTES, 'UTF-8') ?> &middot; Type: <?= htmlspecialchars($emailLog['email_type'], ENT_QUOTES, 'UTF-8') ?></div>
+                                                <div class="text-muted small">Created: <?= htmlspecialchars($emailLog['created_at'] ?: 'Not set', ENT_QUOTES, 'UTF-8') ?> &middot; Sent: <?= htmlspecialchars($emailLog['sent_at'] ?: 'Pending', ENT_QUOTES, 'UTF-8') ?></div>
+                                            </div>
+                                            <div class="col-auto"><span class="badge <?= $emailBadge ?>"><?= htmlspecialchars(ucfirst($emailLog['send_status']), ENT_QUOTES, 'UTF-8') ?></span></div>
                                         </div>
-                                        <span class="status-chip status-<?= htmlspecialchars($emailLog['send_status'], ENT_QUOTES, 'UTF-8') ?>">
-                                            <?= htmlspecialchars(ucfirst($emailLog['send_status']), ENT_QUOTES, 'UTF-8') ?>
-                                        </span>
                                     </div>
                                 <?php endforeach; ?>
                             </div>
                         <?php else: ?>
-                            <div class="table-placeholder">No email log activity has been recorded for this registration yet.</div>
+                            <div class="card-body">
+                                <div class="empty empty-sm">
+                                    <p class="empty-title">No email logs</p>
+                                    <p class="empty-subtitle text-muted">No email log activity has been recorded for this registration yet.</p>
+                                </div>
+                            </div>
                         <?php endif; ?>
                     <?php else: ?>
-                        <p>Select a registration from the queue to review plan and add-on choices.</p>
-                    <?php endif; ?>
-                </article>
-            </section>
-
-            <section id="features" class="content-grid superadmin-grid">
-                <article class="content-card">
-                    <h3>Tenants</h3>
-                    <p>Filter the tenant list by status or subscription state, then open a tenant to manage controls and feature access.</p>
-
-                    <form action="dashboard.php" method="GET" class="feature-toggle-form">
-                        <div class="form-grid customer-search-grid">
-                            <div class="form-group">
-                                <label for="tenant_search">Search Tenant</label>
-                                <input class="form-control" type="text" id="tenant_search" name="tenant_search" value="<?= htmlspecialchars($tenantSearch, ENT_QUOTES, 'UTF-8') ?>" placeholder="Business name">
-                            </div>
-                            <div class="form-group">
-                                <label for="tenant_status">Tenant Status</label>
-                                <select class="form-control" id="tenant_status" name="tenant_status">
-                                    <option value="">All tenant statuses</option>
-                                    <option value="active"<?= $tenantStatusFilter === 'active' ? ' selected' : '' ?>>Active</option>
-                                    <option value="inactive"<?= $tenantStatusFilter === 'inactive' ? ' selected' : '' ?>>Inactive</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="subscription_status">Subscription Status</label>
-                                <select class="form-control" id="subscription_status" name="subscription_status">
-                                    <option value="">All subscription statuses</option>
-                                    <option value="active"<?= $subscriptionStatusFilter === 'active' ? ' selected' : '' ?>>Active</option>
-                                    <option value="expired"<?= $subscriptionStatusFilter === 'expired' ? ' selected' : '' ?>>Expired</option>
-                                    <option value="none"<?= $subscriptionStatusFilter === 'none' ? ' selected' : '' ?>>No subscription</option>
-                                </select>
-                            </div>
-                            <div class="feature-toggle-actions">
-                                <button type="submit" class="btn btn-primary">Filter</button>
-                                <a href="dashboard.php#features" class="btn btn-secondary">Reset</a>
-                            </div>
+                        <div class="card-body">
+                            <p class="text-muted">Select a registration from the queue to review plan and add-on choices.</p>
                         </div>
-                    </form>
-
-                    <?php if (!empty($tenants)): ?>
-                        <div class="dashboard-list">
-                            <?php foreach ($tenants as $tenant): ?>
-                                <?php $isSelected = (int) $tenant['tenant_id'] === $selectedTenantId; ?>
-                                <a class="dashboard-list-item dashboard-link-card<?= $isSelected ? ' is-selected' : '' ?>" href="dashboard.php?tenant_id=<?= (int) $tenant['tenant_id'] ?><?= $tenantSearch !== '' ? '&tenant_search=' . urlencode($tenantSearch) : '' ?><?= $tenantStatusFilter !== '' ? '&tenant_status=' . urlencode($tenantStatusFilter) : '' ?><?= $subscriptionStatusFilter !== '' ? '&subscription_status=' . urlencode($subscriptionStatusFilter) : '' ?>#features">
-                                    <div>
-                                        <strong><?= htmlspecialchars($tenant['business_name'], ENT_QUOTES, 'UTF-8') ?></strong>
-                                        <p>
-                                            Status: <?= htmlspecialchars($tenant['status'], ENT_QUOTES, 'UTF-8') ?> |
-                                            Plan: <?= htmlspecialchars($tenant['current_plan'] ?: 'Not set', ENT_QUOTES, 'UTF-8') ?> |
-                                            Subscription: <?= htmlspecialchars($tenant['current_subscription_status'] ?: 'none', ENT_QUOTES, 'UTF-8') ?><br>
-                                            <?= htmlspecialchars($tenant['health_detail'], ENT_QUOTES, 'UTF-8') ?>
-                                        </p>
-                                    </div>
-                                    <div class="tenant-directory-meta">
-                                        <span class="status-chip <?= htmlspecialchars($tenant['health_class'], ENT_QUOTES, 'UTF-8') ?>">
-                                            <?= htmlspecialchars($tenant['health_label'], ENT_QUOTES, 'UTF-8') ?>
-                                        </span>
-                                        <span class="metric-pill"><?= number_format((int) $tenant['active_users']) ?></span>
-                                    </div>
-                                </a>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php else: ?>
-                        <div class="table-placeholder">No tenants matched the current filters.</div>
                     <?php endif; ?>
-                </article>
+                    </div>
+                </div>
+            </div>
 
-                <article class="content-card">
-                    <h3>Tenant Controls</h3>
+            <!-- Tenants + Tenant Controls -->
+            <div id="features" class="row row-deck row-cards mb-4">
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="ti ti-building-store me-2 text-muted"></i>Tenants</h3>
+                        </div>
+                        <div class="card-body pb-0">
+                            <p class="text-muted small">Filter the tenant list by status or subscription state, then open a tenant to manage controls and feature access.</p>
+                        </div>
+                        <div class="card-body border-top">
+                            <form action="dashboard.php" method="GET">
+                                <div class="row g-2 mb-2">
+                                    <div class="col-12">
+                                        <label class="form-label" for="tenant_search">Search Tenant</label>
+                                        <input class="form-control" type="text" id="tenant_search" name="tenant_search" value="<?= htmlspecialchars($tenantSearch, ENT_QUOTES, 'UTF-8') ?>" placeholder="Business name">
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <label class="form-label" for="tenant_status">Tenant Status</label>
+                                        <select class="form-control" id="tenant_status" name="tenant_status">
+                                            <option value="">All tenant statuses</option>
+                                            <option value="active"<?= $tenantStatusFilter === 'active' ? ' selected' : '' ?>>Active</option>
+                                            <option value="inactive"<?= $tenantStatusFilter === 'inactive' ? ' selected' : '' ?>>Inactive</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <label class="form-label" for="subscription_status">Subscription Status</label>
+                                        <select class="form-control" id="subscription_status" name="subscription_status">
+                                            <option value="">All subscription statuses</option>
+                                            <option value="active"<?= $subscriptionStatusFilter === 'active' ? ' selected' : '' ?>>Active</option>
+                                            <option value="expired"<?= $subscriptionStatusFilter === 'expired' ? ' selected' : '' ?>>Expired</option>
+                                            <option value="none"<?= $subscriptionStatusFilter === 'none' ? ' selected' : '' ?>>No subscription</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12 d-flex gap-2">
+                                        <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+                                        <a href="dashboard.php#features" class="btn btn-secondary btn-sm">Reset</a>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <?php if (!empty($tenants)): ?>
+                            <div class="list-group list-group-flush">
+                                <?php foreach ($tenants as $tenant): ?>
+                                    <?php
+                                    $isSelected = (int) $tenant['tenant_id'] === $selectedTenantId;
+                                    $tenantHealthBadge = match($tenant['health_class'] ?? '') {
+                                        'status-active' => 'bg-green-lt text-green',
+                                        'status-inactive' => 'bg-red-lt text-red',
+                                        'status-rejected' => 'bg-red-lt text-red',
+                                        'status-warning' => 'bg-orange-lt text-orange',
+                                        'status-pending' => 'bg-orange-lt text-orange',
+                                        default => 'bg-secondary-lt',
+                                    };
+                                    ?>
+                                    <a class="list-group-item list-group-item-action<?= $isSelected ? ' active' : '' ?>" href="dashboard.php?tenant_id=<?= (int) $tenant['tenant_id'] ?><?= $tenantSearch !== '' ? '&tenant_search=' . urlencode($tenantSearch) : '' ?><?= $tenantStatusFilter !== '' ? '&tenant_status=' . urlencode($tenantStatusFilter) : '' ?><?= $subscriptionStatusFilter !== '' ? '&subscription_status=' . urlencode($subscriptionStatusFilter) : '' ?>#features">
+                                        <div class="row align-items-center">
+                                            <div class="col">
+                                                <div class="font-weight-medium"><?= htmlspecialchars($tenant['business_name'], ENT_QUOTES, 'UTF-8') ?></div>
+                                                <div class="text-muted small">
+                                                    Status: <?= htmlspecialchars($tenant['status'], ENT_QUOTES, 'UTF-8') ?>
+                                                    &middot; Plan: <?= htmlspecialchars($tenant['current_plan'] ?: 'Not set', ENT_QUOTES, 'UTF-8') ?>
+                                                    &middot; Sub: <?= htmlspecialchars($tenant['current_subscription_status'] ?: 'none', ENT_QUOTES, 'UTF-8') ?>
+                                                </div>
+                                                <div class="text-muted small"><?= htmlspecialchars($tenant['health_detail'], ENT_QUOTES, 'UTF-8') ?></div>
+                                            </div>
+                                            <div class="col-auto d-flex flex-column gap-1 align-items-end">
+                                                <span class="badge <?= $tenantHealthBadge ?>"><?= htmlspecialchars($tenant['health_label'], ENT_QUOTES, 'UTF-8') ?></span>
+                                                <span class="badge bg-secondary-lt"><?= number_format((int) $tenant['active_users']) ?> users</span>
+                                            </div>
+                                        </div>
+                                    </a>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php else: ?>
+                            <div class="card-body">
+                                <div class="empty empty-sm">
+                                    <p class="empty-title">No tenants</p>
+                                    <p class="empty-subtitle text-muted">No tenants matched the current filters.</p>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="ti ti-settings me-2 text-muted"></i>Tenant Controls</h3>
+                        </div>
                     <?php if ($selectedTenant): ?>
-                        <p>
-                            Editing <?= htmlspecialchars($selectedTenant['business_name'], ENT_QUOTES, 'UTF-8') ?>.
-                            Current plan: <?= htmlspecialchars($selectedTenant['plan'] ?: 'Not set', ENT_QUOTES, 'UTF-8') ?>.
-                        </p>
-
-                        <div class="dashboard-list compact-list">
-                            <div class="dashboard-list-item">
-                                <div>
-                                    <strong>Tenant Status</strong>
-                                    <p><?= htmlspecialchars(ucfirst($selectedTenant['status']), ENT_QUOTES, 'UTF-8') ?></p>
+                        <?php
+                        $tenantStatusBadge = ($selectedTenant['status'] === 'active') ? 'bg-green-lt text-green' : 'bg-red-lt text-red';
+                        $tenantSubBadge = ($selectedTenant['subscription_status'] === 'active') ? 'bg-green-lt text-green' : (($selectedTenant['subscription_status'] === 'expired') ? 'bg-red-lt text-red' : 'bg-secondary-lt');
+                        ?>
+                        <div class="card-body pb-0">
+                            <p class="text-muted small">
+                                Editing <strong><?= htmlspecialchars($selectedTenant['business_name'], ENT_QUOTES, 'UTF-8') ?></strong>.
+                                Current plan: <?= htmlspecialchars($selectedTenant['plan'] ?: 'Not set', ENT_QUOTES, 'UTF-8') ?>.
+                            </p>
+                        </div>
+                        <div class="list-group list-group-flush">
+                            <div class="list-group-item">
+                                <div class="row align-items-center">
+                                    <div class="col"><div class="font-weight-medium">Tenant Status</div></div>
+                                    <div class="col-auto"><span class="badge <?= $tenantStatusBadge ?>"><?= htmlspecialchars(ucfirst($selectedTenant['status']), ENT_QUOTES, 'UTF-8') ?></span></div>
                                 </div>
-                                <span class="status-chip status-<?= htmlspecialchars($selectedTenant['status'], ENT_QUOTES, 'UTF-8') ?>">
-                                    <?= htmlspecialchars(ucfirst($selectedTenant['status']), ENT_QUOTES, 'UTF-8') ?>
-                                </span>
                             </div>
-                            <div class="dashboard-list-item">
-                                <div>
-                                    <strong>Active Tenant Users</strong>
-                                    <p>Accounts currently allowed to sign in under this tenant.</p>
+                            <div class="list-group-item">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <div class="font-weight-medium">Active Tenant Users</div>
+                                        <div class="text-muted small">Accounts currently allowed to sign in under this tenant.</div>
+                                    </div>
+                                    <div class="col-auto"><span class="badge bg-secondary-lt"><?= number_format((int) ($selectedTenant['active_users'] ?? 0)) ?></span></div>
                                 </div>
-                                <span class="metric-pill"><?= number_format((int) ($selectedTenant['active_users'] ?? 0)) ?></span>
                             </div>
-                            <div class="dashboard-list-item">
-                                <div>
-                                    <strong>Subscription Window</strong>
-                                    <p>
-                                        <?= htmlspecialchars($selectedTenant['start_date'] ?: 'Not set', ENT_QUOTES, 'UTF-8') ?>
-                                        to
-                                        <?= htmlspecialchars($selectedTenant['end_date'] ?: 'Not set', ENT_QUOTES, 'UTF-8') ?>
-                                    </p>
+                            <div class="list-group-item">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <div class="font-weight-medium">Subscription Window</div>
+                                        <div class="text-muted small"><?= htmlspecialchars($selectedTenant['start_date'] ?: 'Not set', ENT_QUOTES, 'UTF-8') ?> to <?= htmlspecialchars($selectedTenant['end_date'] ?: 'Not set', ENT_QUOTES, 'UTF-8') ?></div>
+                                    </div>
+                                    <div class="col-auto"><span class="badge <?= $tenantSubBadge ?>"><?= htmlspecialchars(ucfirst($selectedTenant['subscription_status'] ?: 'none'), ENT_QUOTES, 'UTF-8') ?></span></div>
                                 </div>
-                                <span class="status-chip">
-                                    <?= htmlspecialchars(ucfirst($selectedTenant['subscription_status'] ?: 'none'), ENT_QUOTES, 'UTF-8') ?>
-                                </span>
                             </div>
-                            <div class="dashboard-list-item">
-                                <div>
-                                    <strong>Attention State</strong>
-                                    <p><?= htmlspecialchars($selectedTenant['health_detail'] ?? 'No subscription health details available.', ENT_QUOTES, 'UTF-8') ?></p>
+                            <div class="list-group-item">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <div class="font-weight-medium">Attention State</div>
+                                        <div class="text-muted small"><?= htmlspecialchars($selectedTenant['health_detail'] ?? 'No subscription health details available.', ENT_QUOTES, 'UTF-8') ?></div>
+                                    </div>
+                                    <div class="col-auto"><span class="badge <?= $tenantHealthBadge ?? 'bg-secondary-lt' ?>"><?= htmlspecialchars($selectedTenant['health_label'] ?? 'Unknown', ENT_QUOTES, 'UTF-8') ?></span></div>
                                 </div>
-                                <span class="status-chip <?= htmlspecialchars($selectedTenant['health_class'] ?? 'status-pending', ENT_QUOTES, 'UTF-8') ?>">
-                                    <?= htmlspecialchars($selectedTenant['health_label'] ?? 'Unknown', ENT_QUOTES, 'UTF-8') ?>
-                                </span>
                             </div>
-                            <div class="dashboard-list-item">
-                                <div>
-                                    <strong>Tenant Created</strong>
-                                    <p><?= htmlspecialchars($selectedTenant['created_at'] ?: 'Not set', ENT_QUOTES, 'UTF-8') ?></p>
+                            <div class="list-group-item">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <div class="font-weight-medium">Tenant Created</div>
+                                        <div class="text-muted small"><?= htmlspecialchars($selectedTenant['created_at'] ?: 'Not set', ENT_QUOTES, 'UTF-8') ?></div>
+                                    </div>
+                                    <div class="col-auto"><span class="badge bg-secondary-lt">Live</span></div>
                                 </div>
-                                <span class="metric-pill">Live</span>
                             </div>
-                            <div class="dashboard-list-item">
-                                <div>
-                                    <strong>Access Mode</strong>
-                                    <p><?= ($selectedTenant['access_mode'] ?? 'full_access') === 'read_only' ? 'Read-only workspace with editing disabled.' : 'Full workspace access is active.' ?></p>
+                            <div class="list-group-item">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <div class="font-weight-medium">Access Mode</div>
+                                        <div class="text-muted small"><?= ($selectedTenant['access_mode'] ?? 'full_access') === 'read_only' ? 'Read-only workspace with editing disabled.' : 'Full workspace access is active.' ?></div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <span class="badge <?= ($selectedTenant['access_mode'] ?? 'full_access') === 'read_only' ? 'bg-orange-lt text-orange' : 'bg-green-lt text-green' ?>">
+                                            <?= ($selectedTenant['access_mode'] ?? 'full_access') === 'read_only' ? 'Read-Only' : 'Full Access' ?>
+                                        </span>
+                                    </div>
                                 </div>
-                                <span class="metric-pill"><?= htmlspecialchars(($selectedTenant['access_mode'] ?? 'full_access') === 'read_only' ? 'Read-Only' : 'Full Access', ENT_QUOTES, 'UTF-8') ?></span>
                             </div>
                         </div>
 
-                        <div class="content-grid superadmin-grid">
-                            <article class="content-card">
-                                <h3>Tenant Lifecycle</h3>
-                                <p>View how this live tenant moved from registration through billing and conversion.</p>
-
+                        <div class="card-body">
+                        <div class="row row-deck row-cards">
+                            <div class="col-12">
+                              <div class="card">
+                                <div class="card-header"><h3 class="card-title">Tenant Lifecycle</h3></div>
+                                <div class="card-body pb-0">
+                                    <p class="text-muted small">View how this live tenant moved from registration through billing and conversion.</p>
+                                </div>
                                 <?php if ($selectedTenantRegistration): ?>
-                                    <div class="dashboard-list compact-list">
-                                        <div class="dashboard-list-item">
-                                            <div>
-                                                <strong>Source Registration</strong>
-                                                <p>
-                                                    #<?= (int) $selectedTenantRegistration['registration_id'] ?> |
-                                                    <?= htmlspecialchars($selectedTenantRegistration['owner_full_name'], ENT_QUOTES, 'UTF-8') ?>
-                                                </p>
+                                    <?php $lifecycleBadge = $regStatusBadge[$selectedTenantRegistration['registration_status']] ?? 'bg-secondary-lt'; ?>
+                                    <div class="list-group list-group-flush">
+                                        <div class="list-group-item">
+                                            <div class="row align-items-center">
+                                                <div class="col">
+                                                    <div class="font-weight-medium">Source Registration</div>
+                                                    <div class="text-muted small">#<?= (int) $selectedTenantRegistration['registration_id'] ?> &middot; <?= htmlspecialchars($selectedTenantRegistration['owner_full_name'], ENT_QUOTES, 'UTF-8') ?></div>
+                                                </div>
+                                                <div class="col-auto"><span class="badge <?= $lifecycleBadge ?>"><?= htmlspecialchars(ucfirst($selectedTenantRegistration['registration_status']), ENT_QUOTES, 'UTF-8') ?></span></div>
                                             </div>
-                                            <span class="status-chip status-<?= htmlspecialchars($selectedTenantRegistration['registration_status'], ENT_QUOTES, 'UTF-8') ?>">
-                                                <?= htmlspecialchars(ucfirst($selectedTenantRegistration['registration_status']), ENT_QUOTES, 'UTF-8') ?>
-                                            </span>
                                         </div>
-                                        <div class="dashboard-list-item">
-                                            <div>
-                                                <strong>Plan and Billing Cycle</strong>
-                                                <p>
-                                                    <?= htmlspecialchars($selectedTenantRegistration['plan_name'], ENT_QUOTES, 'UTF-8') ?> |
-                                                    <?= htmlspecialchars(ucfirst($selectedTenantRegistration['billing_cycle']), ENT_QUOTES, 'UTF-8') ?>
-                                                </p>
+                                        <div class="list-group-item">
+                                            <div class="row align-items-center">
+                                                <div class="col">
+                                                    <div class="font-weight-medium">Plan and Billing Cycle</div>
+                                                    <div class="text-muted small"><?= htmlspecialchars($selectedTenantRegistration['plan_name'], ENT_QUOTES, 'UTF-8') ?> &middot; <?= htmlspecialchars(ucfirst($selectedTenantRegistration['billing_cycle']), ENT_QUOTES, 'UTF-8') ?></div>
+                                                </div>
+                                                <div class="col-auto"><span class="badge bg-secondary-lt">Registration</span></div>
                                             </div>
-                                            <span class="metric-pill">Registration</span>
                                         </div>
-                                        <div class="dashboard-list-item">
-                                            <div>
-                                                <strong>Registration Timeline</strong>
-                                                <p>
-                                                    Submitted: <?= htmlspecialchars($selectedTenantRegistration['created_at'] ?: 'Not set', ENT_QUOTES, 'UTF-8') ?><br>
-                                                    Reviewed / Converted: <?= htmlspecialchars($selectedTenantRegistration['reviewed_at'] ?: 'Not set', ENT_QUOTES, 'UTF-8') ?>
-                                                </p>
+                                        <div class="list-group-item">
+                                            <div class="row align-items-center">
+                                                <div class="col">
+                                                    <div class="font-weight-medium">Registration Timeline</div>
+                                                    <div class="text-muted small">Submitted: <?= htmlspecialchars($selectedTenantRegistration['created_at'] ?: 'Not set', ENT_QUOTES, 'UTF-8') ?><br>Reviewed / Converted: <?= htmlspecialchars($selectedTenantRegistration['reviewed_at'] ?: 'Not set', ENT_QUOTES, 'UTF-8') ?></div>
+                                                </div>
+                                                <div class="col-auto"><span class="badge bg-secondary-lt">Timeline</span></div>
                                             </div>
-                                            <span class="metric-pill">Timeline</span>
                                         </div>
-                                        <div class="dashboard-list-item">
-                                            <div>
-                                                <strong>Current Subscription State</strong>
-                                                <p>
-                                                    <?= htmlspecialchars($selectedTenant['plan'] ?: 'Not set', ENT_QUOTES, 'UTF-8') ?> |
-                                                    <?= htmlspecialchars($selectedTenant['start_date'] ?: 'Not set', ENT_QUOTES, 'UTF-8') ?>
-                                                    to
-                                                    <?= htmlspecialchars($selectedTenant['end_date'] ?: 'Not set', ENT_QUOTES, 'UTF-8') ?>
-                                                </p>
+                                        <div class="list-group-item">
+                                            <div class="row align-items-center">
+                                                <div class="col">
+                                                    <div class="font-weight-medium">Current Subscription State</div>
+                                                    <div class="text-muted small"><?= htmlspecialchars($selectedTenant['plan'] ?: 'Not set', ENT_QUOTES, 'UTF-8') ?> &middot; <?= htmlspecialchars($selectedTenant['start_date'] ?: 'Not set', ENT_QUOTES, 'UTF-8') ?> to <?= htmlspecialchars($selectedTenant['end_date'] ?: 'Not set', ENT_QUOTES, 'UTF-8') ?></div>
+                                                </div>
+                                                <div class="col-auto"><span class="badge <?= $tenantSubBadge ?>"><?= htmlspecialchars(ucfirst($selectedTenant['subscription_status'] ?: 'none'), ENT_QUOTES, 'UTF-8') ?></span></div>
                                             </div>
-                                            <span class="status-chip">
-                                                <?= htmlspecialchars(ucfirst($selectedTenant['subscription_status'] ?: 'none'), ENT_QUOTES, 'UTF-8') ?>
-                                            </span>
                                         </div>
                                     </div>
-
-                                    <div class="approval-actions">
-                                        <a class="btn btn-secondary" href="dashboard.php?registration_id=<?= (int) $selectedTenantRegistration['registration_id'] ?>&tenant_id=<?= (int) $selectedTenant['tenant_id'] ?><?= $registrationSearch !== '' ? '&registration_search=' . urlencode($registrationSearch) : '' ?><?= $registrationStatusFilter !== '' ? '&registration_status=' . urlencode($registrationStatusFilter) : '' ?><?= $registrationBillingStatusFilter !== '' ? '&registration_billing_status=' . urlencode($registrationBillingStatusFilter) : '' ?><?= $tenantSearch !== '' ? '&tenant_search=' . urlencode($tenantSearch) : '' ?><?= $tenantStatusFilter !== '' ? '&tenant_status=' . urlencode($tenantStatusFilter) : '' ?><?= $subscriptionStatusFilter !== '' ? '&subscription_status=' . urlencode($subscriptionStatusFilter) : '' ?>#registrations">Open Registration Record</a>
+                                    <div class="card-body">
+                                        <a class="btn btn-secondary btn-sm" href="dashboard.php?registration_id=<?= (int) $selectedTenantRegistration['registration_id'] ?>&tenant_id=<?= (int) $selectedTenant['tenant_id'] ?><?= $registrationSearch !== '' ? '&registration_search=' . urlencode($registrationSearch) : '' ?><?= $registrationStatusFilter !== '' ? '&registration_status=' . urlencode($registrationStatusFilter) : '' ?><?= $registrationBillingStatusFilter !== '' ? '&registration_billing_status=' . urlencode($registrationBillingStatusFilter) : '' ?><?= $tenantSearch !== '' ? '&tenant_search=' . urlencode($tenantSearch) : '' ?><?= $tenantStatusFilter !== '' ? '&tenant_status=' . urlencode($tenantStatusFilter) : '' ?><?= $subscriptionStatusFilter !== '' ? '&subscription_status=' . urlencode($subscriptionStatusFilter) : '' ?>#registrations">Open Registration Record</a>
                                     </div>
 
-                                    <h3>Final Enabled Features</h3>
-                                    <p>These are the modules currently enabled for this live tenant after plan defaults, requested add-ons, and any later super admin adjustments.</p>
-
-                                    <div class="addon-list registration-addon-list">
+                                    <div class="card-header"><h3 class="card-title">Final Enabled Features</h3></div>
+                                    <div class="card-body pb-0">
+                                        <p class="text-muted small">These are the modules currently enabled for this live tenant after plan defaults, requested add-ons, and any later super admin adjustments.</p>
+                                    </div>
+                                    <div class="list-group list-group-flush">
                                         <?php if (!empty($selectedTenantEnabledFeatures)): ?>
                                             <?php foreach ($selectedTenantEnabledFeatures as $feature): ?>
-                                                <div class="addon-item">
-                                                    <div>
-                                                        <strong><?= htmlspecialchars(ucwords(str_replace('_', ' ', $feature['feature_name'])), ENT_QUOTES, 'UTF-8') ?></strong>
-                                                        <p><?= htmlspecialchars($feature['description'] ?: 'Enabled for this tenant.', ENT_QUOTES, 'UTF-8') ?></p>
+                                                <div class="list-group-item">
+                                                    <div class="row align-items-center">
+                                                        <div class="col">
+                                                            <div class="font-weight-medium"><?= htmlspecialchars(ucwords(str_replace('_', ' ', $feature['feature_name'])), ENT_QUOTES, 'UTF-8') ?></div>
+                                                            <div class="text-muted small"><?= htmlspecialchars($feature['description'] ?: 'Enabled for this tenant.', ENT_QUOTES, 'UTF-8') ?></div>
+                                                        </div>
+                                                        <div class="col-auto"><span class="badge bg-green-lt text-green">Enabled</span></div>
                                                     </div>
-                                                    <span class="addon-price">Enabled</span>
                                                 </div>
                                             <?php endforeach; ?>
                                         <?php else: ?>
-                                            <div class="table-placeholder">No enabled features are currently recorded for this tenant.</div>
+                                            <div class="list-group-item text-muted small">No enabled features are currently recorded for this tenant.</div>
                                         <?php endif; ?>
                                     </div>
 
                                     <?php if (!empty($selectedTenantBillingHistory)): ?>
-                                        <div class="dashboard-list compact-list">
+                                        <div class="card-header"><h3 class="card-title">Billing History</h3></div>
+                                        <div class="list-group list-group-flush">
                                             <?php foreach ($selectedTenantBillingHistory as $billingHistory): ?>
-                                                <div class="dashboard-list-item">
-                                                    <div>
-                                                        <strong>Billing Request #<?= (int) $billingHistory['billing_request_id'] ?></strong>
-                                                        <p>
-                                                            <?= htmlspecialchars($billingHistory['currency'], ENT_QUOTES, 'UTF-8') ?> <?= number_format((float) $billingHistory['total_amount'], 2) ?> |
-                                                            Due: <?= htmlspecialchars($billingHistory['due_date'] ?: 'Not set', ENT_QUOTES, 'UTF-8') ?> |
-                                                            Paid: <?= htmlspecialchars($billingHistory['paid_at'] ?: 'Not paid yet', ENT_QUOTES, 'UTF-8') ?><br>
-                                                            Ref: <?= htmlspecialchars($billingHistory['payment_reference'] ?: 'Not set', ENT_QUOTES, 'UTF-8') ?> |
-                                                            PayMongo: <?= htmlspecialchars(ucfirst($billingHistory['paymongo_status'] ?: 'none'), ENT_QUOTES, 'UTF-8') ?>
-                                                        </p>
+                                                <?php
+                                                $billHistBadge = match($billingHistory['billing_status']) {
+                                                    'paid' => 'bg-teal-lt text-teal',
+                                                    'sent' => 'bg-blue-lt text-blue',
+                                                    'draft' => 'bg-secondary-lt',
+                                                    'cancelled' => 'bg-red-lt text-red',
+                                                    default => 'bg-secondary-lt',
+                                                };
+                                                ?>
+                                                <div class="list-group-item">
+                                                    <div class="row align-items-center">
+                                                        <div class="col">
+                                                            <div class="font-weight-medium">Billing Request #<?= (int) $billingHistory['billing_request_id'] ?></div>
+                                                            <div class="text-muted small"><?= htmlspecialchars($billingHistory['currency'], ENT_QUOTES, 'UTF-8') ?> <?= number_format((float) $billingHistory['total_amount'], 2) ?> &middot; Due: <?= htmlspecialchars($billingHistory['due_date'] ?: 'Not set', ENT_QUOTES, 'UTF-8') ?> &middot; Paid: <?= htmlspecialchars($billingHistory['paid_at'] ?: 'Not paid yet', ENT_QUOTES, 'UTF-8') ?></div>
+                                                            <div class="text-muted small">Ref: <?= htmlspecialchars($billingHistory['payment_reference'] ?: 'Not set', ENT_QUOTES, 'UTF-8') ?> &middot; PayMongo: <?= htmlspecialchars(ucfirst($billingHistory['paymongo_status'] ?: 'none'), ENT_QUOTES, 'UTF-8') ?></div>
+                                                        </div>
+                                                        <div class="col-auto"><span class="badge <?= $billHistBadge ?>"><?= htmlspecialchars(ucfirst($billingHistory['billing_status']), ENT_QUOTES, 'UTF-8') ?></span></div>
                                                     </div>
-                                                    <span class="status-chip">
-                                                        <?= htmlspecialchars(ucfirst($billingHistory['billing_status']), ENT_QUOTES, 'UTF-8') ?>
-                                                    </span>
                                                 </div>
                                             <?php endforeach; ?>
                                         </div>
                                     <?php else: ?>
-                                        <div class="table-placeholder">
-                                            No billing requests were found for the linked registration.
+                                        <div class="card-body">
+                                            <div class="empty empty-sm">
+                                                <p class="empty-title">No billing history</p>
+                                                <p class="empty-subtitle text-muted">No billing requests were found for the linked registration.</p>
+                                            </div>
                                         </div>
                                     <?php endif; ?>
 
-                                    <div class="table-placeholder">
-                                        <strong>Conversion Notes</strong><br>
-                                        <?= nl2br(htmlspecialchars($selectedTenantRegistration['notes'] ?: 'No conversion notes recorded.', ENT_QUOTES, 'UTF-8')) ?>
+                                    <div class="card-body">
+                                        <div class="alert alert-info mb-0" role="alert">
+                                            <div class="d-flex">
+                                                <div><i class="ti ti-notes icon alert-icon"></i></div>
+                                                <div><strong>Conversion Notes</strong><br><?= nl2br(htmlspecialchars($selectedTenantRegistration['notes'] ?: 'No conversion notes recorded.', ENT_QUOTES, 'UTF-8')) ?></div>
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    <h3>Communication Activity</h3>
-                                    <p>Recent communication logs linked to this tenant lifecycle record.</p>
-
+                                    <div class="card-header"><h3 class="card-title">Communication Activity</h3></div>
+                                    <div class="card-body pb-0">
+                                        <p class="text-muted small">Recent communication logs linked to this tenant lifecycle record.</p>
+                                    </div>
                                     <?php if (!empty($selectedTenantEmailLogs)): ?>
-                                        <div class="dashboard-list compact-list">
+                                        <div class="list-group list-group-flush">
                                             <?php foreach ($selectedTenantEmailLogs as $emailLog): ?>
-                                                <div class="dashboard-list-item">
-                                                    <div>
-                                                        <strong><?= htmlspecialchars($emailLog['subject'], ENT_QUOTES, 'UTF-8') ?></strong>
-                                                        <p>
-                                                            <?= htmlspecialchars($emailLog['recipient_email'], ENT_QUOTES, 'UTF-8') ?>
-                                                            | Type: <?= htmlspecialchars($emailLog['email_type'], ENT_QUOTES, 'UTF-8') ?>
-                                                        </p>
-                                                        <p>
-                                                            Created: <?= htmlspecialchars($emailLog['created_at'] ?: 'Not set', ENT_QUOTES, 'UTF-8') ?>
-                                                            | Sent: <?= htmlspecialchars($emailLog['sent_at'] ?: 'Pending', ENT_QUOTES, 'UTF-8') ?>
-                                                        </p>
+                                                <?php $tenantEmailBadge = ($emailLog['send_status'] === 'sent') ? 'bg-green-lt text-green' : (($emailLog['send_status'] === 'failed') ? 'bg-red-lt text-red' : 'bg-orange-lt text-orange'); ?>
+                                                <div class="list-group-item">
+                                                    <div class="row align-items-center">
+                                                        <div class="col">
+                                                            <div class="font-weight-medium"><?= htmlspecialchars($emailLog['subject'], ENT_QUOTES, 'UTF-8') ?></div>
+                                                            <div class="text-muted small"><?= htmlspecialchars($emailLog['recipient_email'], ENT_QUOTES, 'UTF-8') ?> &middot; Type: <?= htmlspecialchars($emailLog['email_type'], ENT_QUOTES, 'UTF-8') ?></div>
+                                                            <div class="text-muted small">Created: <?= htmlspecialchars($emailLog['created_at'] ?: 'Not set', ENT_QUOTES, 'UTF-8') ?> &middot; Sent: <?= htmlspecialchars($emailLog['sent_at'] ?: 'Pending', ENT_QUOTES, 'UTF-8') ?></div>
+                                                        </div>
+                                                        <div class="col-auto"><span class="badge <?= $tenantEmailBadge ?>"><?= htmlspecialchars(ucfirst($emailLog['send_status']), ENT_QUOTES, 'UTF-8') ?></span></div>
                                                     </div>
-                                                    <span class="status-chip status-<?= htmlspecialchars($emailLog['send_status'], ENT_QUOTES, 'UTF-8') ?>">
-                                                        <?= htmlspecialchars(ucfirst($emailLog['send_status']), ENT_QUOTES, 'UTF-8') ?>
-                                                    </span>
                                                 </div>
                                             <?php endforeach; ?>
                                         </div>
                                     <?php else: ?>
-                                        <div class="table-placeholder">
-                                            No email log entries were found for this tenant lifecycle yet.
+                                        <div class="card-body">
+                                            <div class="empty empty-sm">
+                                                <p class="empty-title">No email logs</p>
+                                                <p class="empty-subtitle text-muted">No email log entries were found for this tenant lifecycle yet.</p>
+                                            </div>
                                         </div>
                                     <?php endif; ?>
                                 <?php else: ?>
-                                    <div class="table-placeholder">
-                                        This tenant is live, but the dashboard could not find a linked source registration automatically. Review the conversion notes and tenant details before making lifecycle changes.
+                                    <div class="card-body">
+                                        <div class="alert alert-warning mb-0" role="alert">
+                                            <div class="d-flex">
+                                                <div><i class="ti ti-alert-triangle icon alert-icon"></i></div>
+                                                <div>This tenant is live, but the dashboard could not find a linked source registration automatically. Review the conversion notes and tenant details before making lifecycle changes.</div>
+                                            </div>
+                                        </div>
                                     </div>
                                 <?php endif; ?>
-                            </article>
+                              </div>
+                            </div>
 
-                            <article class="content-card">
-                                <h3>Tenant Status</h3>
-                                <p>Control whether this tenant can access the platform. Tenant login already blocks inactive tenants.</p>
+                            <!-- Tenant Status control -->
+                            <div class="col-12">
+                              <div class="card">
+                                <div class="card-header"><h3 class="card-title">Tenant Status</h3></div>
+                                <div class="card-body pb-0">
+                                    <p class="text-muted small">Control whether this tenant can access the platform. Tenant login already blocks inactive tenants.</p>
+                                </div>
+                                <div class="card-body">
+                                    <form action="actions/update_tenant_status.php" method="POST">
+                                        <input type="hidden" name="tenant_id" value="<?= (int) $selectedTenant['tenant_id'] ?>">
+                                        <input type="hidden" name="tenant_search" value="<?= htmlspecialchars($tenantSearch, ENT_QUOTES, 'UTF-8') ?>">
+                                        <input type="hidden" name="tenant_status_filter" value="<?= htmlspecialchars($tenantStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
+                                        <input type="hidden" name="subscription_status_filter" value="<?= htmlspecialchars($subscriptionStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
+                                        <div class="mb-2">
+                                            <label class="form-label" for="tenant_status_control">Tenant Status</label>
+                                            <select class="form-control" id="tenant_status_control" name="status" required>
+                                                <option value="active"<?= ($selectedTenant['status'] === 'active') ? ' selected' : '' ?>>Active</option>
+                                                <option value="inactive"<?= ($selectedTenant['status'] === 'inactive') ? ' selected' : '' ?>>Inactive</option>
+                                            </select>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary btn-sm">Save Tenant Status</button>
+                                    </form>
+                                </div>
+                              </div>
+                            </div>
 
-                                <form action="actions/update_tenant_status.php" method="POST" class="feature-toggle-form">
-                                    <input type="hidden" name="tenant_id" value="<?= (int) $selectedTenant['tenant_id'] ?>">
-                                    <input type="hidden" name="tenant_search" value="<?= htmlspecialchars($tenantSearch, ENT_QUOTES, 'UTF-8') ?>">
-                                    <input type="hidden" name="tenant_status_filter" value="<?= htmlspecialchars($tenantStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-                                    <input type="hidden" name="subscription_status_filter" value="<?= htmlspecialchars($subscriptionStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-
-                                    <div class="form-group">
-                                        <label for="tenant_status_control">Tenant Status</label>
-                                        <select class="form-control" id="tenant_status_control" name="status" required>
-                                            <option value="active"<?= ($selectedTenant['status'] === 'active') ? ' selected' : '' ?>>Active</option>
-                                            <option value="inactive"<?= ($selectedTenant['status'] === 'inactive') ? ' selected' : '' ?>>Inactive</option>
-                                        </select>
-                                    </div>
-
-                                    <div class="feature-toggle-actions">
-                                        <button type="submit" class="btn btn-primary">Save Tenant Status</button>
-                                    </div>
-                                </form>
-                            </article>
-
-                            <article class="content-card">
-                                <h3>Subscription Status</h3>
-                                <p>Update the latest subscription state using the current schema-supported values.</p>
-
-                                <form action="actions/update_tenant_access_mode.php" method="POST" class="feature-toggle-form">
-                                    <input type="hidden" name="tenant_id" value="<?= (int) $selectedTenant['tenant_id'] ?>">
-                                    <input type="hidden" name="tenant_search" value="<?= htmlspecialchars($tenantSearch, ENT_QUOTES, 'UTF-8') ?>">
-                                    <input type="hidden" name="tenant_status_filter" value="<?= htmlspecialchars($tenantStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-                                    <input type="hidden" name="subscription_status_filter" value="<?= htmlspecialchars($subscriptionStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-
-                                    <div class="dashboard-list compact-list">
-                                        <div class="dashboard-list-item">
+                            <!-- Subscription Status control -->
+                            <div class="col-12">
+                              <div class="card">
+                                <div class="card-header"><h3 class="card-title">Subscription Status</h3></div>
+                                <div class="card-body pb-0">
+                                    <p class="text-muted small">Update the latest subscription state using the current schema-supported values.</p>
+                                </div>
+                                <div class="card-body">
+                                    <form action="actions/update_tenant_access_mode.php" method="POST" class="mb-3">
+                                        <input type="hidden" name="tenant_id" value="<?= (int) $selectedTenant['tenant_id'] ?>">
+                                        <input type="hidden" name="tenant_search" value="<?= htmlspecialchars($tenantSearch, ENT_QUOTES, 'UTF-8') ?>">
+                                        <input type="hidden" name="tenant_status_filter" value="<?= htmlspecialchars($tenantStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
+                                        <input type="hidden" name="subscription_status_filter" value="<?= htmlspecialchars($subscriptionStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
+                                        <div class="d-flex align-items-center justify-content-between mb-2">
                                             <div>
-                                                <strong>Read-Only Downgrade</strong>
-                                                <p>Switch this tenant to a read-only plan when they need access to records without operational editing.</p>
+                                                <div class="font-weight-medium">Read-Only Downgrade</div>
+                                                <div class="text-muted small">Switch this tenant to read-only when they need access to records without operational editing.</div>
                                             </div>
-                                            <span class="status-chip <?= ($selectedTenant['access_mode'] ?? 'full_access') === 'read_only' ? 'status-warning' : 'status-active' ?>">
+                                            <span class="badge <?= ($selectedTenant['access_mode'] ?? 'full_access') === 'read_only' ? 'bg-orange-lt text-orange' : 'bg-green-lt text-green' ?>">
                                                 <?= ($selectedTenant['access_mode'] ?? 'full_access') === 'read_only' ? 'Read-Only' : 'Full Access' ?>
                                             </span>
                                         </div>
-                                    </div>
-
-                                    <div class="approval-actions">
                                         <?php if (($selectedTenant['access_mode'] ?? 'full_access') === 'read_only'): ?>
-                                            <button type="submit" name="access_mode" value="full_access" class="btn btn-secondary">Restore Full Access</button>
+                                            <button type="submit" name="access_mode" value="full_access" class="btn btn-secondary btn-sm">Restore Full Access</button>
                                         <?php else: ?>
-                                            <button type="submit" name="access_mode" value="read_only" class="btn btn-secondary">Downgrade To Read-Only</button>
+                                            <button type="submit" name="access_mode" value="read_only" class="btn btn-secondary btn-sm">Downgrade To Read-Only</button>
                                         <?php endif; ?>
-                                    </div>
-                                </form>
-
-                                <?php if (!empty($selectedTenant['subscription_status'])): ?>
-                                    <form action="actions/update_subscription_status.php" method="POST" class="feature-toggle-form">
-                                        <input type="hidden" name="tenant_id" value="<?= (int) $selectedTenant['tenant_id'] ?>">
-                                        <input type="hidden" name="tenant_search" value="<?= htmlspecialchars($tenantSearch, ENT_QUOTES, 'UTF-8') ?>">
-                                        <input type="hidden" name="tenant_status_filter" value="<?= htmlspecialchars($tenantStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-                                        <input type="hidden" name="subscription_status_filter" value="<?= htmlspecialchars($subscriptionStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-
-                                        <div class="form-group">
-                                            <label for="subscription_status_control">Subscription Status</label>
-                                            <select class="form-control" id="subscription_status_control" name="status" required>
-                                                <option value="active"<?= ($selectedTenant['subscription_status'] === 'active') ? ' selected' : '' ?>>Active</option>
-                                                <option value="expired"<?= ($selectedTenant['subscription_status'] === 'expired') ? ' selected' : '' ?>>Expired</option>
-                                            </select>
-                                        </div>
-
-                                        <div class="feature-toggle-actions">
-                                            <button type="submit" class="btn btn-primary">Save Subscription Status</button>
-                                        </div>
                                     </form>
 
-                                    <form action="actions/update_subscription_window.php" method="POST" class="feature-toggle-form">
-                                        <input type="hidden" name="tenant_id" value="<?= (int) $selectedTenant['tenant_id'] ?>">
-                                        <input type="hidden" name="action_type" value="save_dates">
-                                        <input type="hidden" name="tenant_search" value="<?= htmlspecialchars($tenantSearch, ENT_QUOTES, 'UTF-8') ?>">
-                                        <input type="hidden" name="tenant_status_filter" value="<?= htmlspecialchars($tenantStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-                                        <input type="hidden" name="subscription_status_filter" value="<?= htmlspecialchars($subscriptionStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-
-                                        <div class="form-grid">
-                                            <div class="form-group">
-                                                <label for="subscription_start_date">Start Date</label>
-                                                <input class="form-control" type="date" id="subscription_start_date" name="start_date" value="<?= htmlspecialchars($selectedTenant['start_date'] ?? '', ENT_QUOTES, 'UTF-8') ?>" required>
+                                    <?php if (!empty($selectedTenant['subscription_status'])): ?>
+                                        <form action="actions/update_subscription_status.php" method="POST" class="mb-3">
+                                            <input type="hidden" name="tenant_id" value="<?= (int) $selectedTenant['tenant_id'] ?>">
+                                            <input type="hidden" name="tenant_search" value="<?= htmlspecialchars($tenantSearch, ENT_QUOTES, 'UTF-8') ?>">
+                                            <input type="hidden" name="tenant_status_filter" value="<?= htmlspecialchars($tenantStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
+                                            <input type="hidden" name="subscription_status_filter" value="<?= htmlspecialchars($subscriptionStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
+                                            <div class="mb-2">
+                                                <label class="form-label" for="subscription_status_control">Subscription Status</label>
+                                                <select class="form-control" id="subscription_status_control" name="status" required>
+                                                    <option value="active"<?= ($selectedTenant['subscription_status'] === 'active') ? ' selected' : '' ?>>Active</option>
+                                                    <option value="expired"<?= ($selectedTenant['subscription_status'] === 'expired') ? ' selected' : '' ?>>Expired</option>
+                                                </select>
                                             </div>
+                                            <button type="submit" class="btn btn-primary btn-sm">Save Subscription Status</button>
+                                        </form>
 
-                                            <div class="form-group">
-                                                <label for="subscription_end_date">End Date</label>
-                                                <input class="form-control" type="date" id="subscription_end_date" name="end_date" value="<?= htmlspecialchars($selectedTenant['end_date'] ?? '', ENT_QUOTES, 'UTF-8') ?>" required>
-                                            </div>
-                                        </div>
-
-                                        <div class="feature-toggle-actions">
-                                            <button type="submit" class="btn btn-secondary">Save Subscription Window</button>
-                                        </div>
-                                    </form>
-
-                                    <form action="actions/update_subscription_window.php" method="POST" class="feature-toggle-form">
-                                        <input type="hidden" name="tenant_id" value="<?= (int) $selectedTenant['tenant_id'] ?>">
-                                        <input type="hidden" name="tenant_search" value="<?= htmlspecialchars($tenantSearch, ENT_QUOTES, 'UTF-8') ?>">
-                                        <input type="hidden" name="tenant_status_filter" value="<?= htmlspecialchars($tenantStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-                                        <input type="hidden" name="subscription_status_filter" value="<?= htmlspecialchars($subscriptionStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-
-                                        <div class="dashboard-list compact-list">
-                                            <div class="dashboard-list-item">
-                                                <div>
-                                                    <strong>Quick Renewal</strong>
-                                                    <p>Extend the latest subscription window from its current end date, or from today if already elapsed.</p>
+                                        <form action="actions/update_subscription_window.php" method="POST" class="mb-3">
+                                            <input type="hidden" name="tenant_id" value="<?= (int) $selectedTenant['tenant_id'] ?>">
+                                            <input type="hidden" name="action_type" value="save_dates">
+                                            <input type="hidden" name="tenant_search" value="<?= htmlspecialchars($tenantSearch, ENT_QUOTES, 'UTF-8') ?>">
+                                            <input type="hidden" name="tenant_status_filter" value="<?= htmlspecialchars($tenantStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
+                                            <input type="hidden" name="subscription_status_filter" value="<?= htmlspecialchars($subscriptionStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
+                                            <div class="row g-2 mb-2">
+                                                <div class="col-sm-6">
+                                                    <label class="form-label" for="subscription_start_date">Start Date</label>
+                                                    <input class="form-control" type="date" id="subscription_start_date" name="start_date" value="<?= htmlspecialchars($selectedTenant['start_date'] ?? '', ENT_QUOTES, 'UTF-8') ?>" required>
+                                                </div>
+                                                <div class="col-sm-6">
+                                                    <label class="form-label" for="subscription_end_date">End Date</label>
+                                                    <input class="form-control" type="date" id="subscription_end_date" name="end_date" value="<?= htmlspecialchars($selectedTenant['end_date'] ?? '', ENT_QUOTES, 'UTF-8') ?>" required>
                                                 </div>
                                             </div>
-                                        </div>
+                                            <button type="submit" class="btn btn-secondary btn-sm">Save Subscription Window</button>
+                                        </form>
 
-                                        <div class="approval-actions">
-                                            <button type="submit" name="action_type" value="extend_month" class="btn btn-secondary">Extend 1 Month</button>
-                                            <button type="submit" name="action_type" value="extend_year" class="btn btn-primary">Extend 1 Year</button>
+                                        <form action="actions/update_subscription_window.php" method="POST">
+                                            <input type="hidden" name="tenant_id" value="<?= (int) $selectedTenant['tenant_id'] ?>">
+                                            <input type="hidden" name="tenant_search" value="<?= htmlspecialchars($tenantSearch, ENT_QUOTES, 'UTF-8') ?>">
+                                            <input type="hidden" name="tenant_status_filter" value="<?= htmlspecialchars($tenantStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
+                                            <input type="hidden" name="subscription_status_filter" value="<?= htmlspecialchars($subscriptionStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
+                                            <div class="mb-2">
+                                                <div class="font-weight-medium">Quick Renewal</div>
+                                                <div class="text-muted small">Extend the latest subscription window from its current end date, or from today if already elapsed.</div>
+                                            </div>
+                                            <div class="d-flex gap-2">
+                                                <button type="submit" name="action_type" value="extend_month" class="btn btn-secondary btn-sm">Extend 1 Month</button>
+                                                <button type="submit" name="action_type" value="extend_year" class="btn btn-primary btn-sm">Extend 1 Year</button>
+                                            </div>
+                                        </form>
+                                    <?php else: ?>
+                                        <div class="alert alert-warning mb-0" role="alert">
+                                            <div class="d-flex">
+                                                <div><i class="ti ti-info-circle icon alert-icon"></i></div>
+                                                <div>This tenant does not have a subscription record yet.</div>
+                                            </div>
                                         </div>
-                                    </form>
-                                <?php else: ?>
-                                    <div class="table-placeholder">
-                                        This tenant does not have a subscription record yet.
-                                    </div>
-                                <?php endif; ?>
-                            </article>
+                                    <?php endif; ?>
+                                </div>
+                              </div>
+                            </div>
+
+                        </div>
                         </div>
 
-                        <h3>Feature Toggles</h3>
-                        <p>Plan-included and requested add-on features are auto-applied during tenant conversion. You can fine-tune them here afterward.</p>
-
-                        <form action="actions/save_tenant_features.php" method="POST" class="feature-toggle-form">
+                        <div class="card-header">
+                            <h3 class="card-title">Feature Toggles</h3>
+                        </div>
+                        <div class="card-body pb-0">
+                            <p class="text-muted small">Plan-included and requested add-on features are auto-applied during tenant conversion. You can fine-tune them here afterward.</p>
+                        </div>
+                        <div class="card-body">
+                        <form action="actions/save_tenant_features.php" method="POST">
                             <input type="hidden" name="tenant_id" value="<?= (int) $selectedTenant['tenant_id'] ?>">
                             <input type="hidden" name="tenant_search" value="<?= htmlspecialchars($tenantSearch, ENT_QUOTES, 'UTF-8') ?>">
                             <input type="hidden" name="tenant_status_filter" value="<?= htmlspecialchars($tenantStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
                             <input type="hidden" name="subscription_status_filter" value="<?= htmlspecialchars($subscriptionStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-
-                            <div class="feature-toggle-grid">
+                            <div class="row g-2 mb-3">
                                 <?php foreach ($features as $feature): ?>
-                                    <label class="feature-toggle-card">
-                                        <span class="feature-toggle-copy">
-                                            <strong><?= htmlspecialchars(ucfirst(str_replace('_', ' ', $feature['feature_name'])), ENT_QUOTES, 'UTF-8') ?></strong>
-                                            <span><?= htmlspecialchars($feature['description'] ?: 'No description provided.', ENT_QUOTES, 'UTF-8') ?></span>
-                                        </span>
-                                        <span class="switch">
+                                    <div class="col-sm-6">
+                                        <label class="form-check">
                                             <input
                                                 type="checkbox"
+                                                class="form-check-input"
                                                 name="features[]"
                                                 value="<?= (int) $feature['feature_id'] ?>"
                                                 <?= !empty($featureStates[(int) $feature['feature_id']]) ? 'checked' : '' ?>
                                             >
-                                            <span class="switch-slider"></span>
-                                        </span>
-                                    </label>
+                                            <span class="form-check-label">
+                                                <strong><?= htmlspecialchars(ucfirst(str_replace('_', ' ', $feature['feature_name'])), ENT_QUOTES, 'UTF-8') ?></strong><br>
+                                                <span class="text-muted small"><?= htmlspecialchars($feature['description'] ?: 'No description provided.', ENT_QUOTES, 'UTF-8') ?></span>
+                                            </span>
+                                        </label>
+                                    </div>
                                 <?php endforeach; ?>
                             </div>
-
-                            <div class="feature-toggle-actions">
-                                <button type="submit" class="btn btn-primary">Save Tenant Features</button>
-                            </div>
+                            <button type="submit" class="btn btn-primary btn-sm">Save Tenant Features</button>
                         </form>
+                        </div>
                     <?php else: ?>
-                        <p>Select a tenant from the left to manage feature access.</p>
+                        <div class="card-body">
+                            <p class="text-muted">Select a tenant from the left to manage feature access.</p>
+                        </div>
                     <?php endif; ?>
-                </article>
-            </section>
-        </main>
-    </div>
+                    </div>
+                </div>
+            </div>
 
-    <script src="../assets/js/theme.js"></script>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0/dist/js/tabler.min.js"></script>
+<script src="../assets/js/theme.js?v=2"></script>
 </body>
 </html>

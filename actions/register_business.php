@@ -7,11 +7,22 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+const REGISTRATION_NCR_REGION_CODE = '130000000';
+
 $businessName = trim($_POST['business_name'] ?? '');
 $ownerFullName = trim($_POST['owner_full_name'] ?? '');
 $email = trim($_POST['email'] ?? '');
-$phone = trim($_POST['phone'] ?? '');
-$address = trim($_POST['address'] ?? '');
+$phone = preg_replace('/\s+/', '', trim($_POST['phone'] ?? ''));
+$addressLine1 = trim($_POST['address_line1'] ?? '');
+$addressLine2 = trim($_POST['address_line2'] ?? '');
+$addressRegionCode = trim($_POST['address_region_code'] ?? '');
+$addressProvinceCode = trim($_POST['address_province_code'] ?? '');
+$addressCityCode = trim($_POST['address_city_code'] ?? '');
+$addressBrgyCode = trim($_POST['address_brgy_code'] ?? '');
+$addressRegionName = trim($_POST['address_region_name'] ?? '');
+$addressProvinceName = trim($_POST['address_province_name'] ?? '');
+$addressCityName = trim($_POST['address_city_name'] ?? '');
+$addressBrgyName = trim($_POST['address_brgy_name'] ?? '');
 $preferredUsername = trim($_POST['preferred_username'] ?? '');
 $selectedPlanId = (int) ($_POST['selected_plan_id'] ?? 0);
 $billingCycle = $_POST['billing_cycle'] ?? 'monthly';
@@ -29,23 +40,84 @@ $_SESSION['registration_old_input'] = [
     'owner_full_name' => $ownerFullName,
     'email' => $email,
     'phone' => $phone,
-    'address' => $address,
+    'address_line1' => $addressLine1,
+    'address_line2' => $addressLine2,
+    'address_region_code' => $addressRegionCode,
+    'address_province_code' => $addressProvinceCode,
+    'address_city_code' => $addressCityCode,
+    'address_brgy_code' => $addressBrgyCode,
+    'address_region_name' => $addressRegionName,
+    'address_province_name' => $addressProvinceName,
+    'address_city_name' => $addressCityName,
+    'address_brgy_name' => $addressBrgyName,
     'preferred_username' => $preferredUsername,
     'selected_plan_id' => $selectedPlanId,
     'billing_cycle' => $billingCycle,
     'requested_features' => $requestedFeatureIds,
 ];
 
+$fieldErrors = [];
+
 if ($businessName === '' || $ownerFullName === '' || $email === '' || $selectedPlanId <= 0) {
-    $_SESSION['error_message'] = 'Please complete the required registration fields.';
-    header('Location: ../register.php?plan_id=' . $selectedPlanId);
-    exit;
+    $fieldErrors['general'] = 'Please complete the required registration fields.';
 }
 
-if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    $_SESSION['error_message'] = 'Please enter a valid email address.';
-    header('Location: ../register.php?plan_id=' . $selectedPlanId);
-    exit;
+if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    $fieldErrors['email'] = 'Please enter a valid email address.';
+}
+
+if ($phone === '' || !preg_match('/^\+639[0-9]{9}$/', $phone)) {
+    $fieldErrors['phone'] = 'Phone must be a Philippine mobile: +639 followed by exactly 9 digits.';
+}
+
+if ($addressLine1 === '') {
+    $fieldErrors['address_line1'] = 'Address line 1 is required.';
+} elseif (strlen($addressLine1) > 200) {
+    $fieldErrors['address_line1'] = 'Address line 1 is too long (max 200 characters).';
+}
+
+if ($addressLine2 !== '' && strlen($addressLine2) > 200) {
+    $fieldErrors['address_line2'] = 'Address line 2 is too long (max 200 characters).';
+}
+
+if ($addressRegionCode === '' || !preg_match('/^[0-9]{9}$/', $addressRegionCode)) {
+    $fieldErrors['address_region_code'] = 'Select a valid region.';
+}
+
+if ($addressRegionCode !== '' && $addressRegionCode !== REGISTRATION_NCR_REGION_CODE) {
+    if ($addressProvinceCode === '' || !preg_match('/^[0-9]{9}$/', $addressProvinceCode)) {
+        $fieldErrors['address_city_code'] = 'Select a valid province.';
+    }
+}
+
+if ($addressCityCode === '' || !preg_match('/^[0-9]{9}$/', $addressCityCode)) {
+    $fieldErrors['address_city_code'] = 'Select a valid city or municipality.';
+}
+
+if ($addressBrgyCode === '' || !preg_match('/^[0-9]{9}$/', $addressBrgyCode)) {
+    $fieldErrors['address_brgy_code'] = 'Select a valid barangay.';
+}
+
+if ($addressCityName === '' || strlen($addressCityName) > 120) {
+    $fieldErrors['address_city_code'] = isset($fieldErrors['address_city_code'])
+        ? $fieldErrors['address_city_code']
+        : 'City or municipality name is missing or invalid.';
+}
+
+if ($addressBrgyName === '' || strlen($addressBrgyName) > 120) {
+    $fieldErrors['address_brgy_code'] = isset($fieldErrors['address_brgy_code'])
+        ? $fieldErrors['address_brgy_code']
+        : 'Barangay name is missing or invalid.';
+}
+
+if ($addressRegionName === '' || strlen($addressRegionName) > 120) {
+    $fieldErrors['address_region_code'] = isset($fieldErrors['address_region_code'])
+        ? $fieldErrors['address_region_code']
+        : 'Region name is missing or invalid.';
+}
+
+if ($addressRegionCode !== REGISTRATION_NCR_REGION_CODE && $addressProvinceName === '') {
+    $fieldErrors['address_city_code'] = $fieldErrors['address_city_code'] ?? 'Province name is required outside NCR.';
 }
 
 if (!in_array($billingCycle, ['monthly', 'yearly'], true)) {
@@ -53,6 +125,28 @@ if (!in_array($billingCycle, ['monthly', 'yearly'], true)) {
     header('Location: ../register.php?plan_id=' . $selectedPlanId);
     exit;
 }
+
+if (!empty($fieldErrors)) {
+    $_SESSION['registration_field_errors'] = $fieldErrors;
+    if (isset($fieldErrors['general'])) {
+        $_SESSION['error_message'] = $fieldErrors['general'];
+    }
+    header('Location: ../register.php?plan_id=' . $selectedPlanId);
+    exit;
+}
+
+$addressParts = [$addressLine1];
+if ($addressLine2 !== '') {
+    $addressParts[] = $addressLine2;
+}
+$addressParts[] = $addressBrgyName . ', ' . $addressCityName;
+$locMeta = $addressRegionName;
+if ($addressProvinceName !== '') {
+    $locMeta .= ' · ' . $addressProvinceName;
+}
+$addressParts[] = $locMeta;
+$addressParts[] = 'PSGC city ' . $addressCityCode . ' · brgy ' . $addressBrgyCode;
+$address = implode("\n", $addressParts);
 
 try {
     $pdo = Database::getInstance();
@@ -115,8 +209,8 @@ try {
         'business_name' => $businessName,
         'owner_full_name' => $ownerFullName,
         'email' => $email,
-        'phone' => $phone !== '' ? $phone : null,
-        'address' => $address !== '' ? $address : null,
+        'phone' => $phone,
+        'address' => $address,
         'preferred_username' => $preferredUsername !== '' ? $preferredUsername : null,
         'selected_plan_id' => $selectedPlanId,
         'billing_cycle' => $billingCycle,
@@ -171,7 +265,7 @@ try {
 
     $pdo->commit();
 
-    unset($_SESSION['registration_old_input'], $_SESSION['error_message']);
+    unset($_SESSION['registration_old_input'], $_SESSION['error_message'], $_SESSION['registration_field_errors']);
     $_SESSION['registration_success'] = 'Your registration was submitted successfully. The super admin can now review your plan and requested features.';
     header('Location: ../register.php');
     exit;
@@ -184,4 +278,3 @@ try {
     header('Location: ../register.php?plan_id=' . $selectedPlanId);
     exit;
 }
-?>

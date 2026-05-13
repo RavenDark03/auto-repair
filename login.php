@@ -1,6 +1,13 @@
 <?php
 require_once __DIR__ . '/includes/session.php';
 require_once __DIR__ . '/config/config.php';
+require_once __DIR__ . '/includes/super_admin_auth.php';
+require_once __DIR__ . '/includes/mechanix_ui.php';
+
+if (isSuperAdminLoggedIn()) {
+    header('Location: ' . BASE_URL . '/superadmin/dashboard.php');
+    exit;
+}
 
 if (isset($_SESSION['user_id'])) {
     if (!empty($_SESSION['must_change_password'])) {
@@ -15,7 +22,7 @@ if (isset($_SESSION['user_id'])) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="light" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,27 +30,30 @@ if (isset($_SESSION['user_id'])) {
     <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body class="page-shell">
-    <div class="topbar">
+    <header class="topbar">
         <div class="topbar-inner">
             <div class="brand">
                 <div class="brand-mark">M</div>
                 <div class="brand-text">
                     <h1>MECHANIX</h1>
-                    <p>SaaS Auto Repair System</p>
+                    <p>Subscription-based auto repair SaaS</p>
                 </div>
             </div>
 
             <div class="nav-actions">
-                <button type="button" class="theme-toggle" data-theme-toggle>Dark Mode</button>
-                <a href="index.php" class="btn btn-secondary">Back to Landing</a>
+                <?= mechanix_theme_toggle_button() ?>
+                <?= mechanix_back_icon_link('index.php', 'Back to landing') ?>
             </div>
         </div>
-    </div>
+    </header>
 
-    <main class="auth-page">
+    <main class="auth-page auth-page--brand">
         <div class="auth-card">
+            <div class="auth-card-eyebrow">
+                <span class="eyebrow">Secure sign-in</span>
+            </div>
             <h2>Welcome back</h2>
-            <p>Sign in to access your tenant workspace.</p>
+            <p>Sign in with tenant staff credentials or your platform super admin account.</p>
 
             <?php if (isset($_SESSION['error_message'])): ?>
                 <div class="alert alert-error">

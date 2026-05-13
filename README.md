@@ -26,7 +26,7 @@ Do not use `auto_repair_saas_clean.sql` for active setup. It is older and no lon
 
 App URL:
 
-- `http://localhost/saas-auto-repair`
+- `http://localhost/auto-repair-saas`
 
 ## Setup
 
@@ -44,9 +44,9 @@ DB_PASS=
 
 5. Open:
 
-- landing page: `http://localhost/saas-auto-repair/`
-- tenant login: `http://localhost/saas-auto-repair/login.php`
-- super admin login: `http://localhost/saas-auto-repair/superadmin/login.php`
+- landing page: `http://localhost/auto-repair-saas/`
+- tenant login: `http://localhost/auto-repair-saas/login.php`
+- super admin login: `http://localhost/auto-repair-saas/superadmin/login.php`
 
 ## Seeded Accounts
 
@@ -61,7 +61,7 @@ If needed, reset passwords locally using `hash.php` or direct SQL.
 
 Helper page:
 
-- `http://localhost/saas-auto-repair/hash.php`
+- `http://localhost/auto-repair-saas/hash.php`
 
 ## Example Local Admin Reset
 

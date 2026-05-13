@@ -427,7 +427,7 @@ function vehicleContextUrl($vehicleId = 0, $customerId = 0, $search = '') {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="light" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">

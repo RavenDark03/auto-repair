@@ -10,6 +10,13 @@
         root.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
     }
 
+    function syncBootstrapTheme() {
+        const currentTheme = root.getAttribute('data-theme') || 'light';
+        root.setAttribute('data-bs-theme', currentTheme === 'dark' ? 'dark' : 'light');
+    }
+
+    syncBootstrapTheme();
+
     function applyThemeLabel() {
         const currentTheme = root.getAttribute('data-theme') || 'light';
         toggleButtons.forEach(function (button) {
@@ -30,6 +37,7 @@
             const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
             root.setAttribute('data-theme', nextTheme);
             localStorage.setItem('theme', nextTheme);
+            syncBootstrapTheme();
             applyThemeLabel();
         });
     });

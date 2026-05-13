@@ -7,7 +7,8 @@ function isSuperAdminLoggedIn() {
 
 function requireSuperAdmin() {
     if (!isSuperAdminLoggedIn()) {
-        header('Location: ../superadmin/login.php');
+        require_once __DIR__ . '/../config/config.php';
+        header('Location: ' . BASE_URL . '/login.php');
         exit;
     }
 }

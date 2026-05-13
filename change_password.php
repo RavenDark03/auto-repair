@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/includes/session.php';
 require_once __DIR__ . '/config/config.php';
+require_once __DIR__ . '/includes/mechanix_ui.php';
 
 if (!isset($_SESSION['user_id'], $_SESSION['tenant_id'], $_SESSION['role'])) {
     header('Location: ' . BASE_URL . '/login.php');
@@ -22,7 +23,7 @@ $successMessage = $_SESSION['change_password_success'] ?? null;
 unset($_SESSION['change_password_error'], $_SESSION['change_password_success']);
 ?>
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="light" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -30,24 +31,24 @@ unset($_SESSION['change_password_error'], $_SESSION['change_password_success']);
     <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body class="page-shell">
-    <div class="topbar">
+    <header class="topbar">
         <div class="topbar-inner">
             <div class="brand">
                 <div class="brand-mark">M</div>
                 <div class="brand-text">
                     <h1>MECHANIX</h1>
-                    <p>Secure your tenant admin account</p>
+                    <p>Subscription-based auto repair SaaS</p>
                 </div>
             </div>
 
             <div class="nav-actions">
-                <button type="button" class="theme-toggle" data-theme-toggle>Dark Mode</button>
+                <?= mechanix_theme_toggle_button() ?>
                 <a href="logout.php" class="btn btn-secondary">Log Out</a>
             </div>
         </div>
-    </div>
+    </header>
 
-    <main class="auth-page">
+    <main class="auth-page auth-page--brand">
         <div class="auth-card">
             <h2>Create your new password</h2>
             <p>This is the first login for your tenant admin account, so the temporary password needs to be replaced before you can continue.</p>

@@ -1,8 +1,10 @@
 <?php
-require_once __DIR__ . '/../includes/session.php';
-require_once __DIR__ . '/../includes/super_admin_auth.php';
-require_once __DIR__ . '/../includes/db.php';
-require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/includes/session.php';
+require_once __DIR__ . '/includes/super_admin_auth.php';
+require_once __DIR__ . '/includes/db.php';
+require_once __DIR__ . '/config/config.php';
+
+require_once __DIR__ . '/includes/mechanix_ui.php';
 
 requireSuperAdmin();
 
@@ -772,12 +774,12 @@ try {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="light" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Super Admin Dashboard - MECHANIX</title>
-    <link rel="stylesheet" href="../assets/css/styles.css">
+    <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body class="page-shell">
     <div class="dashboard">
@@ -808,7 +810,7 @@ try {
             </nav>
 
             <div class="sidebar-footer">
-                <a href="../logout.php" class="btn btn-secondary btn-full">Log Out</a>
+                <a href="logout.php" class="btn btn-secondary btn-full">Log Out</a>
             </div>
         </aside>
 
@@ -820,7 +822,7 @@ try {
                 </div>
 
                 <div class="nav-actions">
-                    <button type="button" class="theme-toggle" data-theme-toggle>Dark Mode</button>
+                    <?= mechanix_theme_toggle_button() ?>
                 </div>
             </div>
 
@@ -870,7 +872,7 @@ try {
                                 is now live and ready for first login testing.
                             </p>
                         </div>
-                        <a href="../login.php" class="btn btn-secondary">Open Tenant Login</a>
+                        <a href="login.php" class="btn btn-secondary">Open Tenant Login</a>
                     </div>
 
                     <div class="onboarding-grid">
@@ -1857,6 +1859,6 @@ try {
         </main>
     </div>
 
-    <script src="../assets/js/theme.js"></script>
+    <script src="assets/js/theme.js"></script>
 </body>
 </html>

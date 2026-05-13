@@ -361,6 +361,79 @@
     margin-top: 18px;
 }
 
+.field-error {
+    color: #b42318;
+    font-size: 0.875rem;
+    margin-top: 6px;
+    line-height: 1.35;
+}
+
+html[data-theme="dark"] .field-error {
+    color: #fca5a5;
+}
+
+.field-hint {
+    color: var(--text-soft);
+    font-size: 0.82rem;
+    margin-top: 6px;
+    line-height: 1.4;
+}
+
+.reg-muted {
+    color: var(--text-soft);
+    font-weight: 500;
+}
+
+.form-control.is-invalid {
+    border-color: #b42318;
+}
+
+.phone-input-row {
+    display: flex;
+    align-items: stretch;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    background: var(--input-bg);
+}
+
+.phone-prefix {
+    flex: 0 0 auto;
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    border-right: 1px solid var(--border);
+    color: var(--text-soft);
+    background: var(--bg-elevated);
+}
+
+.phone-input-row .form-control {
+    border: none;
+    border-radius: 0;
+    flex: 1;
+    min-width: 0;
+}
+
+.phone-input-row:focus-within {
+    border-color: var(--border-strong);
+    box-shadow: 0 0 0 4px rgba(127, 127, 127, 0.1);
+}
+
+.form-address-fieldset {
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 20px 18px 8px;
+    margin-bottom: 22px;
+    background: color-mix(in srgb, var(--bg-elevated) 55%, transparent);
+}
+
+.form-address-fieldset legend {
+    padding: 0 8px;
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
 .registration-layout {
     display: grid;
     grid-template-columns: 1.15fr 0.85fr;

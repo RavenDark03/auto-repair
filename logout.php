@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/includes/session.php';
 
-$redirect = isset($_SESSION['super_admin_id']) ? 'superadmin/login.php' : 'login.php';
+$redirect = 'login.php';
 
 unset($_SESSION['super_admin_id'], $_SESSION['super_admin_username']);
 $_SESSION = [];

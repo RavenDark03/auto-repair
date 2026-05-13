@@ -1,4 +1,6 @@
 ﻿<?php
+require_once __DIR__ . '/mechanix_ui.php';
+
 function redirect($path) {
     header("Location: " . $path);
     exit;
@@ -183,7 +185,8 @@ function getVisibleTenantAdminModuleLinks($tenantId, $role = null) {
 }
 
 function renderTenantAdminFooterScripts() {
-    return '<script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0/dist/js/tabler.min.js"></script>';
+    return '<script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0/dist/js/tabler.min.js"></script>'
+        . '<script src="../assets/js/theme.js"></script>';
 }
 
 function renderTenantAdminSidebar($businessName, array $visibleModuleLinks, $activeHref, $showAnalytics, $logoutHref = '../logout.php') {
@@ -266,6 +269,11 @@ function renderTenantAdminTopbar($title, $description, $contextHtml = '') {
                     <?php if ($contextHtml !== ''): ?>
                         <div class="mt-2"><?= $contextHtml ?></div>
                     <?php endif; ?>
+                </div>
+                <div class="col-auto ms-auto">
+                    <div class="nav-actions tenant-topbar-actions">
+                        <?= mechanix_theme_toggle_button() ?>
+                    </div>
                 </div>
             </div>
         </div>

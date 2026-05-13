@@ -1,0 +1,485 @@
+/**
+ * Super admin (Tabler) shell — visual alignment with MECHANIX landing / page-shell.
+ * Scoped with body.superadmin-app. Depends on tokens.css (via tabler-mechanix-bridge).
+ */
+
+.superadmin-app {
+    min-height: 100vh;
+}
+
+/* Canvas: same atmospheric wash as landing hero / page-shell */
+html[data-theme="light"] .superadmin-app .page {
+    background:
+        radial-gradient(ellipse 78% 42% at 50% -10%, color-mix(in srgb, var(--border) 50%, transparent), transparent),
+        var(--bg) !important;
+}
+
+html[data-theme="dark"] .superadmin-app .page {
+    background:
+        radial-gradient(ellipse 70% 35% at 80% 0%, color-mix(in srgb, var(--border-strong) 22%, transparent), transparent),
+        var(--bg) !important;
+}
+
+/* Sticky header like landing topbar */
+.superadmin-app .page-header {
+    background: color-mix(in srgb, var(--bg-soft) 88%, transparent) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border) !important;
+    box-shadow: none !important;
+}
+
+.superadmin-app .page-body {
+    background: transparent !important;
+}
+
+.superadmin-app .page-title {
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--text) !important;
+}
+
+.superadmin-app .page-pretitle {
+    margin-bottom: 0.35rem;
+}
+
+/* Landing-style eyebrow for section pretitle */
+.superadmin-app .sa-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    color: var(--text-soft);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: color-mix(in srgb, var(--bg-elevated) 90%, transparent);
+}
+
+.superadmin-app .page-header .text-muted {
+    color: var(--text-soft) !important;
+    max-width: 72ch;
+    line-height: 1.55;
+}
+
+/* Primary cards: solid surfaces (transparent cards read as “holes” in dark mode) */
+.superadmin-app .card {
+    border-radius: 22px !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: var(--shadow-soft) !important;
+    background: var(--bg-soft) !important;
+    overflow: hidden;
+}
+
+.superadmin-app .card-header {
+    background: transparent !important;
+    border-bottom: 1px solid var(--border) !important;
+}
+
+.superadmin-app .card-footer {
+    background: transparent !important;
+    border-top: 1px solid var(--border) !important;
+}
+
+.superadmin-app .card .card:not(.card-sm) {
+    background: var(--bg-elevated) !important;
+    border: 1px solid var(--border) !important;
+}
+
+.superadmin-app .card.card-sm {
+    border-radius: 16px !important;
+}
+
+.superadmin-app .list-group-item {
+    border-color: var(--border) !important;
+    background: transparent;
+}
+
+html[data-theme="dark"] .superadmin-app .list-group-item {
+    color: var(--text);
+}
+
+html[data-theme="dark"] .superadmin-app .text-muted {
+    color: var(--text-soft) !important;
+}
+
+/* Alerts: lean on token borders */
+.superadmin-app .alert {
+    border-radius: 16px !important;
+}
+
+/* Sidebar: dense dark rail aligned with MECHANIX brand chrome */
+.superadmin-app .navbar.navbar-vertical {
+    background: linear-gradient(180deg, #161616 0%, #0c0c0c 100%) !important;
+    border-right: 1px solid var(--border) !important;
+}
+
+.superadmin-app .navbar.navbar-vertical .nav-link {
+    border-radius: 12px;
+    margin-inline: 4px;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.superadmin-app .navbar.navbar-vertical .nav-link:hover {
+    background: color-mix(in srgb, #ffffff 8%, transparent);
+}
+
+.superadmin-app .navbar.navbar-vertical .nav-link.active,
+.superadmin-app .navbar.navbar-vertical .nav-link:focus {
+    background: color-mix(in srgb, #ffffff 12%, transparent) !important;
+}
+
+.superadmin-app .navbar-brand a {
+    color: #f5f5f5 !important;
+    letter-spacing: 0.06em;
+}
+
+.superadmin-app .sa-brand-mark {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: #f5f5f5;
+    color: #0a0a0a;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    font-size: 0.95rem;
+    letter-spacing: 0.06em;
+    flex-shrink: 0;
+    box-shadow: var(--shadow-soft);
+}
+
+/* Theme control in header */
+.superadmin-app .page-header .theme-toggle.theme-icon-btn {
+    border-color: color-mix(in srgb, var(--border) 70%, #fff) !important;
+}
+
+/* Tables / forms inside cards */
+.superadmin-app .table {
+    --tblr-table-border-color: var(--border);
+}
+
+.superadmin-app .form-control,
+.superadmin-app .form-select {
+    border-radius: 14px;
+    border-color: var(--border);
+    background-color: var(--input-bg) !important;
+    color: var(--text) !important;
+}
+
+html[data-theme="dark"] .superadmin-app .form-control,
+html[data-theme="dark"] .superadmin-app .form-select,
+html[data-theme="dark"] .superadmin-app textarea.form-control {
+    border-color: var(--border-strong) !important;
+}
+
+.superadmin-app .form-control::placeholder,
+.superadmin-app textarea.form-control::placeholder {
+    color: var(--text-soft);
+}
+
+.superadmin-app .form-label {
+    color: var(--text-soft);
+    font-weight: 600;
+}
+
+.superadmin-app .sa-plan-edit-card {
+    border-left: 3px solid var(--border-strong);
+}
+
+/* Tabler row-deck equalizes column heights — leaves a tall empty band beside short columns */
+.superadmin-app .row-deck {
+    align-items: flex-start !important;
+}
+
+.superadmin-app .row-deck > [class*="col"] > .card {
+    height: auto !important;
+    min-height: 0;
+}
+
+.superadmin-app .btn {
+    border-radius: 999px;
+    font-weight: 600;
+}
+
+.superadmin-app .btn-primary {
+    background: var(--button-bg) !important;
+    color: var(--button-text) !important;
+    border-color: transparent !important;
+}
+
+.superadmin-app .btn-primary:hover {
+    background: var(--button-hover) !important;
+    color: var(--button-text) !important;
+}
+
+.superadmin-app .btn-outline-light {
+    border-radius: 999px;
+    border-color: color-mix(in srgb, #ffffff 35%, transparent);
+}
+
+.superadmin-app .btn-outline-light:hover {
+    background: color-mix(in srgb, #ffffff 10%, transparent);
+}
+
+.superadmin-app .theme-toggle.theme-icon-btn:focus-visible {
+    outline: 2px solid var(--text);
+    outline-offset: 3px;
+}
+
+.superadmin-app .container-xl {
+    max-width: min(100%, var(--max-width, 1200px));
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .superadmin-app .navbar.navbar-vertical .nav-link,
+    .superadmin-app .btn {
+        transition: none;
+    }
+}
+
+
+/* ================================================================
+   LANDING PAGE ALIGNMENT — Phase 2
+   Align metric cards, typography, and section structure with
+   the landing page's premium neutral monochrome aesthetic.
+================================================================ */
+
+/* ----------------------------------------------------------------
+   METRIC STAT CARDS — avatar neutralization
+   Override Tabler's rainbow palette (bg-orange, bg-blue, etc.)
+   with the landing page's unified mono icon ring.
+---------------------------------------------------------------- */
+.superadmin-app .card.card-sm .avatar {
+    background-color: color-mix(in srgb, var(--text) 9%, transparent) !important;
+    color: var(--text) !important;
+    border-radius: 14px !important;
+    box-shadow: 0 0 0 1px var(--border) !important;
+    width: 42px !important;
+    height: 42px !important;
+    font-size: 1.1rem !important;
+}
+
+html[data-theme="dark"] .superadmin-app .card.card-sm .avatar {
+    background-color: rgba(255, 255, 255, 0.09) !important;
+    color: rgba(255, 255, 255, 0.72) !important;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ----------------------------------------------------------------
+   METRIC STAT CARDS — value promoted to large number
+   Small uppercase label above, big stat number below.
+   Mirrors the stat grid in the landing page story section.
+---------------------------------------------------------------- */
+.superadmin-app .card.card-sm .card-body:has(.avatar) .col > .font-weight-medium {
+    font-size: 0.68rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+    color: var(--text-soft) !important;
+    line-height: 1.2 !important;
+    margin-bottom: 3px !important;
+}
+
+.superadmin-app .card.card-sm .card-body:has(.avatar) .col > .text-muted {
+    font-size: 1.85rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.04em !important;
+    color: var(--text) !important;
+    line-height: 1 !important;
+}
+
+/* ----------------------------------------------------------------
+   CARD TITLE — tight heading like landing h2 / h3
+---------------------------------------------------------------- */
+.superadmin-app .card-title,
+.superadmin-app .card-title a {
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.02em !important;
+    color: var(--text) !important;
+}
+
+.superadmin-app .card-title i {
+    opacity: 0.4;
+}
+
+/* ----------------------------------------------------------------
+   PAGE HEADER — match landing hero headline weight
+---------------------------------------------------------------- */
+.superadmin-app .page-header .page-title {
+    font-size: clamp(1.6rem, 3.5vw, 2.2rem) !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.04em !important;
+    color: var(--text) !important;
+}
+
+/* ----------------------------------------------------------------
+   LIST GROUP — hover state matching landing interactive cards
+---------------------------------------------------------------- */
+.superadmin-app .list-group-item {
+    transition: background 0.18s ease !important;
+}
+
+.superadmin-app .list-group-item.list-group-item-action {
+    cursor: pointer !important;
+}
+
+.superadmin-app .list-group-item.list-group-item-action:hover {
+    background: color-mix(in srgb, var(--text) 4%, transparent) !important;
+}
+
+html[data-theme="dark"] .superadmin-app .list-group-item.list-group-item-action:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* ----------------------------------------------------------------
+   BADGE — pill shape refined to match landing's inline badges
+---------------------------------------------------------------- */
+.superadmin-app .badge {
+    border-radius: 999px !important;
+    font-weight: 600 !important;
+    font-size: 0.7rem !important;
+    letter-spacing: 0.02em !important;
+    padding: 4px 10px !important;
+}
+
+.superadmin-app .list-group-item .badge {
+    font-size: 0.78rem !important;
+    padding: 5px 12px !important;
+}
+
+/* ----------------------------------------------------------------
+   BUTTONS — landing page pill style
+---------------------------------------------------------------- */
+.superadmin-app .btn-sm {
+    border-radius: 999px !important;
+    font-size: 0.8125rem !important;
+    font-weight: 600 !important;
+    padding: 6px 16px !important;
+}
+
+/* ----------------------------------------------------------------
+   FORMS — landing page input radius
+---------------------------------------------------------------- */
+.superadmin-app .form-control,
+.superadmin-app .form-select,
+.superadmin-app textarea.form-control {
+    border-radius: 14px !important;
+}
+
+.superadmin-app .input-group .form-control,
+.superadmin-app .input-group .form-select {
+    border-radius: 14px 0 0 14px !important;
+}
+
+.superadmin-app .input-group .btn {
+    border-radius: 0 14px 14px 0 !important;
+}
+
+/* ----------------------------------------------------------------
+   SIDEBAR SECTION HEADING — ultra-subtle uppercase rail
+---------------------------------------------------------------- */
+.superadmin-app .navbar-heading {
+    font-size: 0.62rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.14em !important;
+    color: rgba(255, 255, 255, 0.28) !important;
+    padding-left: 14px !important;
+    padding-top: 8px !important;
+}
+
+/* ----------------------------------------------------------------
+   DARK CARD VARIANT (sa-dark-card)
+   Matches landing page's stage-card-primary dark gradient surface.
+   Add class="card sa-dark-card" to any featured card.
+---------------------------------------------------------------- */
+.superadmin-app .card.sa-dark-card {
+    background: linear-gradient(160deg, #111111 0%, #1c1c1c 50%, #141414 100%) !important;
+    border-color: #2a2a2a !important;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+.superadmin-app .card.sa-dark-card .card-title,
+.superadmin-app .card.sa-dark-card .font-weight-medium {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.superadmin-app .card.sa-dark-card .text-muted {
+    color: rgba(255, 255, 255, 0.45) !important;
+}
+
+.superadmin-app .card.sa-dark-card .card-header,
+.superadmin-app .card.sa-dark-card .card-footer,
+.superadmin-app .card.sa-dark-card .list-group-item {
+    border-color: rgba(255, 255, 255, 0.09) !important;
+    background: transparent !important;
+    color: inherit;
+}
+
+/* ----------------------------------------------------------------
+   EMPTY STATES
+---------------------------------------------------------------- */
+.superadmin-app .empty-title {
+    font-weight: 700 !important;
+    letter-spacing: -0.02em !important;
+    color: var(--text) !important;
+}
+
+.superadmin-app .empty-subtitle {
+    color: var(--text-soft) !important;
+}
+
+/* ----------------------------------------------------------------
+   ALERTS — match landing card radius
+---------------------------------------------------------------- */
+.superadmin-app .alert {
+    border-radius: 18px !important;
+}
+
+/* ----------------------------------------------------------------
+   PLAN EDIT CARD — accent left rail
+---------------------------------------------------------------- */
+.superadmin-app .sa-plan-edit-card {
+    border-left: 3px solid var(--border-strong) !important;
+    border-radius: 18px 22px 22px 18px !important;
+}
+
+/* ----------------------------------------------------------------
+   ONBOARDING SUCCESS CARD — aligned with landing green accent
+---------------------------------------------------------------- */
+.superadmin-app .card.card-status-top {
+    border-top-width: 3px !important;
+    border-radius: 22px !important;
+}
+
+/* ----------------------------------------------------------------
+   FEATURE TOGGLE LABELS
+---------------------------------------------------------------- */
+.superadmin-app .form-check.form-switch .form-check-label {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--text);
+}
+
+/* ----------------------------------------------------------------
+   RESPONSIVE — scale down stat numbers on mobile
+---------------------------------------------------------------- */
+@media (max-width: 768px) {
+    .superadmin-app .card.card-sm .card-body:has(.avatar) .col > .text-muted {
+        font-size: 1.5rem !important;
+    }
+
+    .superadmin-app .page-header .page-title {
+        font-size: 1.5rem !important;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .superadmin-app .list-group-item {
+        transition: none !important;
+    }
+}

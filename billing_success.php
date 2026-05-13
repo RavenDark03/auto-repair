@@ -1,8 +1,9 @@
 <?php
 require_once __DIR__ . '/includes/session.php';
+require_once __DIR__ . '/includes/mechanix_ui.php';
 ?>
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="light" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,7 +11,22 @@ require_once __DIR__ . '/includes/session.php';
     <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body class="page-shell">
-    <main class="auth-page">
+    <header class="topbar">
+        <div class="topbar-inner">
+            <div class="brand">
+                <div class="brand-mark">M</div>
+                <div class="brand-text">
+                    <h1>MECHANIX</h1>
+                    <p>Subscription-based auto repair SaaS</p>
+                </div>
+            </div>
+            <div class="nav-actions">
+                <?= mechanix_theme_toggle_button() ?>
+                <?= mechanix_back_icon_link('index.php', 'Back to home') ?>
+            </div>
+        </div>
+    </header>
+    <main class="auth-page auth-page--brand">
         <div class="auth-card">
             <h2>Payment submitted</h2>
             <p>Your payment was submitted through PayMongo. Final confirmation will appear once the payment status is verified by the platform.</p>
