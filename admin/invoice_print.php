@@ -41,6 +41,13 @@ try {
             SELECT
                 i.invoice_id,
                 i.invoice_no,
+                i.services_subtotal,
+                i.parts_subtotal,
+                i.labor_fee,
+                i.inspection_fee,
+                i.subtotal,
+                i.tax_rate,
+                i.tax_amount,
                 i.total,
                 i.status,
                 i.due_date,
@@ -710,7 +717,31 @@ function printableSettlementTone($invoice) {
                                 <h3>Invoice Totals</h3>
                                 <table class="totals-table">
                                     <tr>
+                                        <td>Services</td>
+                                        <td><?= htmlspecialchars(printableCurrency($invoice['services_subtotal'] ?? 0), ENT_QUOTES, 'UTF-8') ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Parts</td>
+                                        <td><?= htmlspecialchars(printableCurrency($invoice['parts_subtotal'] ?? 0), ENT_QUOTES, 'UTF-8') ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Labor</td>
+                                        <td><?= htmlspecialchars(printableCurrency($invoice['labor_fee'] ?? 0), ENT_QUOTES, 'UTF-8') ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Inspection</td>
+                                        <td><?= htmlspecialchars(printableCurrency($invoice['inspection_fee'] ?? 0), ENT_QUOTES, 'UTF-8') ?></td>
+                                    </tr>
+                                    <tr>
                                         <td>Subtotal</td>
+                                        <td><?= htmlspecialchars(printableCurrency($invoice['subtotal'] ?? $invoice['total']), ENT_QUOTES, 'UTF-8') ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Tax (<?= htmlspecialchars(number_format((float) ($invoice['tax_rate'] ?? 0), 2), ENT_QUOTES, 'UTF-8') ?>%)</td>
+                                        <td><?= htmlspecialchars(printableCurrency($invoice['tax_amount'] ?? 0), ENT_QUOTES, 'UTF-8') ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Total</td>
                                         <td><?= htmlspecialchars(printableCurrency($invoice['total']), ENT_QUOTES, 'UTF-8') ?></td>
                                     </tr>
                                     <tr>

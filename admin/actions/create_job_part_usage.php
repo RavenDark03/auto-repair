@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../includes/session.php';
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../includes/db.php';
 require_once __DIR__ . '/../../includes/feature_access.php';
+require_once __DIR__ . '/../../includes/functions.php';
 
 requireAdmin();
 requireTenantFeature('jobs', '../jobs.php');
@@ -63,9 +64,9 @@ try {
         exit;
     }
 
-    if ($job['status'] !== 'ongoing') {
+    if (!isJobOpenStatus($job['status'])) {
         $pdo->rollBack();
-        $_SESSION['job_error'] = 'Parts can only be added while a job is ongoing.';
+        $_SESSION['job_error'] = 'Parts can only be added while a job is still active.';
         header('Location: ../jobs.php?job_id=' . $jobId);
         exit;
     }
@@ -112,17 +113,22 @@ try {
         exit;
     }
 
+    $quantityBefore = (int) $inventory['quantity'];
+    $quantityAfter = $quantityBefore - (int) $quantityUsed;
+
     $insertStmt = $pdo->prepare("
         INSERT INTO job_parts_used (
             tenant_id,
             job_id,
             inventory_id,
-            quantity_used
+            quantity_used,
+            created_by
         ) VALUES (
             :tenant_id,
             :job_id,
             :inventory_id,
-            :quantity_used
+            :quantity_used,
+            :created_by
         )
     ");
     $insertStmt->execute([
@@ -130,6 +136,48 @@ try {
         'job_id' => $jobId,
         'inventory_id' => $inventoryId,
         'quantity_used' => (int) $quantityUsed,
+        'created_by' => (int) ($_SESSION['user_id'] ?? 0) ?: null,
+    ]);
+
+    $usageId = (int) $pdo->lastInsertId();
+
+    $movementStmt = $pdo->prepare("
+        INSERT INTO inventory_movements (
+            tenant_id,
+            inventory_id,
+            job_id,
+            user_id,
+            movement_type,
+            quantity_change,
+            quantity_before,
+            quantity_after,
+            reference_type,
+            reference_id,
+            notes
+        ) VALUES (
+            :tenant_id,
+            :inventory_id,
+            :job_id,
+            :user_id,
+            'deduct',
+            :quantity_change,
+            :quantity_before,
+            :quantity_after,
+            'job_part_usage',
+            :reference_id,
+            :notes
+        )
+    ");
+    $movementStmt->execute([
+        'tenant_id' => $tenantId,
+        'inventory_id' => $inventoryId,
+        'job_id' => $jobId,
+        'user_id' => (int) ($_SESSION['user_id'] ?? 0) ?: null,
+        'quantity_change' => -1 * (int) $quantityUsed,
+        'quantity_before' => $quantityBefore,
+        'quantity_after' => $quantityAfter,
+        'reference_id' => $usageId,
+        'notes' => 'Deducted from job #' . $jobId,
     ]);
 
     $updatedInventoryStmt = $pdo->prepare("

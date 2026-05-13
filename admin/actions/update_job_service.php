@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../includes/session.php';
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../includes/db.php';
 require_once __DIR__ . '/../../includes/feature_access.php';
+require_once __DIR__ . '/../../includes/functions.php';
 
 requireAdmin();
 requireTenantFeature('jobs', '../jobs.php');
@@ -69,9 +70,9 @@ try {
         exit;
     }
 
-    if ($job['status'] !== 'ongoing') {
+    if (!isJobOpenStatus($job['status'])) {
         $pdo->rollBack();
-        $_SESSION['job_error'] = 'Service lines can only be updated while a job is ongoing.';
+        $_SESSION['job_error'] = 'Service lines can only be updated while a job is still active.';
         header('Location: ../jobs.php?job_id=' . $jobId);
         exit;
     }

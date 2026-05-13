@@ -26,6 +26,7 @@ $selectedCustomerContext = null;
 $selectedVehicleContext = null;
 $customerOptions = [];
 $vehicleOptions = [];
+$mechanicOptions = [];
 $allowedStatuses = ['pending', 'approved', 'cancelled'];
 $selectedAppointmentHasInactiveLinks = false;
 $appointmentSummary = [
@@ -65,6 +66,17 @@ try {
     ");
     $customerOptionsStmt->execute(['tenant_id' => $tenantId]);
     $customerOptions = $customerOptionsStmt->fetchAll();
+
+    $mechanicOptionsStmt = $pdo->prepare("
+        SELECT user_id, full_name, status
+        FROM users
+        WHERE tenant_id = :tenant_id
+          AND role = 'mechanic'
+          AND status = 'active'
+        ORDER BY full_name ASC, user_id ASC
+    ");
+    $mechanicOptionsStmt->execute(['tenant_id' => $tenantId]);
+    $mechanicOptions = $mechanicOptionsStmt->fetchAll();
 
     if ($selectedCustomerContextId > 0) {
         $selectedCustomerContextStmt = $pdo->prepare("
@@ -179,14 +191,18 @@ try {
             a.appointment_id,
             a.customer_id,
             a.vehicle_id,
+            a.mechanic_id,
             a.appointment_date,
+            a.concern,
+            a.cancellation_reason,
             a.status,
             c.name AS customer_name,
             c.contact AS customer_contact,
             v.make,
             v.model,
             v.year_model,
-            v.plate
+            v.plate,
+            u.full_name AS mechanic_name
         FROM appointments a
         INNER JOIN customers c
             ON c.customer_id = a.customer_id
@@ -194,6 +210,9 @@ try {
         INNER JOIN vehicles v
             ON v.vehicle_id = a.vehicle_id
            AND v.tenant_id = a.tenant_id
+        LEFT JOIN users u
+            ON u.user_id = a.mechanic_id
+           AND u.tenant_id = a.tenant_id
         WHERE a.tenant_id = :tenant_id
     ";
     $params = ['tenant_id' => $tenantId];
@@ -242,7 +261,11 @@ try {
                 a.appointment_id,
                 a.customer_id,
                 a.vehicle_id,
+                a.mechanic_id,
                 a.appointment_date,
+                a.concern,
+                a.cancellation_reason,
+                a.cancelled_at,
                 a.status,
                 c.name AS customer_name,
                 c.contact AS customer_contact,
@@ -251,7 +274,8 @@ try {
                 v.model,
                 v.year_model,
                 v.plate,
-                v.status AS vehicle_status
+                v.status AS vehicle_status,
+                u.full_name AS mechanic_name
             FROM appointments a
             INNER JOIN customers c
                 ON c.customer_id = a.customer_id
@@ -259,6 +283,9 @@ try {
             INNER JOIN vehicles v
                 ON v.vehicle_id = a.vehicle_id
                AND v.tenant_id = a.tenant_id
+            LEFT JOIN users u
+                ON u.user_id = a.mechanic_id
+               AND u.tenant_id = a.tenant_id
             WHERE a.appointment_id = :appointment_id
               AND a.tenant_id = :tenant_id
             LIMIT 1
@@ -347,6 +374,7 @@ function appointmentContextUrl($appointmentId = 0, $customerId = 0, $vehicleId =
 $selectedAppointmentStatus = $oldInput['status'] ?? ($selectedAppointment['status'] ?? 'pending');
 $selectedCustomerValue = (int) ($oldInput['customer_id'] ?? ($selectedAppointment['customer_id'] ?? 0));
 $selectedVehicleValue = (int) ($oldInput['vehicle_id'] ?? ($selectedAppointment['vehicle_id'] ?? 0));
+$selectedMechanicValue = (int) ($oldInput['mechanic_id'] ?? ($selectedAppointment['mechanic_id'] ?? 0));
 $approvedAppointmentLocked = $selectedAppointment && $selectedAppointment['status'] === 'approved';
 ?>
 <!DOCTYPE html>
@@ -355,9 +383,13 @@ $approvedAppointmentLocked = $selectedAppointment && $selectedAppointment['statu
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Appointments - MECHANIX</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0/dist/css/tabler.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+    <link rel="stylesheet" href="../assets/css/tabler-mechanix-bridge.css">
     <link rel="stylesheet" href="../assets/css/styles.css">
+    <link rel="stylesheet" href="../assets/css/superadmin-landing-theme.css">
 </head>
-<body class="page-shell">
+<body class="page-shell antialiased tenant-app">
     <div class="dashboard">
         <?= renderTenantAdminSidebar($businessName, $visibleModuleLinks, 'appointments.php', $showAnalytics) ?>
 
@@ -461,7 +493,11 @@ $approvedAppointmentLocked = $selectedAppointment && $selectedAppointment['statu
                                         <p>
                                             <?= htmlspecialchars(appointmentVehicleLabel($appointment), ENT_QUOTES, 'UTF-8') ?>
                                             | <?= htmlspecialchars(appointmentDate($appointment['appointment_date']), ENT_QUOTES, 'UTF-8') ?>
+                                            | <?= htmlspecialchars($appointment['mechanic_name'] ?? 'Unassigned', ENT_QUOTES, 'UTF-8') ?>
                                         </p>
+                                        <?php if (!empty($appointment['cancellation_reason'])): ?>
+                                            <p>Cancelled: <?= htmlspecialchars($appointment['cancellation_reason'], ENT_QUOTES, 'UTF-8') ?></p>
+                                        <?php endif; ?>
                                     </div>
                                     <span class="status-chip status-<?= htmlspecialchars($appointment['status'], ENT_QUOTES, 'UTF-8') ?>">
                                         <?= htmlspecialchars(ucfirst($appointment['status']), ENT_QUOTES, 'UTF-8') ?>
@@ -536,6 +572,23 @@ $approvedAppointmentLocked = $selectedAppointment && $selectedAppointment['statu
                                 <input class="form-control" type="date" id="appointment_date" name="appointment_date" value="<?= htmlspecialchars($oldInput['appointment_date'] ?? ($selectedAppointment['appointment_date'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" required>
                             </div>
 
+                            <div class="form-group">
+                                <label for="mechanic_id">Assigned Mechanic</label>
+                                <select class="form-control" id="mechanic_id" name="mechanic_id">
+                                    <option value="0">Unassigned</option>
+                                    <?php foreach ($mechanicOptions as $mechanic): ?>
+                                        <option value="<?= (int) $mechanic['user_id'] ?>"<?= $selectedMechanicValue === (int) $mechanic['user_id'] ? ' selected' : '' ?>>
+                                            <?= htmlspecialchars($mechanic['full_name'], ENT_QUOTES, 'UTF-8') ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="concern">Vehicle Issue / Concern</label>
+                                <textarea class="form-control form-textarea" id="concern" name="concern"><?= htmlspecialchars($oldInput['concern'] ?? ($selectedAppointment['concern'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
+                            </div>
+
                             <?php if ($selectedAppointment): ?>
                                 <div class="form-group">
                                     <label for="appointment_status">Status</label>
@@ -551,6 +604,11 @@ $approvedAppointmentLocked = $selectedAppointment && $selectedAppointment['statu
                                             <option value="cancelled"<?= $selectedAppointmentStatus === 'cancelled' ? ' selected' : '' ?>>Cancelled</option>
                                         </select>
                                     <?php endif; ?>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="cancellation_reason">Cancellation Reason</label>
+                                    <textarea class="form-control form-textarea" id="cancellation_reason" name="cancellation_reason"><?= htmlspecialchars($oldInput['cancellation_reason'] ?? ($selectedAppointment['cancellation_reason'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
                                 </div>
                             <?php endif; ?>
 
@@ -574,7 +632,14 @@ $approvedAppointmentLocked = $selectedAppointment && $selectedAppointment['statu
                                             | <?= htmlspecialchars($selectedAppointment['customer_contact'], ENT_QUOTES, 'UTF-8') ?>
                                         <?php endif; ?>
                                         | <?= htmlspecialchars(appointmentVehicleLabel($selectedAppointment), ENT_QUOTES, 'UTF-8') ?>
+                                        | <?= htmlspecialchars($selectedAppointment['mechanic_name'] ?? 'Unassigned', ENT_QUOTES, 'UTF-8') ?>
                                     </p>
+                                    <?php if (!empty($selectedAppointment['concern'])): ?>
+                                        <p>Concern: <?= htmlspecialchars($selectedAppointment['concern'], ENT_QUOTES, 'UTF-8') ?></p>
+                                    <?php endif; ?>
+                                    <?php if (!empty($selectedAppointment['cancellation_reason'])): ?>
+                                        <p>Cancellation reason: <?= htmlspecialchars($selectedAppointment['cancellation_reason'], ENT_QUOTES, 'UTF-8') ?></p>
+                                    <?php endif; ?>
                                 </div>
                                 <span class="status-chip status-<?= htmlspecialchars($selectedAppointment['status'], ENT_QUOTES, 'UTF-8') ?>">
                                     <?= htmlspecialchars(ucfirst($selectedAppointment['status']), ENT_QUOTES, 'UTF-8') ?>
@@ -589,6 +654,11 @@ $approvedAppointmentLocked = $selectedAppointment && $selectedAppointment['statu
                         <?php else: ?>
                             <form action="actions/update_appointment_status.php" method="POST" class="feature-toggle-form">
                                 <input type="hidden" name="appointment_id" value="<?= (int) $selectedAppointment['appointment_id'] ?>">
+
+                                <div class="form-group">
+                                    <label for="quick_cancellation_reason">Cancellation Reason</label>
+                                    <textarea class="form-control form-textarea" id="quick_cancellation_reason" name="cancellation_reason" placeholder="Required when cancelling"><?= htmlspecialchars($selectedAppointment['cancellation_reason'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
+                                </div>
 
                                 <div class="approval-actions">
                                     <?php if ($selectedAppointment['status'] !== 'pending'): ?>

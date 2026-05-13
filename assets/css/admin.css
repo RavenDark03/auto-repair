@@ -1,7 +1,7 @@
-﻿.dashboard {
+.dashboard {
     min-height: 100vh;
     display: grid;
-    grid-template-columns: 280px 1fr;
+    grid-template-columns: 260px minmax(0, 1fr);
 }
 
 .sidebar {
@@ -1207,5 +1207,309 @@ body.dashboard-nav-locked {
 
     .sidebar-backdrop {
         transition: none !important;
+    }
+}
+
+/* ================================================================
+   TENANT SIDEBAR â€” self-contained dark rail used on every tenant
+   admin page (dashboard, customers, jobs, etc). Does not rely on
+   Tabler navbar styles being loaded.
+================================================================ */
+aside.tenant-sidebar,
+.tenant-sidebar {
+    position: sticky !important;
+    top: 0;
+    height: 100vh !important;
+    width: 260px !important;
+    min-width: 260px;
+    max-width: 260px;
+    flex-shrink: 0;
+    background: linear-gradient(180deg, #161616 0%, #0c0c0c 100%);
+    border-right: 1px solid #222;
+    color: rgba(255, 255, 255, 0.78);
+    z-index: 1000;
+    padding: 0 !important;
+}
+
+.tenant-sidebar .container-fluid {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 16px 14px 14px;
+    gap: 14px;
+    width: auto;
+    max-width: none;
+}
+
+.tenant-sidebar > .container-fluid > .navbar-toggler {
+    display: none;
+}
+
+.tenant-sidebar__brand {
+    margin: 0 !important;
+    padding: 4px 4px 12px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex !important;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    width: 100%;
+    font-size: 0.98rem !important;
+    line-height: 1.2;
+}
+
+.tenant-sidebar__brand a {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 10px;
+    color: #f5f5f5 !important;
+    letter-spacing: 0.08em;
+    text-decoration: none !important;
+}
+
+.tenant-sidebar__brand-mark {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    background: #f5f5f5;
+    color: #0a0a0a;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    font-size: 0.9rem;
+    letter-spacing: 0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+    flex-shrink: 0;
+}
+
+.tenant-sidebar__brand-text { font-weight: 800; }
+
+.tenant-sidebar__business {
+    font-size: 0.66rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    padding-left: 42px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tenant-sidebar .navbar-collapse {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1 1 auto;
+    justify-content: flex-start !important;
+    align-items: stretch;
+    min-height: 0;
+    width: 100%;
+    gap: 0;
+}
+
+.tenant-sidebar__sections {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+    padding-right: 2px;
+}
+
+.tenant-sidebar__sections::-webkit-scrollbar { width: 6px; }
+.tenant-sidebar__sections::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+}
+
+.tenant-sidebar__section {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-top: 12px;
+}
+
+.tenant-sidebar__section:first-child { padding-top: 4px; }
+
+.tenant-sidebar__heading {
+    margin: 0 0 4px !important;
+    padding: 4px 10px !important;
+    font-size: 0.62rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.16em !important;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.36) !important;
+}
+
+.tenant-sidebar__nav {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.tenant-sidebar__nav .nav-item {
+    width: 100%;
+    list-style: none;
+}
+
+.tenant-sidebar .nav-link {
+    display: flex !important;
+    align-items: center;
+    gap: 12px;
+    border-radius: 10px;
+    padding: 9px 12px !important;
+    margin: 0 !important;
+    color: rgba(255, 255, 255, 0.72) !important;
+    font-size: 0.92rem;
+    font-weight: 500;
+    text-decoration: none !important;
+    transition: background 0.18s ease, color 0.18s ease;
+    position: relative;
+    line-height: 1.2;
+}
+
+.tenant-sidebar .nav-link .nav-link-icon {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 1.05rem;
+    flex-shrink: 0;
+}
+
+.tenant-sidebar .nav-link .nav-link-title { line-height: 1.2; }
+
+.tenant-sidebar .nav-link:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #ffffff !important;
+}
+
+.tenant-sidebar .nav-link:hover .nav-link-icon {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.tenant-sidebar .nav-link.active {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.tenant-sidebar .nav-link.active::before {
+    content: "";
+    position: absolute;
+    left: 4px;
+    top: 25%;
+    bottom: 25%;
+    width: 3px;
+    border-radius: 999px;
+    background: #f5f5f5;
+}
+
+.tenant-sidebar .nav-link.active .nav-link-icon { color: #ffffff; }
+
+.tenant-sidebar .nav-link:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.55);
+    outline-offset: 2px;
+}
+
+.tenant-sidebar__footer {
+    flex-shrink: 0;
+    padding-top: 12px;
+    margin-top: auto;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.tenant-sidebar__logout {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: transparent;
+    color: rgba(255, 255, 255, 0.85);
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.tenant-sidebar__logout i { font-size: 1.05rem; line-height: 1; }
+
+.tenant-sidebar__logout:hover,
+.tenant-sidebar__logout:focus-visible {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+    outline: none;
+}
+
+@media (max-width: 991.98px) {
+    .tenant-sidebar {
+        position: relative;
+        width: 100%;
+        height: auto;
+    }
+
+    .tenant-sidebar .container-fluid {
+        height: auto;
+        gap: 8px;
+        padding: 10px 14px 12px;
+    }
+
+    .tenant-sidebar .navbar-toggler {
+        display: inline-flex;
+        align-self: flex-end;
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        padding: 6px 10px;
+        cursor: pointer;
+    }
+
+    .tenant-sidebar .navbar-toggler-icon {
+        display: inline-block;
+        width: 18px;
+        height: 2px;
+        background: #ffffff;
+        box-shadow: 0 -6px 0 #ffffff, 0 6px 0 #ffffff;
+    }
+
+    .tenant-sidebar__brand {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 8px;
+    }
+
+    .tenant-sidebar__business {
+        padding-left: 0;
+        font-size: 0.62rem;
+    }
+
+    .tenant-sidebar .navbar-collapse:not(.show) {
+        display: none !important;
+    }
+
+    .tenant-sidebar__sections {
+        overflow: visible;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tenant-sidebar .nav-link,
+    .tenant-sidebar__logout {
+        transition: none;
     }
 }

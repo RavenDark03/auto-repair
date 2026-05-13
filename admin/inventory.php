@@ -58,6 +58,7 @@ $selectedSupplier = null;
 $purchases = [];
 $selectedPurchase = null;
 $purchasePayments = [];
+$selectedInventoryMovements = [];
 $inventoryOptions = [];
 $supplierOptions = [];
 $summary = [
@@ -172,6 +173,22 @@ try {
             'tenant_id' => $tenantId,
         ]);
         $selectedInventory = $selectedInventoryStmt->fetch();
+
+        if ($selectedInventory) {
+            $movementStmt = $pdo->prepare("
+                SELECT movement_type, quantity_change, quantity_before, quantity_after, reference_type, reference_id, notes, created_at
+                FROM inventory_movements
+                WHERE tenant_id = :tenant_id
+                  AND inventory_id = :inventory_id
+                ORDER BY created_at DESC, movement_id DESC
+                LIMIT 12
+            ");
+            $movementStmt->execute([
+                'tenant_id' => $tenantId,
+                'inventory_id' => $selectedInventoryId,
+            ]);
+            $selectedInventoryMovements = $movementStmt->fetchAll();
+        }
     }
 
     $supplierSql = "
@@ -345,9 +362,13 @@ function inventoryOutstandingAmount($purchase) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventory - MECHANIX</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0/dist/css/tabler.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+    <link rel="stylesheet" href="../assets/css/tabler-mechanix-bridge.css">
     <link rel="stylesheet" href="../assets/css/styles.css">
+    <link rel="stylesheet" href="../assets/css/superadmin-landing-theme.css">
 </head>
-<body class="page-shell">
+<body class="page-shell antialiased tenant-app">
     <div class="dashboard">
         <?= renderTenantAdminSidebar($businessName, $visibleModuleLinks, 'inventory.php', $showAnalytics) ?>
 
@@ -578,6 +599,37 @@ function inventoryOutstandingAmount($purchase) {
                                     <?= htmlspecialchars(ucfirst($selectedInventory['status']), ENT_QUOTES, 'UTF-8') ?>
                                 </span>
                             </div>
+                        </div>
+
+                        <div class="dashboard-list compact-list">
+                            <div class="dashboard-list-item">
+                                <div>
+                                    <strong>Movement History</strong>
+                                    <p>Recent restocks, deductions, returns, and adjustments for this inventory item.</p>
+                                </div>
+                            </div>
+                            <?php if (!empty($selectedInventoryMovements)): ?>
+                                <?php foreach ($selectedInventoryMovements as $movement): ?>
+                                    <div class="dashboard-list-item">
+                                        <div>
+                                            <strong><?= htmlspecialchars(ucfirst($movement['movement_type']), ENT_QUOTES, 'UTF-8') ?> <?= number_format((int) $movement['quantity_change']) ?></strong>
+                                            <p>
+                                                <?= htmlspecialchars(inventoryDate($movement['created_at']), ENT_QUOTES, 'UTF-8') ?>
+                                                | Before <?= number_format((int) $movement['quantity_before']) ?>
+                                                | After <?= number_format((int) $movement['quantity_after']) ?>
+                                            </p>
+                                            <?php if (!empty($movement['notes'])): ?>
+                                                <p><?= htmlspecialchars($movement['notes'], ENT_QUOTES, 'UTF-8') ?></p>
+                                            <?php endif; ?>
+                                        </div>
+                                        <span class="status-chip status-<?= htmlspecialchars($movement['movement_type'], ENT_QUOTES, 'UTF-8') ?>">
+                                            <?= htmlspecialchars($movement['reference_type'] ?: 'movement', ENT_QUOTES, 'UTF-8') ?>
+                                        </span>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <div class="table-placeholder">No inventory movements have been recorded for this item yet.</div>
+                            <?php endif; ?>
                         </div>
                     <?php endif; ?>
                 </article>

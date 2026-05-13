@@ -121,11 +121,12 @@ try {
     }
 
     $inventoryStmt = $pdo->prepare("
-        SELECT inventory_id, status
+        SELECT inventory_id, quantity, status
         FROM inventory
         WHERE inventory_id = :inventory_id
           AND tenant_id = :tenant_id
         LIMIT 1
+        FOR UPDATE
     ");
     $inventoryStmt->execute([
         'inventory_id' => $inventoryId,
@@ -223,6 +224,42 @@ try {
         'unit_cost' => number_format((float) $unitCost, 2, '.', ''),
         'inventory_id' => $inventoryId,
         'tenant_id' => $tenantId,
+    ]);
+
+    $movementStmt = $pdo->prepare("
+        INSERT INTO inventory_movements (
+            tenant_id,
+            inventory_id,
+            user_id,
+            movement_type,
+            quantity_change,
+            quantity_before,
+            quantity_after,
+            reference_type,
+            reference_id,
+            notes
+        ) VALUES (
+            :tenant_id,
+            :inventory_id,
+            :user_id,
+            'restock',
+            :quantity_change,
+            :quantity_before,
+            :quantity_after,
+            'inventory_purchase',
+            :reference_id,
+            :notes
+        )
+    ");
+    $movementStmt->execute([
+        'tenant_id' => $tenantId,
+        'inventory_id' => $inventoryId,
+        'user_id' => (int) ($_SESSION['user_id'] ?? 0) ?: null,
+        'quantity_change' => (int) $quantity,
+        'quantity_before' => (int) $inventory['quantity'],
+        'quantity_after' => (int) $inventory['quantity'] + (int) $quantity,
+        'reference_id' => $purchaseId,
+        'notes' => $referenceNo !== '' ? 'Restock purchase ' . $referenceNo : 'Restock purchase #' . $purchaseId,
     ]);
 
     if ((float) $amountPaid > 0) {

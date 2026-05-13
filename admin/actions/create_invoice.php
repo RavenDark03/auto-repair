@@ -17,6 +17,9 @@ $jobId = (int) ($_POST['job_id'] ?? 0);
 $invoiceNo = trim($_POST['invoice_no'] ?? '');
 $status = $_POST['status'] ?? 'draft';
 $dueDate = trim($_POST['due_date'] ?? '');
+$laborFee = trim($_POST['labor_fee'] ?? '0');
+$inspectionFee = trim($_POST['inspection_fee'] ?? '0');
+$taxRate = trim($_POST['tax_rate'] ?? '0');
 $notes = trim($_POST['notes'] ?? '');
 $allowedStatuses = ['draft', 'unpaid'];
 
@@ -25,6 +28,9 @@ $_SESSION['invoice_old_input'] = [
     'invoice_no' => $invoiceNo,
     'status' => $status,
     'due_date' => $dueDate,
+    'labor_fee' => $laborFee,
+    'inspection_fee' => $inspectionFee,
+    'tax_rate' => $taxRate,
     'notes' => $notes,
 ];
 
@@ -48,6 +54,20 @@ if ($dueDate !== '') {
         exit;
     }
 }
+
+if (
+    !is_numeric($laborFee) || (float) $laborFee < 0
+    || !is_numeric($inspectionFee) || (float) $inspectionFee < 0
+    || !is_numeric($taxRate) || (float) $taxRate < 0 || (float) $taxRate > 100
+) {
+    $_SESSION['invoice_error'] = 'Labor fee, inspection fee, and tax rate must be valid non-negative values.';
+    header('Location: ../invoices.php');
+    exit;
+}
+
+$laborFeeAmount = (float) $laborFee;
+$inspectionFeeAmount = (float) $inspectionFee;
+$taxRateAmount = (float) $taxRate;
 
 try {
     $pdo = Database::getInstance();
@@ -161,7 +181,8 @@ try {
     $partItems = $partItemsStmt->fetchAll();
 
     $invoiceItems = [];
-    $total = 0.0;
+    $servicesSubtotal = 0.0;
+    $partsSubtotal = 0.0;
 
     foreach ($serviceItems as $serviceItem) {
         $description = $serviceItem['service_name'];
@@ -178,7 +199,7 @@ try {
             'unit_price' => number_format((float) $serviceItem['unit_price'], 2, '.', ''),
             'line_total' => number_format($lineTotal, 2, '.', ''),
         ];
-        $total += $lineTotal;
+        $servicesSubtotal += $lineTotal;
     }
 
     foreach ($partItems as $partItem) {
@@ -196,12 +217,38 @@ try {
             'unit_price' => number_format((float) $partItem['unit_price'], 2, '.', ''),
             'line_total' => number_format($lineTotal, 2, '.', ''),
         ];
-        $total += $lineTotal;
+        $partsSubtotal += $lineTotal;
     }
+
+    if ($laborFeeAmount > 0) {
+        $invoiceItems[] = [
+            'item_type' => 'manual',
+            'source_id' => null,
+            'description' => 'Labor fee',
+            'quantity' => '1.00',
+            'unit_price' => number_format($laborFeeAmount, 2, '.', ''),
+            'line_total' => number_format($laborFeeAmount, 2, '.', ''),
+        ];
+    }
+
+    if ($inspectionFeeAmount > 0) {
+        $invoiceItems[] = [
+            'item_type' => 'manual',
+            'source_id' => null,
+            'description' => 'Inspection fee',
+            'quantity' => '1.00',
+            'unit_price' => number_format($inspectionFeeAmount, 2, '.', ''),
+            'line_total' => number_format($inspectionFeeAmount, 2, '.', ''),
+        ];
+    }
+
+    $subtotal = $servicesSubtotal + $partsSubtotal + $laborFeeAmount + $inspectionFeeAmount;
+    $taxAmount = $subtotal * ($taxRateAmount / 100);
+    $total = $subtotal + $taxAmount;
 
     if (empty($invoiceItems) || $total <= 0) {
         $pdo->rollBack();
-        $_SESSION['invoice_error'] = 'This job has no billable service lines or parts usage yet. Add job services and/or parts used before invoicing.';
+        $_SESSION['invoice_error'] = 'This invoice has no billable service lines, parts, labor, inspection fee, or tax total yet.';
         header('Location: ../invoices.php');
         exit;
     }
@@ -211,6 +258,13 @@ try {
             tenant_id,
             job_id,
             invoice_no,
+            services_subtotal,
+            parts_subtotal,
+            labor_fee,
+            inspection_fee,
+            subtotal,
+            tax_rate,
+            tax_amount,
             total,
             status,
             due_date,
@@ -220,6 +274,13 @@ try {
             :tenant_id,
             :job_id,
             :invoice_no,
+            :services_subtotal,
+            :parts_subtotal,
+            :labor_fee,
+            :inspection_fee,
+            :subtotal,
+            :tax_rate,
+            :tax_amount,
             :total,
             :status,
             :due_date,
@@ -231,6 +292,13 @@ try {
         'tenant_id' => $tenantId,
         'job_id' => $jobId,
         'invoice_no' => $invoiceNo,
+        'services_subtotal' => number_format($servicesSubtotal, 2, '.', ''),
+        'parts_subtotal' => number_format($partsSubtotal, 2, '.', ''),
+        'labor_fee' => number_format($laborFeeAmount, 2, '.', ''),
+        'inspection_fee' => number_format($inspectionFeeAmount, 2, '.', ''),
+        'subtotal' => number_format($subtotal, 2, '.', ''),
+        'tax_rate' => number_format($taxRateAmount, 2, '.', ''),
+        'tax_amount' => number_format($taxAmount, 2, '.', ''),
         'total' => number_format($total, 2, '.', ''),
         'status' => $status,
         'due_date' => $dueDate !== '' ? $dueDate : null,

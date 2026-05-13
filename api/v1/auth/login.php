@@ -82,7 +82,7 @@ try {
 
     $profile = null;
     if ($role === 'customer') {
-        $cid = api_resolve_customer_id($pdo, $tenantId, (string) $user['username']);
+        $cid = api_resolve_customer_id($pdo, $tenantId, (string) $user['username'], $userId);
         $display = (string) $user['full_name'];
         $email = '';
         $phone = '';

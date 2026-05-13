@@ -23,17 +23,20 @@ $subscriptionNotice = null;
 $metrics = [
     'customers' => 0,
     'vehicles' => 0,
+    'total_appointments' => 0,
     'pending_appointments' => 0,
     'ongoing_jobs' => 0,
     'completed_jobs' => 0,
     'monthly_revenue' => 0,
     'payments_received' => 0,
+    'pending_payments' => 0,
     'low_stock_items' => 0,
     'active_staff' => 0,
     'enabled_features' => 0,
 ];
 
 $recentAppointments = [];
+$recentActivities = [];
 $mechanicWorkload = [];
 $systemMessage = null;
 $featureMap = [];
@@ -44,8 +47,9 @@ try {
     $scalarQueries = [
         'customers' => "SELECT COUNT(*) FROM customers WHERE tenant_id = :tenant_id",
         'vehicles' => "SELECT COUNT(*) FROM vehicles WHERE tenant_id = :tenant_id",
+        'total_appointments' => "SELECT COUNT(*) FROM appointments WHERE tenant_id = :tenant_id",
         'pending_appointments' => "SELECT COUNT(*) FROM appointments WHERE tenant_id = :tenant_id AND status = 'pending'",
-        'ongoing_jobs' => "SELECT COUNT(*) FROM jobs WHERE tenant_id = :tenant_id AND status = 'ongoing'",
+        'ongoing_jobs' => "SELECT COUNT(*) FROM jobs WHERE tenant_id = :tenant_id AND status IN ('pending_inspection', 'in_repair', 'waiting_for_parts', 'ongoing')",
         'completed_jobs' => "SELECT COUNT(*) FROM jobs WHERE tenant_id = :tenant_id AND status = 'completed'",
         'monthly_revenue' => "
             SELECT COALESCE(SUM(total), 0)
@@ -59,7 +63,13 @@ try {
             WHERE tenant_id = :tenant_id
               AND DATE_FORMAT(payment_date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')
         ",
-        'low_stock_items' => "SELECT COUNT(*) FROM inventory WHERE tenant_id = :tenant_id AND quantity <= 5",
+        'pending_payments' => "
+            SELECT COALESCE(SUM(total - amount_paid), 0)
+            FROM invoices
+            WHERE tenant_id = :tenant_id
+              AND status IN ('unpaid', 'partial')
+        ",
+        'low_stock_items' => "SELECT COUNT(*) FROM inventory WHERE tenant_id = :tenant_id AND status = 'active' AND quantity <= reorder_level",
         'active_staff' => "
             SELECT COUNT(*)
             FROM users
@@ -136,7 +146,7 @@ try {
         SELECT
             u.full_name,
             COUNT(j.job_id) AS assigned_jobs,
-            SUM(CASE WHEN j.status = 'ongoing' THEN 1 ELSE 0 END) AS ongoing_jobs
+            SUM(CASE WHEN j.status IN ('pending_inspection', 'in_repair', 'waiting_for_parts', 'ongoing') THEN 1 ELSE 0 END) AS ongoing_jobs
         FROM users u
         LEFT JOIN jobs j
             ON j.mechanic_id = u.user_id
@@ -150,6 +160,40 @@ try {
     ");
     $mechanicWorkloadStmt->execute(['tenant_id' => $tenantId]);
     $mechanicWorkload = $mechanicWorkloadStmt->fetchAll();
+
+    $recentActivitiesStmt = $pdo->prepare("
+        SELECT activity_label, activity_detail, activity_at
+        FROM (
+            SELECT
+                CONCAT('Job ', REPLACE(status, '_', ' ')) AS activity_label,
+                CONCAT('Job #', job_id, ' status changed') AS activity_detail,
+                changed_at AS activity_at
+            FROM job_status_logs
+            WHERE tenant_id = :tenant_id
+
+            UNION ALL
+
+            SELECT
+                'Payment recorded' AS activity_label,
+                CONCAT('Invoice #', invoice_id, ' - PHP ', FORMAT(amount, 2)) AS activity_detail,
+                payment_date AS activity_at
+            FROM payments
+            WHERE tenant_id = :tenant_id
+
+            UNION ALL
+
+            SELECT
+                CONCAT('Inventory ', movement_type) AS activity_label,
+                CONCAT('Item #', inventory_id, ' change ', quantity_change) AS activity_detail,
+                created_at AS activity_at
+            FROM inventory_movements
+            WHERE tenant_id = :tenant_id
+        ) recent_activity
+        ORDER BY activity_at DESC
+        LIMIT 8
+    ");
+    $recentActivitiesStmt->execute(['tenant_id' => $tenantId]);
+    $recentActivities = $recentActivitiesStmt->fetchAll();
 } catch (PDOException $e) {
     $systemMessage = 'Dashboard data could not be loaded: ' . $e->getMessage();
 }
@@ -228,10 +272,11 @@ function dashboardDate($date) {
                         <article class="metric-card sa-metric-fixed"><span>Vehicles tracked</span><h3><?= number_format((int) $metrics['vehicles']) ?></h3></article>
                     <?php endif; ?>
                     <?php if ($showAppointments): ?>
+                        <article class="metric-card sa-metric-fixed"><span>Total appointments</span><h3><?= number_format((int) $metrics['total_appointments']) ?></h3></article>
                         <article class="metric-card sa-metric-fixed"><span>Pending appointments</span><h3><?= number_format((int) $metrics['pending_appointments']) ?></h3></article>
                     <?php endif; ?>
                     <?php if ($showJobs): ?>
-                        <article class="metric-card sa-metric-fixed"><span>Ongoing jobs</span><h3><?= number_format((int) $metrics['ongoing_jobs']) ?></h3></article>
+                        <article class="metric-card sa-metric-fixed"><span>Active jobs</span><h3><?= number_format((int) $metrics['ongoing_jobs']) ?></h3></article>
                         <article class="metric-card sa-metric-fixed"><span>Completed jobs</span><h3><?= number_format((int) $metrics['completed_jobs']) ?></h3></article>
                     <?php endif; ?>
                 </section>
@@ -245,6 +290,7 @@ function dashboardDate($date) {
                     <?php endif; ?>
                     <?php if ($showPayments): ?>
                         <article class="metric-card sa-metric-fixed"><span>Payments received</span><h3><?= htmlspecialchars(dashboardCurrency($metrics['payments_received']), ENT_QUOTES, 'UTF-8') ?></h3></article>
+                        <article class="metric-card sa-metric-fixed"><span>Pending payments</span><h3><?= htmlspecialchars(dashboardCurrency($metrics['pending_payments']), ENT_QUOTES, 'UTF-8') ?></h3></article>
                     <?php endif; ?>
                     <?php if ($showInventory): ?>
                         <article class="metric-card sa-metric-fixed"><span>Low stock items</span><h3><?= number_format((int) $metrics['low_stock_items']) ?></h3></article>
@@ -426,55 +472,35 @@ function dashboardDate($date) {
                     <div class="col-lg-6">
                         <div class="card">
                             <div class="card-header">
-                                <h3 class="card-title"><i class="ti ti-list-check me-2 text-muted"></i>Build Queue</h3>
+                                <h3 class="card-title"><i class="ti ti-list-check me-2 text-muted"></i>Recent Activities</h3>
                             </div>
                             <div class="card-body pb-0">
-                                <p class="text-muted small">Recommended next admin modules based on the current project state.</p>
+                                <p class="text-muted small">Latest job, payment, and inventory events in this tenant.</p>
                             </div>
-                            <div class="list-group list-group-flush">
-                                <div class="list-group-item">
-                                    <div class="row align-items-center">
-                                        <div class="col">
-                                            <div class="font-weight-medium">Staff Management</div>
-                                            <div class="text-muted small">Manage tenant users, roles, and active status with tenant-aware queries.</div>
+                            <?php if (!empty($recentActivities)): ?>
+                                <div class="list-group list-group-flush">
+                                    <?php foreach ($recentActivities as $activity): ?>
+                                    <div class="list-group-item">
+                                        <div class="row align-items-center">
+                                            <div class="col">
+                                                <div class="font-weight-medium"><?= htmlspecialchars(ucfirst($activity['activity_label']), ENT_QUOTES, 'UTF-8') ?></div>
+                                                <div class="text-muted small">
+                                                    <?= htmlspecialchars($activity['activity_detail'], ENT_QUOTES, 'UTF-8') ?>
+                                                    &middot; <?= htmlspecialchars(dashboardDate($activity['activity_at']), ENT_QUOTES, 'UTF-8') ?>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div class="col-auto"><span class="badge bg-secondary-lt">1</span></div>
+                                    </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php else: ?>
+                                <div class="card-body">
+                                    <div class="empty empty-sm">
+                                        <p class="empty-title">No activities yet</p>
+                                        <p class="empty-subtitle text-muted">Job, payment, and inventory events will appear here once the shop starts moving work.</p>
                                     </div>
                                 </div>
-                                <?php if ($showCustomerModule): ?>
-                                    <div class="list-group-item">
-                                        <div class="row align-items-center">
-                                            <div class="col">
-                                                <div class="font-weight-medium">Customers &amp; Vehicles</div>
-                                                <div class="text-muted small">Create the main CRUD flow for service records and tenant-scoped lookups.</div>
-                                            </div>
-                                            <div class="col-auto"><span class="badge bg-secondary-lt">2</span></div>
-                                        </div>
-                                    </div>
-                                <?php endif; ?>
-                                <?php if ($showAppointments || $showJobs): ?>
-                                    <div class="list-group-item">
-                                        <div class="row align-items-center">
-                                            <div class="col">
-                                                <div class="font-weight-medium">Appointments &amp; Jobs</div>
-                                                <div class="text-muted small">Link booking intake to workshop execution and mechanic assignments.</div>
-                                            </div>
-                                            <div class="col-auto"><span class="badge bg-secondary-lt">3</span></div>
-                                        </div>
-                                    </div>
-                                <?php endif; ?>
-                                <?php if ($showAnalytics): ?>
-                                    <div class="list-group-item">
-                                        <div class="row align-items-center">
-                                            <div class="col">
-                                                <div class="font-weight-medium">Analytics</div>
-                                                <div class="text-muted small">Add date-range filters and compute summaries across core modules.</div>
-                                            </div>
-                                            <div class="col-auto"><span class="badge bg-secondary-lt">4</span></div>
-                                        </div>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>

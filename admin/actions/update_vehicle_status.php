@@ -71,7 +71,7 @@ try {
                        AND a.tenant_id = j.tenant_id
                     WHERE j.tenant_id = :tenant_id
                       AND a.vehicle_id = :vehicle_id
-                      AND j.status = 'ongoing'
+                      AND j.status IN ('pending_inspection', 'in_repair', 'waiting_for_parts', 'ongoing')
                 ) AS ongoing_jobs,
                 (
                     SELECT COALESCE(SUM(i.total - i.amount_paid), 0)

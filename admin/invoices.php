@@ -367,6 +367,13 @@ try {
                 i.invoice_id,
                 i.job_id,
                 i.invoice_no,
+                i.services_subtotal,
+                i.parts_subtotal,
+                i.labor_fee,
+                i.inspection_fee,
+                i.subtotal,
+                i.tax_rate,
+                i.tax_amount,
                 i.total,
                 i.status,
                 i.due_date,
@@ -634,9 +641,13 @@ $selectedEditPaymentNotes = $editPaymentOldInput['notes'] ?? ($editingPayment['n
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Invoices - MECHANIX</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0/dist/css/tabler.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+    <link rel="stylesheet" href="../assets/css/tabler-mechanix-bridge.css">
     <link rel="stylesheet" href="../assets/css/styles.css">
+    <link rel="stylesheet" href="../assets/css/superadmin-landing-theme.css">
 </head>
-<body class="page-shell">
+<body class="page-shell antialiased tenant-app">
     <div class="dashboard">
         <?= renderTenantAdminSidebar($businessName, $visibleModuleLinks, 'invoices.php', $showAnalytics) ?>
 
@@ -836,13 +847,28 @@ $selectedEditPaymentNotes = $editPaymentOldInput['notes'] ?? ($editingPayment['n
                                 <input class="form-control" type="date" id="due_date" name="due_date" value="<?= htmlspecialchars($oldInvoiceInput['due_date'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
                             </div>
 
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="labor_fee">Labor Fee</label>
+                                    <input class="form-control" type="number" id="labor_fee" name="labor_fee" min="0" step="0.01" value="<?= htmlspecialchars($oldInvoiceInput['labor_fee'] ?? '0.00', ENT_QUOTES, 'UTF-8') ?>">
+                                </div>
+                                <div class="form-group">
+                                    <label for="inspection_fee">Inspection Fee</label>
+                                    <input class="form-control" type="number" id="inspection_fee" name="inspection_fee" min="0" step="0.01" value="<?= htmlspecialchars($oldInvoiceInput['inspection_fee'] ?? '0.00', ENT_QUOTES, 'UTF-8') ?>">
+                                </div>
+                                <div class="form-group">
+                                    <label for="tax_rate">Tax Rate (%)</label>
+                                    <input class="form-control" type="number" id="tax_rate" name="tax_rate" min="0" max="100" step="0.01" value="<?= htmlspecialchars($oldInvoiceInput['tax_rate'] ?? '0.00', ENT_QUOTES, 'UTF-8') ?>">
+                                </div>
+                            </div>
+
                             <div class="form-group">
                                 <label for="invoice_notes">Notes</label>
                                 <textarea class="form-control form-textarea" id="invoice_notes" name="notes"><?= htmlspecialchars($oldInvoiceInput['notes'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
                             </div>
 
                             <div class="table-placeholder">
-                                Invoice totals are now calculated automatically from job service lines and parts used for the selected completed job.
+                                Parts subtotal is calculated from inventory used on the job; service lines, labor, inspection, and tax are folded into the final invoice total.
                             </div>
 
                             <div class="approval-actions">
@@ -939,6 +965,23 @@ $selectedEditPaymentNotes = $editPaymentOldInput['notes'] ?? ($editingPayment['n
                         <?php endif; ?>
 
                         <div class="dashboard-list compact-list">
+                            <div class="dashboard-list-item">
+                                <div>
+                                    <strong>Invoice Breakdown</strong>
+                                    <p>
+                                        Services <?= htmlspecialchars(invoiceCurrency($selectedInvoice['services_subtotal'] ?? 0), ENT_QUOTES, 'UTF-8') ?>
+                                        | Parts <?= htmlspecialchars(invoiceCurrency($selectedInvoice['parts_subtotal'] ?? 0), ENT_QUOTES, 'UTF-8') ?>
+                                        | Labor <?= htmlspecialchars(invoiceCurrency($selectedInvoice['labor_fee'] ?? 0), ENT_QUOTES, 'UTF-8') ?>
+                                        | Inspection <?= htmlspecialchars(invoiceCurrency($selectedInvoice['inspection_fee'] ?? 0), ENT_QUOTES, 'UTF-8') ?>
+                                    </p>
+                                    <p>
+                                        Subtotal <?= htmlspecialchars(invoiceCurrency($selectedInvoice['subtotal'] ?? $selectedInvoice['total']), ENT_QUOTES, 'UTF-8') ?>
+                                        | Tax <?= htmlspecialchars(number_format((float) ($selectedInvoice['tax_rate'] ?? 0), 2), ENT_QUOTES, 'UTF-8') ?>%
+                                        (<?= htmlspecialchars(invoiceCurrency($selectedInvoice['tax_amount'] ?? 0), ENT_QUOTES, 'UTF-8') ?>)
+                                    </p>
+                                </div>
+                                <span class="metric-pill"><?= htmlspecialchars(invoiceCurrency($selectedInvoice['total']), ENT_QUOTES, 'UTF-8') ?></span>
+                            </div>
                             <div class="dashboard-list-item">
                                 <div>
                                     <strong>Invoice Items</strong>

@@ -21,15 +21,15 @@ if (!api_tenant_has_feature($pdo, $ctx['tenant_id'], 'customer_module')) {
     api_error('feature_disabled', 'Customer module is not enabled for this tenant.', 403);
 }
 
-$cid = api_resolve_customer_id($pdo, $ctx['tenant_id'], $ctx['username']);
+$cid = api_resolve_customer_id($pdo, $ctx['tenant_id'], $ctx['username'], $ctx['user_id']);
 if ($cid === null) {
     api_json(['ok' => true, 'items' => []]);
 }
 
 $st = $pdo->prepare('
-    SELECT vehicle_id, make, model, plate, year_model
+    SELECT vehicle_id, make, model, plate, year_model, color, mileage, notes, status
     FROM vehicles
-    WHERE tenant_id = :t AND customer_id = :c AND status = \'active\'
+    WHERE tenant_id = :t AND customer_id = :c
     ORDER BY vehicle_id DESC
 ');
 $st->execute(['t' => $ctx['tenant_id'], 'c' => $cid]);
@@ -50,6 +50,10 @@ foreach ($rows as $r) {
         'model' => (string) ($r['model'] ?? ''),
         'plate' => (string) ($r['plate'] ?? ''),
         'year' => $year,
+        'color' => (string) ($r['color'] ?? ''),
+        'mileage' => $r['mileage'] !== null ? (int) $r['mileage'] : null,
+        'notes' => (string) ($r['notes'] ?? ''),
+        'status' => (string) ($r['status'] ?? 'active'),
     ];
 }
 

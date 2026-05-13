@@ -12,6 +12,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
 
 $body = api_input_json();
 $id = (int) ($body['id'] ?? $body['appointmentId'] ?? 0);
+$reason = trim($body['reason'] ?? $body['cancellation_reason'] ?? '');
 
 $pdo = Database::getInstance();
 $ctx = api_require_bearer($pdo);
@@ -24,7 +25,7 @@ if (!api_tenant_has_feature($pdo, $ctx['tenant_id'], 'appointments')) {
     api_error('feature_disabled', 'Appointments are not enabled for this tenant.', 403);
 }
 
-$cid = api_resolve_customer_id($pdo, $ctx['tenant_id'], $ctx['username']);
+$cid = api_resolve_customer_id($pdo, $ctx['tenant_id'], $ctx['username'], $ctx['user_id']);
 if ($cid === null || $id <= 0) {
     api_error('validation_error', 'Invalid request.', 422);
 }
@@ -44,9 +45,10 @@ if (($row['status'] ?? '') !== 'pending') {
 }
 
 $upd = $pdo->prepare('
-    UPDATE appointments SET status = \'cancelled\'
+    UPDATE appointments
+    SET status = \'cancelled\', cancellation_reason = :reason, cancelled_at = NOW()
     WHERE appointment_id = :id AND tenant_id = :t AND customer_id = :c
 ');
-$upd->execute(['id' => $id, 't' => $ctx['tenant_id'], 'c' => $cid]);
+$upd->execute(['id' => $id, 't' => $ctx['tenant_id'], 'c' => $cid, 'reason' => $reason]);
 
-api_json(['ok' => true]);
+api_json(['ok' => true, 'message' => 'Appointment cancelled successfully.']);

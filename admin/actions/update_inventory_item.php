@@ -57,6 +57,28 @@ if (!is_numeric($unitCost) || (float) $unitCost < 0) {
 
 try {
     $pdo = Database::getInstance();
+    $pdo->beginTransaction();
+
+    $existingStmt = $pdo->prepare("
+        SELECT inventory_id, quantity
+        FROM inventory
+        WHERE inventory_id = :inventory_id
+          AND tenant_id = :tenant_id
+        LIMIT 1
+        FOR UPDATE
+    ");
+    $existingStmt->execute([
+        'inventory_id' => $inventoryId,
+        'tenant_id' => $tenantId,
+    ]);
+    $existingInventory = $existingStmt->fetch();
+
+    if (!$existingInventory) {
+        $pdo->rollBack();
+        $_SESSION['inventory_error'] = 'That inventory item could not be found in this tenant.';
+        header('Location: ../inventory.php');
+        exit;
+    }
 
     $stmt = $pdo->prepare("
         UPDATE inventory
@@ -80,31 +102,58 @@ try {
         'tenant_id' => $tenantId,
     ]);
 
-    if ($stmt->rowCount() === 0) {
-        $existsStmt = $pdo->prepare("
-            SELECT inventory_id
-            FROM inventory
-            WHERE inventory_id = :inventory_id
-              AND tenant_id = :tenant_id
-            LIMIT 1
-        ");
-        $existsStmt->execute([
-            'inventory_id' => $inventoryId,
-            'tenant_id' => $tenantId,
-        ]);
+    $quantityBefore = (int) $existingInventory['quantity'];
+    $quantityAfter = (int) $quantity;
+    $quantityChange = $quantityAfter - $quantityBefore;
 
-        if (!$existsStmt->fetch()) {
-            $_SESSION['inventory_error'] = 'That inventory item could not be found in this tenant.';
-            header('Location: ../inventory.php');
-            exit;
-        }
+    if ($quantityChange !== 0) {
+        $movementStmt = $pdo->prepare("
+            INSERT INTO inventory_movements (
+                tenant_id,
+                inventory_id,
+                user_id,
+                movement_type,
+                quantity_change,
+                quantity_before,
+                quantity_after,
+                reference_type,
+                reference_id,
+                notes
+            ) VALUES (
+                :tenant_id,
+                :inventory_id,
+                :user_id,
+                'adjustment',
+                :quantity_change,
+                :quantity_before,
+                :quantity_after,
+                'inventory_item',
+                :reference_id,
+                :notes
+            )
+        ");
+        $movementStmt->execute([
+            'tenant_id' => $tenantId,
+            'inventory_id' => $inventoryId,
+            'user_id' => (int) ($_SESSION['user_id'] ?? 0) ?: null,
+            'quantity_change' => $quantityChange,
+            'quantity_before' => $quantityBefore,
+            'quantity_after' => $quantityAfter,
+            'reference_id' => $inventoryId,
+            'notes' => 'Manual stock adjustment from inventory editor',
+        ]);
     }
 
+    $pdo->commit();
     unset($_SESSION['inventory_old_input']);
     $_SESSION['inventory_success'] = 'Inventory item updated successfully.';
     header('Location: ../inventory.php?inventory_id=' . $inventoryId);
     exit;
 } catch (PDOException $e) {
+    if (isset($pdo) && $pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+
     $_SESSION['inventory_error'] = 'Inventory item update failed: ' . $e->getMessage();
     header('Location: ../inventory.php?inventory_id=' . $inventoryId);
     exit;

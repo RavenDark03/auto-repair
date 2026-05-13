@@ -21,14 +21,27 @@ if (!api_tenant_has_feature($pdo, $ctx['tenant_id'], 'appointments')) {
     api_error('feature_disabled', 'Appointments are not enabled for this tenant.', 403);
 }
 
-$cid = api_resolve_customer_id($pdo, $ctx['tenant_id'], $ctx['username']);
+$cid = api_resolve_customer_id($pdo, $ctx['tenant_id'], $ctx['username'], $ctx['user_id']);
 if ($cid === null) {
     api_json(['ok' => true, 'items' => []]);
 }
 
 $st = $pdo->prepare('
-    SELECT a.appointment_id, a.vehicle_id, a.appointment_date, a.status
+    SELECT
+        a.appointment_id,
+        a.vehicle_id,
+        a.appointment_date,
+        a.status,
+        a.concern,
+        a.cancellation_reason,
+        v.make,
+        v.model,
+        v.plate,
+        v.year_model
     FROM appointments a
+    INNER JOIN vehicles v
+        ON v.vehicle_id = a.vehicle_id
+       AND v.tenant_id = a.tenant_id
     WHERE a.tenant_id = :t AND a.customer_id = :c
     ORDER BY a.appointment_id DESC
 ');
@@ -44,8 +57,13 @@ foreach ($rows as $r) {
     $items[] = [
         'id' => (string) $r['appointment_id'],
         'vehicleId' => (string) $r['vehicle_id'],
+        'vehicle' => trim((string) ($r['make'] ?? '') . ' ' . (string) ($r['model'] ?? '')),
+        'plate' => (string) ($r['plate'] ?? ''),
         'requestedAtEpochMs' => $created,
+        'appointmentDate' => (string) ($r['appointment_date'] ?? ''),
         'status' => api_appt_status_mobile((string) $r['status']),
+        'concern' => (string) ($r['concern'] ?? ''),
+        'cancellationReason' => (string) ($r['cancellation_reason'] ?? ''),
         'notes' => null,
     ];
 }

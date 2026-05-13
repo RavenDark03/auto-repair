@@ -806,3 +806,136 @@ html[data-theme="dark"] .superadmin-app .list-group-item.list-group-item-action:
         transition: none;
     }
 }
+
+
+/* ================================================================
+   TENANT PAGE ALIGNMENT — Phase 4
+   Applies landing-page visual language to all legacy admin pages
+   that use .dashboard layout (customers, jobs, invoices, etc.)
+================================================================ */
+
+/* B1 — Page background for .dashboard layout (mirrors .tenant-app .page gradient) */
+body.page-shell.tenant-app {
+    background:
+        radial-gradient(ellipse 78% 42% at 50% -10%, color-mix(in srgb, var(--border) 50%, transparent), transparent),
+        var(--bg);
+    min-height: 100vh;
+}
+
+/* B2 — Sticky glassmorphic topbar inside .dashboard-main
+   renderTenantAdminTopbar() emits .page-header as first child of .dashboard-main.
+   Negative margin breaks it out of the parent 26px padding for full-width coverage. */
+.tenant-app .dashboard-main > .page-header {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky, 50);
+    margin: -26px -26px 26px;
+    padding: 16px 26px;
+}
+
+/* B3 — Page header typography aligned to landing page hierarchy */
+.tenant-app .page-pretitle {
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.12em !important;
+    text-transform: uppercase;
+    color: var(--text-soft) !important;
+    margin-bottom: 4px !important;
+}
+
+.tenant-app .page-title {
+    font-size: clamp(1.4rem, 3vw, 2rem) !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.04em !important;
+    line-height: 1.15 !important;
+    color: var(--text) !important;
+}
+
+.tenant-app .page-header p.text-muted {
+    color: var(--text-soft) !important;
+    font-size: 0.93rem;
+    margin-top: 6px !important;
+}
+
+/* B4 — Metric card hover lift (matches landing page -2px translateY on content cards) */
+.tenant-app .metric-card {
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.tenant-app .metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow) !important;
+}
+
+/* B5 — Content / onboarding card shadow lift */
+.tenant-app .content-card,
+.tenant-app .onboarding-card,
+.tenant-app .onboarding-panel {
+    transition: box-shadow 0.22s ease;
+}
+
+.tenant-app .content-card:hover {
+    box-shadow: var(--shadow) !important;
+}
+
+/* B6 — Form control focus ring (landing page style) */
+.tenant-app .form-control:focus,
+.tenant-app .form-select:focus {
+    border-color: var(--border-strong) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--text) 8%, transparent) !important;
+    outline: none !important;
+}
+
+/* B7 — .text-muted fallback (Tabler overrides our token color) */
+.tenant-app .text-muted {
+    color: var(--text-soft) !important;
+}
+
+/* B8 — Btn pill style consistency (ensure Tabler .btn is also pill-shaped) */
+.tenant-app .btn {
+    border-radius: 999px !important;
+    font-weight: 600 !important;
+}
+
+.tenant-app .btn-primary {
+    background: var(--button-bg) !important;
+    color: var(--button-text) !important;
+    border-color: transparent !important;
+}
+
+.tenant-app .btn-primary:hover {
+    background: var(--button-hover) !important;
+}
+
+/* B9 — Responsive grid breakpoints for legacy metric/content grids */
+@media (max-width: 1024px) {
+    .tenant-app .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    .tenant-app .entity-stat-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+@media (max-width: 640px) {
+    .tenant-app .dashboard-grid,
+    .tenant-app .entity-stat-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .tenant-app .content-grid,
+    .tenant-app .staff-grid,
+    .tenant-app .customer-grid,
+    .tenant-app .vehicle-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tenant-app .metric-card,
+    .tenant-app .content-card,
+    .tenant-app .onboarding-card {
+        transition: none !important;
+    }
+}

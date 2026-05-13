@@ -15,12 +15,16 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $tenantId = (int) ($_SESSION['tenant_id'] ?? 0);
 $customerId = (int) ($_POST['customer_id'] ?? 0);
 $vehicleId = (int) ($_POST['vehicle_id'] ?? 0);
+$mechanicId = (int) ($_POST['mechanic_id'] ?? 0);
 $appointmentDate = trim($_POST['appointment_date'] ?? '');
+$concern = trim($_POST['concern'] ?? '');
 
 $_SESSION['appointment_old_input'] = [
     'customer_id' => $customerId,
     'vehicle_id' => $vehicleId,
+    'mechanic_id' => $mechanicId,
     'appointment_date' => $appointmentDate,
+    'concern' => $concern,
 ];
 
 if ($customerId <= 0 || $vehicleId <= 0 || $appointmentDate === '') {
@@ -93,18 +97,44 @@ try {
         exit;
     }
 
+    if ($mechanicId > 0) {
+        $mechanicStmt = $pdo->prepare("
+            SELECT user_id
+            FROM users
+            WHERE user_id = :user_id
+              AND tenant_id = :tenant_id
+              AND role = 'mechanic'
+              AND status = 'active'
+            LIMIT 1
+        ");
+        $mechanicStmt->execute([
+            'user_id' => $mechanicId,
+            'tenant_id' => $tenantId,
+        ]);
+
+        if (!$mechanicStmt->fetch()) {
+            $_SESSION['appointment_error'] = 'The assigned mechanic must be an active mechanic in this tenant.';
+            header('Location: ../appointments.php');
+            exit;
+        }
+    }
+
     $stmt = $pdo->prepare("
         INSERT INTO appointments (
             tenant_id,
             customer_id,
             vehicle_id,
+            mechanic_id,
             appointment_date,
+            concern,
             status
         ) VALUES (
             :tenant_id,
             :customer_id,
             :vehicle_id,
+            :mechanic_id,
             :appointment_date,
+            :concern,
             'pending'
         )
     ");
@@ -112,7 +142,9 @@ try {
         'tenant_id' => $tenantId,
         'customer_id' => $customerId,
         'vehicle_id' => $vehicleId,
+        'mechanic_id' => $mechanicId > 0 ? $mechanicId : null,
         'appointment_date' => $appointmentDate,
+        'concern' => $concern !== '' ? $concern : null,
     ]);
 
     $appointmentId = (int) $pdo->lastInsertId();

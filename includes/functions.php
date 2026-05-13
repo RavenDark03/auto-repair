@@ -42,6 +42,36 @@ function formatVehicleLabel(array $record, $includeYear = true, $includePlate = 
     return $label;
 }
 
+function normalizeJobStatus($status) {
+    $status = (string) $status;
+
+    return $status === 'ongoing' ? 'in_repair' : $status;
+}
+
+function getJobStatusOptions() {
+    return [
+        'pending_inspection' => 'Pending inspection',
+        'in_repair' => 'In repair',
+        'waiting_for_parts' => 'Waiting for parts',
+        'completed' => 'Completed',
+    ];
+}
+
+function jobStatusLabel($status) {
+    $status = normalizeJobStatus($status);
+    $options = getJobStatusOptions();
+
+    return $options[$status] ?? ucfirst(str_replace('_', ' ', (string) $status));
+}
+
+function isJobOpenStatus($status) {
+    return in_array(normalizeJobStatus($status), ['pending_inspection', 'in_repair', 'waiting_for_parts'], true);
+}
+
+function jobStatusClass($status) {
+    return str_replace('_', '-', normalizeJobStatus($status));
+}
+
 function getTenantSubscriptionNotice(?string $plan, ?string $subscriptionStatus, ?string $startDate, ?string $endDate): array
 {
     $planLabel = $plan ?: 'No plan assigned';
@@ -161,6 +191,7 @@ function renderContextStrip(array $links, $currentLabel = null, array $actions =
 function getTenantAdminModuleLinks() {
     return [
         ['label' => 'Staff Management', 'feature' => null,              'hint' => 'Live', 'href' => 'staff.php',        'roles' => ['admin'],            'icon' => 'ti-users'],
+        ['label' => 'Settings',         'feature' => null,              'hint' => 'Shop', 'href' => 'settings.php',     'roles' => ['admin'],            'icon' => 'ti-settings'],
         ['label' => 'Subscription',     'feature' => 'subscription_center', 'hint' => 'Plan', 'href' => 'subscriptions.php', 'roles' => ['admin'],        'icon' => 'ti-calendar-due'],
         ['label' => 'Customers',        'feature' => 'customer_module', 'hint' => 'Live', 'href' => 'customers.php',    'roles' => ['admin'],            'icon' => 'ti-user-circle'],
         ['label' => 'Vehicles',         'feature' => 'customer_module', 'hint' => 'Live', 'href' => 'vehicles.php',     'roles' => ['admin'],            'icon' => 'ti-car'],
@@ -198,52 +229,56 @@ function renderTenantAdminSidebar($businessName, array $visibleModuleLinks, $act
 
     ob_start();
     ?>
-    <aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
+    <aside class="navbar navbar-vertical navbar-expand-lg tenant-sidebar" data-bs-theme="dark">
         <div class="container-fluid">
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu" aria-controls="sidebar-menu" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <h1 class="navbar-brand navbar-brand-autodark">
+            <h1 class="navbar-brand navbar-brand-autodark tenant-sidebar__brand">
                 <a href="<?= htmlspecialchars($dashboardHref, ENT_QUOTES, 'UTF-8') ?>">
-                    <span class="fw-bold">MECHANIX</span>
+                    <span class="tenant-sidebar__brand-mark" aria-hidden="true">M</span>
+                    <span class="tenant-sidebar__brand-text">MECHANIX</span>
                 </a>
+                <span class="tenant-sidebar__business" title="<?= $safeBusinessName ?>"><?= $safeBusinessName ?></span>
             </h1>
             <div class="collapse navbar-collapse" id="sidebar-menu">
-                <div class="navbar-nav flex-column">
-                    <p class="navbar-heading text-muted small text-uppercase fw-bold px-1 mt-2 mb-1"><?= $safeBusinessName ?></p>
+                <div class="tenant-sidebar__sections">
+                    <div class="tenant-sidebar__section">
+                        <p class="navbar-heading tenant-sidebar__heading">Overview</p>
+                        <ul class="navbar-nav tenant-sidebar__nav">
+                            <li class="nav-item">
+                                <a class="nav-link<?= $activeHref === $dashboardHref ? ' active' : '' ?>" href="<?= htmlspecialchars($dashboardHref, ENT_QUOTES, 'UTF-8') ?>">
+                                    <span class="nav-link-icon"><i class="ti ti-layout-dashboard"></i></span>
+                                    <span class="nav-link-title">Dashboard</span>
+                                </a>
+                            </li>
+                            <?php if ($showAnalytics): ?>
+                                <li class="nav-item">
+                                    <a class="nav-link<?= $activeHref === 'reports.php' ? ' active' : '' ?>" href="reports.php">
+                                        <span class="nav-link-icon"><i class="ti ti-chart-bar"></i></span>
+                                        <span class="nav-link-title">Analytics</span>
+                                    </a>
+                                </li>
+                            <?php endif; ?>
+                        </ul>
+                    </div>
+                    <div class="tenant-sidebar__section">
+                        <p class="navbar-heading tenant-sidebar__heading">Operations</p>
+                        <ul class="navbar-nav tenant-sidebar__nav">
+                            <?php foreach ($visibleModuleLinks as $module): ?>
+                                <li class="nav-item">
+                                    <a class="nav-link<?= $module['href'] === $activeHref ? ' active' : '' ?>" href="<?= htmlspecialchars($module['href'], ENT_QUOTES, 'UTF-8') ?>">
+                                        <span class="nav-link-icon"><i class="ti <?= htmlspecialchars($module['icon'] ?? 'ti-circle', ENT_QUOTES, 'UTF-8') ?>"></i></span>
+                                        <span class="nav-link-title"><?= htmlspecialchars($module['label'], ENT_QUOTES, 'UTF-8') ?></span>
+                                    </a>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
                 </div>
-                <ul class="navbar-nav pt-lg-1">
-                    <li class="nav-item">
-                        <a class="nav-link<?= $activeHref === $dashboardHref ? ' active' : '' ?>" href="<?= htmlspecialchars($dashboardHref, ENT_QUOTES, 'UTF-8') ?>">
-                            <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-layout-dashboard"></i></span>
-                            <span class="nav-link-title">Dashboard</span>
-                        </a>
-                    </li>
-                    <?php if ($showAnalytics): ?>
-                        <li class="nav-item">
-                            <a class="nav-link<?= $activeHref === 'reports.php' ? ' active' : '' ?>" href="reports.php">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-chart-bar"></i></span>
-                                <span class="nav-link-title">Analytics</span>
-                            </a>
-                        </li>
-                    <?php endif; ?>
-                </ul>
-                <div class="navbar-nav flex-column">
-                    <p class="navbar-heading text-muted small text-uppercase fw-bold px-1 mt-3 mb-1">Operations</p>
-                </div>
-                <ul class="navbar-nav">
-                    <?php foreach ($visibleModuleLinks as $module): ?>
-                        <li class="nav-item">
-                            <a class="nav-link<?= $module['href'] === $activeHref ? ' active' : '' ?>" href="<?= htmlspecialchars($module['href'], ENT_QUOTES, 'UTF-8') ?>">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti <?= htmlspecialchars($module['icon'] ?? 'ti-circle', ENT_QUOTES, 'UTF-8') ?>"></i></span>
-                                <span class="nav-link-title"><?= htmlspecialchars($module['label'], ENT_QUOTES, 'UTF-8') ?></span>
-                            </a>
-                        </li>
-                    <?php endforeach; ?>
-                </ul>
-                <div class="mt-auto p-3">
-                    <button type="button" class="btn btn-outline-light w-100" data-mechanix-logout-open>
-                        <i class="ti ti-logout me-2"></i>Log Out
+                <div class="tenant-sidebar__footer">
+                    <button type="button" class="btn tenant-sidebar__logout" data-mechanix-logout-open>
+                        <i class="ti ti-logout"></i><span>Log Out</span>
                     </button>
                 </div>
             </div>

@@ -26,3 +26,4 @@ node_modules/
 # Optional local database exports
 *.sql.zip
 *.sql.gz
+.aider*

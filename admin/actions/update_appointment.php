@@ -16,14 +16,20 @@ $tenantId = (int) ($_SESSION['tenant_id'] ?? 0);
 $appointmentId = (int) ($_POST['appointment_id'] ?? 0);
 $customerId = (int) ($_POST['customer_id'] ?? 0);
 $vehicleId = (int) ($_POST['vehicle_id'] ?? 0);
+$mechanicId = (int) ($_POST['mechanic_id'] ?? 0);
 $appointmentDate = trim($_POST['appointment_date'] ?? '');
+$concern = trim($_POST['concern'] ?? '');
+$cancellationReason = trim($_POST['cancellation_reason'] ?? '');
 $status = $_POST['status'] ?? '';
 $allowedStatuses = ['pending', 'approved', 'cancelled'];
 
 $_SESSION['appointment_old_input'] = [
     'customer_id' => $customerId,
     'vehicle_id' => $vehicleId,
+    'mechanic_id' => $mechanicId,
     'appointment_date' => $appointmentDate,
+    'concern' => $concern,
+    'cancellation_reason' => $cancellationReason,
     'status' => $status,
 ];
 
@@ -35,6 +41,12 @@ if ($appointmentId <= 0 || $customerId <= 0 || $vehicleId <= 0 || $appointmentDa
 
 if (!in_array($status, $allowedStatuses, true)) {
     $_SESSION['appointment_error'] = 'Please choose a valid appointment status.';
+    header('Location: ../appointments.php?appointment_id=' . $appointmentId);
+    exit;
+}
+
+if ($status === 'cancelled' && $cancellationReason === '') {
+    $_SESSION['appointment_error'] = 'A cancellation reason is required when cancelling an appointment.';
     header('Location: ../appointments.php?appointment_id=' . $appointmentId);
     exit;
 }
@@ -128,23 +140,71 @@ try {
         exit;
     }
 
+    if ($mechanicId > 0) {
+        $mechanicStmt = $pdo->prepare("
+            SELECT user_id
+            FROM users
+            WHERE user_id = :user_id
+              AND tenant_id = :tenant_id
+              AND role = 'mechanic'
+              AND status = 'active'
+            LIMIT 1
+        ");
+        $mechanicStmt->execute([
+            'user_id' => $mechanicId,
+            'tenant_id' => $tenantId,
+        ]);
+
+        if (!$mechanicStmt->fetch()) {
+            $_SESSION['appointment_error'] = 'The assigned mechanic must be an active mechanic in this tenant.';
+            header('Location: ../appointments.php?appointment_id=' . $appointmentId);
+            exit;
+        }
+    }
+
     $stmt = $pdo->prepare("
         UPDATE appointments
         SET customer_id = :customer_id,
             vehicle_id = :vehicle_id,
+            mechanic_id = :mechanic_id,
             appointment_date = :appointment_date,
-            status = :status
+            concern = :concern,
+            status = :status,
+            cancellation_reason = :cancellation_reason,
+            cancelled_at = :cancelled_at,
+            cancelled_by = :cancelled_by
         WHERE appointment_id = :appointment_id
           AND tenant_id = :tenant_id
     ");
     $stmt->execute([
         'customer_id' => $customerId,
         'vehicle_id' => $vehicleId,
+        'mechanic_id' => $mechanicId > 0 ? $mechanicId : null,
         'appointment_date' => $appointmentDate,
+        'concern' => $concern !== '' ? $concern : null,
         'status' => $status,
+        'cancellation_reason' => $status === 'cancelled' ? $cancellationReason : null,
+        'cancelled_at' => $status === 'cancelled' ? date('Y-m-d H:i:s') : null,
+        'cancelled_by' => $status === 'cancelled' ? (int) ($_SESSION['user_id'] ?? 0) : null,
         'appointment_id' => $appointmentId,
         'tenant_id' => $tenantId,
     ]);
+
+    if ($status === 'approved') {
+        $jobUpdateStmt = $pdo->prepare("
+            UPDATE jobs
+            SET mechanic_id = :mechanic_id,
+                issue_concern = COALESCE(NULLIF(:concern, ''), issue_concern)
+            WHERE tenant_id = :tenant_id
+              AND appointment_id = :appointment_id
+        ");
+        $jobUpdateStmt->execute([
+            'mechanic_id' => $mechanicId > 0 ? $mechanicId : null,
+            'concern' => $concern,
+            'tenant_id' => $tenantId,
+            'appointment_id' => $appointmentId,
+        ]);
+    }
 
     unset($_SESSION['appointment_old_input']);
     $_SESSION['appointment_success'] = $status === 'approved' && $existingAppointment['status'] !== 'approved'

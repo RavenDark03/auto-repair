@@ -39,6 +39,7 @@ $selectedVehicleContext = null;
 $mechanicOptions = [];
 $inventoryOptions = [];
 $jobLogs = [];
+$jobNotes = [];
 $jobPartsUsed = [];
 $jobServices = [];
 $jobHasInvoice = false;
@@ -46,10 +47,10 @@ $jobInvoiceId = 0;
 $jobSourceAppointmentLocked = false;
 $editingService = null;
 $editingPartUsage = null;
-$allowedStatuses = ['ongoing', 'completed'];
+$allowedStatuses = array_keys(getJobStatusOptions());
 $jobSummary = [
     'total_jobs' => 0,
-    'ongoing_jobs' => 0,
+    'active_jobs' => 0,
     'completed_jobs' => 0,
     'unassigned_jobs' => 0,
 ];
@@ -163,7 +164,7 @@ try {
     $summarySql = "
         SELECT
             COUNT(*) AS total_jobs,
-            SUM(CASE WHEN j.status = 'ongoing' THEN 1 ELSE 0 END) AS ongoing_jobs,
+            SUM(CASE WHEN j.status IN ('pending_inspection', 'in_repair', 'waiting_for_parts', 'ongoing') THEN 1 ELSE 0 END) AS active_jobs,
             SUM(CASE WHEN j.status = 'completed' THEN 1 ELSE 0 END) AS completed_jobs,
             SUM(CASE WHEN j.mechanic_id IS NULL THEN 1 ELSE 0 END) AS unassigned_jobs
         FROM jobs j
@@ -199,6 +200,7 @@ try {
                 j.job_id,
                 j.appointment_id,
                 j.mechanic_id,
+                j.priority,
                 j.status,
                 a.appointment_date,
                 a.status AS appointment_status,
@@ -283,6 +285,10 @@ try {
                 j.job_id,
                 j.appointment_id,
                 j.mechanic_id,
+                j.priority,
+                j.description,
+                j.issue_concern,
+                j.customer_visible_notes,
                 j.status,
                 a.appointment_date,
                 a.status AS appointment_status,
@@ -350,7 +356,7 @@ try {
             $jobSourceAppointmentLocked = ($selectedJob['appointment_status'] ?? 'approved') !== 'approved';
 
             $jobLogStmt = $pdo->prepare("
-                SELECT status, changed_at
+                SELECT status, note, changed_at
                 FROM job_status_logs
                 WHERE tenant_id = :tenant_id
                   AND job_id = :job_id
@@ -362,6 +368,23 @@ try {
                 'job_id' => $selectedJobId,
             ]);
             $jobLogs = $jobLogStmt->fetchAll();
+
+            $jobNotesStmt = $pdo->prepare("
+                SELECT n.note_id, n.note_type, n.note, n.is_customer_visible, n.created_at, u.full_name AS author_name
+                FROM job_notes n
+                LEFT JOIN users u
+                    ON u.user_id = n.user_id
+                   AND u.tenant_id = n.tenant_id
+                WHERE n.tenant_id = :tenant_id
+                  AND n.job_id = :job_id
+                ORDER BY n.created_at DESC, n.note_id DESC
+                LIMIT 20
+            ");
+            $jobNotesStmt->execute([
+                'tenant_id' => $tenantId,
+                'job_id' => $selectedJobId,
+            ]);
+            $jobNotes = $jobNotesStmt->fetchAll();
 
             $jobServicesStmt = $pdo->prepare("
                 SELECT job_service_id, service_name, description, quantity, unit_price, line_total, created_at
@@ -529,7 +552,11 @@ if ($editPartUsageId > 0) {
 }
 
 $selectedMechanicId = (int) ($oldInput['mechanic_id'] ?? ($selectedJob['mechanic_id'] ?? 0));
-$selectedStatus = $oldInput['status'] ?? ($selectedJob['status'] ?? 'ongoing');
+$selectedStatus = normalizeJobStatus($oldInput['status'] ?? ($selectedJob['status'] ?? 'pending_inspection'));
+$selectedPriority = $oldInput['priority'] ?? ($selectedJob['priority'] ?? 'normal');
+$selectedDescription = $oldInput['description'] ?? ($selectedJob['description'] ?? '');
+$selectedIssueConcern = $oldInput['issue_concern'] ?? ($selectedJob['issue_concern'] ?? '');
+$selectedCustomerVisibleNotes = $oldInput['customer_visible_notes'] ?? ($selectedJob['customer_visible_notes'] ?? '');
 $selectedInventoryUsageId = (int) ($oldInput['inventory_id'] ?? 0);
 $selectedUsageQuantity = (int) ($oldInput['quantity_used'] ?? 1);
 $selectedServiceName = $oldInput['service_name'] ?? '';
@@ -549,9 +576,13 @@ $editPartQuantity = (int) ($partEditOldInput['quantity_used'] ?? ($editingPartUs
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jobs - MECHANIX</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0/dist/css/tabler.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+    <link rel="stylesheet" href="../assets/css/tabler-mechanix-bridge.css">
     <link rel="stylesheet" href="../assets/css/styles.css">
+    <link rel="stylesheet" href="../assets/css/superadmin-landing-theme.css">
 </head>
-<body class="page-shell">
+<body class="page-shell antialiased tenant-app">
     <div class="dashboard">
         <?= renderTenantAdminSidebar($businessName, $visibleModuleLinks, 'jobs.php', $showAnalytics) ?>
 
@@ -598,8 +629,8 @@ $editPartQuantity = (int) ($partEditOldInput['quantity_used'] ?? ($editingPartUs
                     <h3><?= number_format($jobSummary['total_jobs']) ?></h3>
                 </article>
                 <article class="metric-card">
-                    <span>Ongoing Jobs</span>
-                    <h3><?= number_format($jobSummary['ongoing_jobs']) ?></h3>
+                    <span>Active Jobs</span>
+                    <h3><?= number_format($jobSummary['active_jobs']) ?></h3>
                 </article>
                 <article class="metric-card">
                     <span>Completed Jobs</span>
@@ -640,8 +671,11 @@ $editPartQuantity = (int) ($partEditOldInput['quantity_used'] ?? ($editingPartUs
                                 <label for="status">Status Filter</label>
                                 <select class="form-control" id="status" name="status">
                                     <option value="">All statuses</option>
-                                    <option value="ongoing"<?= $statusFilter === 'ongoing' ? ' selected' : '' ?>>Ongoing</option>
-                                    <option value="completed"<?= $statusFilter === 'completed' ? ' selected' : '' ?>>Completed</option>
+                                    <?php foreach (getJobStatusOptions() as $statusValue => $statusLabel): ?>
+                                        <option value="<?= htmlspecialchars($statusValue, ENT_QUOTES, 'UTF-8') ?>"<?= $statusFilter === $statusValue ? ' selected' : '' ?>>
+                                            <?= htmlspecialchars($statusLabel, ENT_QUOTES, 'UTF-8') ?>
+                                        </option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
                             <div class="feature-toggle-actions">
@@ -663,8 +697,8 @@ $editPartQuantity = (int) ($partEditOldInput['quantity_used'] ?? ($editingPartUs
                                             | <?= htmlspecialchars($job['mechanic_name'] ?? 'Unassigned', ENT_QUOTES, 'UTF-8') ?>
                                         </p>
                                     </div>
-                                    <span class="status-chip status-<?= htmlspecialchars($job['status'], ENT_QUOTES, 'UTF-8') ?>">
-                                        <?= htmlspecialchars(ucfirst($job['status']), ENT_QUOTES, 'UTF-8') ?>
+                                    <span class="status-chip status-<?= htmlspecialchars(jobStatusClass($job['status']), ENT_QUOTES, 'UTF-8') ?>">
+                                        <?= htmlspecialchars(jobStatusLabel($job['status']), ENT_QUOTES, 'UTF-8') ?>
                                     </span>
                                 </a>
                             <?php endforeach; ?>
@@ -719,10 +753,44 @@ $editPartQuantity = (int) ($partEditOldInput['quantity_used'] ?? ($editingPartUs
                                     <div class="form-group">
                                         <label for="job_status">Job Status</label>
                                         <select class="form-control" id="job_status" name="status" required>
-                                            <option value="ongoing"<?= $selectedStatus === 'ongoing' ? ' selected' : '' ?>>Ongoing</option>
-                                            <option value="completed"<?= $selectedStatus === 'completed' ? ' selected' : '' ?>>Completed</option>
+                                            <?php foreach (getJobStatusOptions() as $statusValue => $statusLabel): ?>
+                                                <option value="<?= htmlspecialchars($statusValue, ENT_QUOTES, 'UTF-8') ?>"<?= $selectedStatus === $statusValue ? ' selected' : '' ?>>
+                                                    <?= htmlspecialchars($statusLabel, ENT_QUOTES, 'UTF-8') ?>
+                                                </option>
+                                            <?php endforeach; ?>
                                         </select>
                                     </div>
+
+                                    <div class="form-group">
+                                        <label for="priority">Priority</label>
+                                        <select class="form-control" id="priority" name="priority" required>
+                                            <?php foreach (['low' => 'Low', 'normal' => 'Normal', 'high' => 'High', 'urgent' => 'Urgent'] as $priorityValue => $priorityLabel): ?>
+                                                <option value="<?= htmlspecialchars($priorityValue, ENT_QUOTES, 'UTF-8') ?>"<?= $selectedPriority === $priorityValue ? ' selected' : '' ?>>
+                                                    <?= htmlspecialchars($priorityLabel, ENT_QUOTES, 'UTF-8') ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="issue_concern">Vehicle Issue / Concern</label>
+                                    <textarea class="form-control form-textarea" id="issue_concern" name="issue_concern"><?= htmlspecialchars($selectedIssueConcern, ENT_QUOTES, 'UTF-8') ?></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="description">Job Description</label>
+                                    <textarea class="form-control form-textarea" id="description" name="description"><?= htmlspecialchars($selectedDescription, ENT_QUOTES, 'UTF-8') ?></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="customer_visible_notes">Customer-visible Notes</label>
+                                    <textarea class="form-control form-textarea" id="customer_visible_notes" name="customer_visible_notes"><?= htmlspecialchars($selectedCustomerVisibleNotes, ENT_QUOTES, 'UTF-8') ?></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="progress_note">Internal Progress Note</label>
+                                    <textarea class="form-control form-textarea" id="progress_note" name="progress_note" placeholder="Optional note for this update"></textarea>
                                 </div>
 
                                 <div class="approval-actions">
@@ -742,8 +810,8 @@ $editPartQuantity = (int) ($partEditOldInput['quantity_used'] ?? ($editingPartUs
                                     </p>
                                 </div>
                                 <div class="list-meta">
-                                    <span class="status-chip status-<?= htmlspecialchars($selectedJob['status'], ENT_QUOTES, 'UTF-8') ?>">
-                                        <?= htmlspecialchars(ucfirst($selectedJob['status']), ENT_QUOTES, 'UTF-8') ?>
+                                    <span class="status-chip status-<?= htmlspecialchars(jobStatusClass($selectedJob['status']), ENT_QUOTES, 'UTF-8') ?>">
+                                        <?= htmlspecialchars(jobStatusLabel($selectedJob['status']), ENT_QUOTES, 'UTF-8') ?>
                                     </span>
                                     <span class="status-chip status-<?= htmlspecialchars($selectedJob['appointment_status'], ENT_QUOTES, 'UTF-8') ?>">
                                         Appointment <?= htmlspecialchars(ucfirst($selectedJob['appointment_status']), ENT_QUOTES, 'UTF-8') ?>
@@ -770,13 +838,18 @@ $editPartQuantity = (int) ($partEditOldInput['quantity_used'] ?? ($editingPartUs
                         <?php if (!$jobSourceAppointmentLocked): ?>
                             <form action="actions/update_job_status.php" method="POST" class="feature-toggle-form">
                                 <input type="hidden" name="job_id" value="<?= (int) $selectedJob['job_id'] ?>">
+                                <div class="form-group">
+                                    <label for="quick_progress_note">Progress Note</label>
+                                    <textarea class="form-control form-textarea" id="quick_progress_note" name="progress_note" placeholder="Optional note for this status change"></textarea>
+                                </div>
                                 <div class="approval-actions">
-                                    <?php if ($selectedJob['status'] !== 'ongoing'): ?>
-                                        <button type="submit" name="status" value="ongoing" class="btn btn-secondary">Mark Ongoing</button>
-                                    <?php endif; ?>
-                                    <?php if ($selectedJob['status'] !== 'completed'): ?>
-                                        <button type="submit" name="status" value="completed" class="btn btn-primary">Mark Completed</button>
-                                    <?php endif; ?>
+                                    <?php foreach (getJobStatusOptions() as $statusValue => $statusLabel): ?>
+                                        <?php if (normalizeJobStatus($selectedJob['status']) !== $statusValue): ?>
+                                            <button type="submit" name="status" value="<?= htmlspecialchars($statusValue, ENT_QUOTES, 'UTF-8') ?>" class="btn <?= $statusValue === 'completed' ? 'btn-primary' : 'btn-secondary' ?>">
+                                                Mark <?= htmlspecialchars($statusLabel, ENT_QUOTES, 'UTF-8') ?>
+                                            </button>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
                                 </div>
                             </form>
                         <?php endif; ?>
@@ -795,8 +868,11 @@ $editPartQuantity = (int) ($partEditOldInput['quantity_used'] ?? ($editingPartUs
                                 <?php foreach ($jobLogs as $log): ?>
                                     <div class="dashboard-list-item">
                                         <div>
-                                            <strong><?= htmlspecialchars(ucfirst($log['status']), ENT_QUOTES, 'UTF-8') ?></strong>
+                                            <strong><?= htmlspecialchars(jobStatusLabel($log['status']), ENT_QUOTES, 'UTF-8') ?></strong>
                                             <p><?= htmlspecialchars(jobDateTime($log['changed_at']), ENT_QUOTES, 'UTF-8') ?></p>
+                                            <?php if (!empty($log['note'])): ?>
+                                                <p><?= htmlspecialchars($log['note'], ENT_QUOTES, 'UTF-8') ?></p>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 <?php endforeach; ?>
@@ -805,6 +881,34 @@ $editPartQuantity = (int) ($partEditOldInput['quantity_used'] ?? ($editingPartUs
                                     <strong>No activity yet</strong>
                                     <p>Status changes will appear here once the job is updated.</p>
                                 </div>
+                            <?php endif; ?>
+                        </div>
+
+                        <div class="dashboard-list compact-list">
+                            <div class="dashboard-list-item">
+                                <div>
+                                    <strong>Job Notes</strong>
+                                    <p>Mechanic and admin observations linked to this repair.</p>
+                                </div>
+                            </div>
+                            <?php if (!empty($jobNotes)): ?>
+                                <?php foreach ($jobNotes as $note): ?>
+                                    <div class="dashboard-list-item">
+                                        <div>
+                                            <strong><?= htmlspecialchars(ucfirst(str_replace('_', ' ', $note['note_type'])), ENT_QUOTES, 'UTF-8') ?></strong>
+                                            <p>
+                                                <?= htmlspecialchars(jobDateTime($note['created_at']), ENT_QUOTES, 'UTF-8') ?>
+                                                <?php if (!empty($note['author_name'])): ?>
+                                                    | <?= htmlspecialchars($note['author_name'], ENT_QUOTES, 'UTF-8') ?>
+                                                <?php endif; ?>
+                                                <?= (int) $note['is_customer_visible'] === 1 ? ' | Customer visible' : '' ?>
+                                            </p>
+                                            <p><?= htmlspecialchars($note['note'], ENT_QUOTES, 'UTF-8') ?></p>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <div class="table-placeholder">No job notes have been added yet.</div>
                             <?php endif; ?>
                         </div>
 
@@ -834,7 +938,7 @@ $editPartQuantity = (int) ($partEditOldInput['quantity_used'] ?? ($editingPartUs
                                         </div>
                                         <div class="list-meta">
                                             <span class="metric-pill"><?= htmlspecialchars(jobCurrency($service['line_total']), ENT_QUOTES, 'UTF-8') ?></span>
-                                            <?php if ($selectedJob['status'] === 'ongoing' && !$jobHasInvoice && !$jobSourceAppointmentLocked): ?>
+                                            <?php if (isJobOpenStatus($selectedJob['status']) && !$jobHasInvoice && !$jobSourceAppointmentLocked): ?>
                                                 <a href="<?= htmlspecialchars(jobUrl((int) $selectedJob['job_id'], $search, $statusFilter, ['edit_service_id' => (int) $service['job_service_id']], $selectedCustomerContextId, $selectedVehicleContextId), ENT_QUOTES, 'UTF-8') ?>" class="btn btn-secondary btn-small">Edit</a>
                                                 <form action="actions/delete_job_service.php" method="POST" class="inline-form">
                                                     <input type="hidden" name="job_id" value="<?= (int) $selectedJob['job_id'] ?>">
@@ -852,7 +956,7 @@ $editPartQuantity = (int) ($partEditOldInput['quantity_used'] ?? ($editingPartUs
                             <?php endif; ?>
                         </div>
 
-                        <?php if ($editingService && $selectedJob['status'] === 'ongoing' && !$jobHasInvoice && !$jobSourceAppointmentLocked): ?>
+                        <?php if ($editingService && isJobOpenStatus($selectedJob['status']) && !$jobHasInvoice && !$jobSourceAppointmentLocked): ?>
                             <form action="actions/update_job_service.php" method="POST" class="feature-toggle-form">
                                 <input type="hidden" name="job_id" value="<?= (int) $selectedJob['job_id'] ?>">
                                 <input type="hidden" name="job_service_id" value="<?= (int) $editingService['job_service_id'] ?>">
@@ -895,7 +999,7 @@ $editPartQuantity = (int) ($partEditOldInput['quantity_used'] ?? ($editingPartUs
                             </form>
                         <?php endif; ?>
 
-                        <?php if ($selectedJob['status'] === 'ongoing' && !$jobHasInvoice && !$jobSourceAppointmentLocked): ?>
+                        <?php if (isJobOpenStatus($selectedJob['status']) && !$jobHasInvoice && !$jobSourceAppointmentLocked): ?>
                             <form action="actions/create_job_service.php" method="POST" class="feature-toggle-form">
                                 <input type="hidden" name="job_id" value="<?= (int) $selectedJob['job_id'] ?>">
 
@@ -964,7 +1068,7 @@ $editPartQuantity = (int) ($partEditOldInput['quantity_used'] ?? ($editingPartUs
                                             </div>
                                             <div class="list-meta">
                                                 <span class="metric-pill"><?= number_format((int) $partUsage['quantity_used']) ?></span>
-                                                <?php if ($selectedJob['status'] === 'ongoing' && !$jobHasInvoice && !$jobSourceAppointmentLocked): ?>
+                                                <?php if (isJobOpenStatus($selectedJob['status']) && !$jobHasInvoice && !$jobSourceAppointmentLocked): ?>
                                                     <a href="<?= htmlspecialchars(jobUrl((int) $selectedJob['job_id'], $search, $statusFilter, ['edit_part_usage_id' => (int) $partUsage['id']], $selectedCustomerContextId, $selectedVehicleContextId), ENT_QUOTES, 'UTF-8') ?>" class="btn btn-secondary btn-small">Edit</a>
                                                     <form action="actions/delete_job_part_usage.php" method="POST" class="inline-form">
                                                         <input type="hidden" name="job_id" value="<?= (int) $selectedJob['job_id'] ?>">
@@ -982,7 +1086,7 @@ $editPartQuantity = (int) ($partEditOldInput['quantity_used'] ?? ($editingPartUs
                                 <?php endif; ?>
                             </div>
 
-                            <?php if ($editingPartUsage && $selectedJob['status'] === 'ongoing' && !$jobHasInvoice && !$jobSourceAppointmentLocked): ?>
+                            <?php if ($editingPartUsage && isJobOpenStatus($selectedJob['status']) && !$jobHasInvoice && !$jobSourceAppointmentLocked): ?>
                                 <form action="actions/update_job_part_usage.php" method="POST" class="feature-toggle-form">
                                     <input type="hidden" name="job_id" value="<?= (int) $selectedJob['job_id'] ?>">
                                     <input type="hidden" name="job_part_usage_id" value="<?= (int) $editingPartUsage['id'] ?>">
@@ -1024,7 +1128,7 @@ $editPartQuantity = (int) ($partEditOldInput['quantity_used'] ?? ($editingPartUs
                                 </form>
                             <?php endif; ?>
 
-                            <?php if ($selectedJob['status'] === 'ongoing' && !$jobHasInvoice && !$jobSourceAppointmentLocked): ?>
+                            <?php if (isJobOpenStatus($selectedJob['status']) && !$jobHasInvoice && !$jobSourceAppointmentLocked): ?>
                                 <?php if (!empty($inventoryOptions)): ?>
                                     <form action="actions/create_job_part_usage.php" method="POST" class="feature-toggle-form">
                                         <input type="hidden" name="job_id" value="<?= (int) $selectedJob['job_id'] ?>">

@@ -50,4 +50,74 @@ if (!$row) {
 }
 
 $row['has_invoice'] = (int) ($row['has_invoice'] ?? 0) > 0;
-api_json(['ok' => true, 'item' => api_job_row_to_payload($row)]);
+$item = api_job_row_to_payload($row);
+
+$servicesStmt = $pdo->prepare('
+    SELECT job_service_id, service_name, description, quantity, unit_price, line_total, created_at
+    FROM job_services
+    WHERE tenant_id = :tid
+      AND job_id = :jid
+    ORDER BY job_service_id ASC
+');
+$servicesStmt->execute(['tid' => $tid, 'jid' => $jobId]);
+$item['services'] = array_map(static function (array $service): array {
+    return [
+        'id' => (string) $service['job_service_id'],
+        'name' => (string) $service['service_name'],
+        'description' => (string) ($service['description'] ?? ''),
+        'quantity' => (float) $service['quantity'],
+        'unitPrice' => (float) $service['unit_price'],
+        'lineTotal' => (float) $service['line_total'],
+        'createdAt' => (string) $service['created_at'],
+    ];
+}, $servicesStmt->fetchAll(PDO::FETCH_ASSOC));
+
+$partsStmt = $pdo->prepare('
+    SELECT jpu.id, i.inventory_id, i.part_name, i.sku, jpu.quantity_used, i.unit_cost, jpu.created_at
+    FROM job_parts_used jpu
+    INNER JOIN inventory i
+        ON i.inventory_id = jpu.inventory_id
+       AND i.tenant_id = jpu.tenant_id
+    WHERE jpu.tenant_id = :tid
+      AND jpu.job_id = :jid
+    ORDER BY jpu.id ASC
+');
+$partsStmt->execute(['tid' => $tid, 'jid' => $jobId]);
+$item['partsUsed'] = array_map(static function (array $part): array {
+    $quantity = (int) $part['quantity_used'];
+    $unitCost = (float) $part['unit_cost'];
+    return [
+        'id' => (string) $part['id'],
+        'inventoryId' => (string) $part['inventory_id'],
+        'name' => (string) $part['part_name'],
+        'sku' => (string) ($part['sku'] ?? ''),
+        'quantity' => $quantity,
+        'unitCost' => $unitCost,
+        'lineTotal' => $quantity * $unitCost,
+        'createdAt' => (string) $part['created_at'],
+    ];
+}, $partsStmt->fetchAll(PDO::FETCH_ASSOC));
+
+$notesStmt = $pdo->prepare('
+    SELECT n.note_id, n.note_type, n.note, n.is_customer_visible, n.created_at, u.full_name AS author_name
+    FROM job_notes n
+    LEFT JOIN users u
+        ON u.user_id = n.user_id
+       AND u.tenant_id = n.tenant_id
+    WHERE n.tenant_id = :tid
+      AND n.job_id = :jid
+    ORDER BY n.created_at DESC, n.note_id DESC
+');
+$notesStmt->execute(['tid' => $tid, 'jid' => $jobId]);
+$item['notes'] = array_map(static function (array $note): array {
+    return [
+        'id' => (string) $note['note_id'],
+        'type' => (string) $note['note_type'],
+        'note' => (string) $note['note'],
+        'isCustomerVisible' => (int) $note['is_customer_visible'] === 1,
+        'authorName' => (string) ($note['author_name'] ?? ''),
+        'createdAt' => (string) $note['created_at'],
+    ];
+}, $notesStmt->fetchAll(PDO::FETCH_ASSOC));
+
+api_json(['ok' => true, 'item' => $item]);

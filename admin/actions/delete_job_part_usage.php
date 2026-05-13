@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../includes/session.php';
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../includes/db.php';
 require_once __DIR__ . '/../../includes/feature_access.php';
+require_once __DIR__ . '/../../includes/functions.php';
 
 requireAdmin();
 requireTenantFeature('jobs', '../jobs.php');
@@ -51,9 +52,9 @@ try {
         exit;
     }
 
-    if ($job['status'] !== 'ongoing') {
+    if (!isJobOpenStatus($job['status'])) {
         $pdo->rollBack();
-        $_SESSION['job_error'] = 'Parts usage can only be removed while a job is ongoing.';
+        $_SESSION['job_error'] = 'Parts usage can only be removed while a job is still active.';
         header('Location: ../jobs.php?job_id=' . $jobId);
         exit;
     }
@@ -89,7 +90,7 @@ try {
     }
 
     $inventoryStmt = $pdo->prepare("
-        SELECT inventory_id
+        SELECT inventory_id, quantity
         FROM inventory
         WHERE inventory_id = :inventory_id
           AND tenant_id = :tenant_id
@@ -101,7 +102,9 @@ try {
         'tenant_id' => $tenantId,
     ]);
 
-    if (!$inventoryStmt->fetch()) {
+    $inventory = $inventoryStmt->fetch();
+
+    if (!$inventory) {
         $pdo->rollBack();
         $_SESSION['job_error'] = 'The linked inventory item could not be found in this tenant.';
         header('Location: ../jobs.php?job_id=' . $jobId);
@@ -138,6 +141,45 @@ try {
         'quantity_used' => (int) $usage['quantity_used'],
         'inventory_id' => (int) $usage['inventory_id'],
         'tenant_id' => $tenantId,
+    ]);
+
+    $movementStmt = $pdo->prepare("
+        INSERT INTO inventory_movements (
+            tenant_id,
+            inventory_id,
+            job_id,
+            user_id,
+            movement_type,
+            quantity_change,
+            quantity_before,
+            quantity_after,
+            reference_type,
+            reference_id,
+            notes
+        ) VALUES (
+            :tenant_id,
+            :inventory_id,
+            :job_id,
+            :user_id,
+            'return',
+            :quantity_change,
+            :quantity_before,
+            :quantity_after,
+            'job_part_usage',
+            :reference_id,
+            :notes
+        )
+    ");
+    $movementStmt->execute([
+        'tenant_id' => $tenantId,
+        'inventory_id' => (int) $usage['inventory_id'],
+        'job_id' => $jobId,
+        'user_id' => (int) ($_SESSION['user_id'] ?? 0) ?: null,
+        'quantity_change' => (int) $usage['quantity_used'],
+        'quantity_before' => (int) $inventory['quantity'],
+        'quantity_after' => (int) $inventory['quantity'] + (int) $usage['quantity_used'],
+        'reference_id' => $jobPartUsageId,
+        'notes' => 'Removed parts usage from job #' . $jobId,
     ]);
 
     $pdo->commit();

@@ -23,7 +23,7 @@ if (!api_tenant_has_feature($pdo, $ctx['tenant_id'], 'jobs')) {
     api_error('feature_disabled', 'Jobs module is not enabled for this tenant.', 403);
 }
 
-$cid = api_resolve_customer_id($pdo, $ctx['tenant_id'], $ctx['username']);
+$cid = api_resolve_customer_id($pdo, $ctx['tenant_id'], $ctx['username'], $ctx['user_id']);
 if ($cid === null) {
     api_json(['ok' => true, 'items' => []]);
 }

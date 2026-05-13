@@ -37,6 +37,10 @@ $payablesAging = [
 $lowStockItems = [];
 $monthlyCollections = [];
 $monthlyPayables = [];
+$completedJobsByMechanic = [];
+$inventoryUsageReport = [];
+$paymentReport = [];
+$customerServiceHistory = [];
 
 $fromDateObj = DateTime::createFromFormat('Y-m-d', $fromDate);
 $toDateObj = DateTime::createFromFormat('Y-m-d', $toDate);
@@ -198,6 +202,105 @@ try {
     ");
     $monthlyPayablesStmt->execute(['tenant_id' => $tenantId]);
     $monthlyPayables = $monthlyPayablesStmt->fetchAll();
+
+    $completedJobsByMechanicStmt = $pdo->prepare("
+        SELECT
+            COALESCE(u.full_name, 'Unassigned') AS mechanic_name,
+            COUNT(*) AS completed_jobs
+        FROM jobs j
+        LEFT JOIN users u
+            ON u.user_id = j.mechanic_id
+           AND u.tenant_id = j.tenant_id
+        WHERE j.tenant_id = :tenant_id
+          AND j.status = 'completed'
+          AND DATE(COALESCE(j.completed_at, j.updated_at)) BETWEEN :from_date AND :to_date
+        GROUP BY COALESCE(u.full_name, 'Unassigned')
+        ORDER BY completed_jobs DESC, mechanic_name ASC
+        LIMIT 12
+    ");
+    $completedJobsByMechanicStmt->execute([
+        'tenant_id' => $tenantId,
+        'from_date' => $fromDate,
+        'to_date' => $toDate,
+    ]);
+    $completedJobsByMechanic = $completedJobsByMechanicStmt->fetchAll();
+
+    $inventoryUsageStmt = $pdo->prepare("
+        SELECT
+            i.part_name,
+            i.sku,
+            COALESCE(SUM(jpu.quantity_used), 0) AS quantity_used,
+            COALESCE(SUM(jpu.quantity_used * i.unit_cost), 0) AS estimated_cost
+        FROM job_parts_used jpu
+        INNER JOIN inventory i
+            ON i.inventory_id = jpu.inventory_id
+           AND i.tenant_id = jpu.tenant_id
+        WHERE jpu.tenant_id = :tenant_id
+          AND DATE(jpu.created_at) BETWEEN :from_date AND :to_date
+        GROUP BY i.inventory_id, i.part_name, i.sku
+        ORDER BY quantity_used DESC, i.part_name ASC
+        LIMIT 12
+    ");
+    $inventoryUsageStmt->execute([
+        'tenant_id' => $tenantId,
+        'from_date' => $fromDate,
+        'to_date' => $toDate,
+    ]);
+    $inventoryUsageReport = $inventoryUsageStmt->fetchAll();
+
+    $paymentReportStmt = $pdo->prepare("
+        SELECT
+            COALESCE(payment_method, 'Unspecified') AS payment_method,
+            COUNT(*) AS payment_count,
+            COALESCE(SUM(amount), 0) AS total_amount
+        FROM payments
+        WHERE tenant_id = :tenant_id
+          AND DATE(payment_date) BETWEEN :from_date AND :to_date
+        GROUP BY COALESCE(payment_method, 'Unspecified')
+        ORDER BY total_amount DESC, payment_method ASC
+    ");
+    $paymentReportStmt->execute([
+        'tenant_id' => $tenantId,
+        'from_date' => $fromDate,
+        'to_date' => $toDate,
+    ]);
+    $paymentReport = $paymentReportStmt->fetchAll();
+
+    $customerServiceHistoryStmt = $pdo->prepare("
+        SELECT
+            c.name AS customer_name,
+            v.make,
+            v.model,
+            v.plate,
+            a.appointment_date,
+            j.job_id,
+            j.status,
+            i.invoice_no,
+            i.total
+        FROM jobs j
+        INNER JOIN appointments a
+            ON a.appointment_id = j.appointment_id
+           AND a.tenant_id = j.tenant_id
+        INNER JOIN customers c
+            ON c.customer_id = a.customer_id
+           AND c.tenant_id = j.tenant_id
+        INNER JOIN vehicles v
+            ON v.vehicle_id = a.vehicle_id
+           AND v.tenant_id = j.tenant_id
+        LEFT JOIN invoices i
+            ON i.job_id = j.job_id
+           AND i.tenant_id = j.tenant_id
+        WHERE j.tenant_id = :tenant_id
+          AND DATE(a.appointment_date) BETWEEN :from_date AND :to_date
+        ORDER BY a.appointment_date DESC, j.job_id DESC
+        LIMIT 20
+    ");
+    $customerServiceHistoryStmt->execute([
+        'tenant_id' => $tenantId,
+        'from_date' => $fromDate,
+        'to_date' => $toDate,
+    ]);
+    $customerServiceHistory = $customerServiceHistoryStmt->fetchAll();
 } catch (PDOException $e) {
     $errorMessage = 'Reports could not be loaded: ' . $e->getMessage();
 }
@@ -220,9 +323,13 @@ function reportsMonthLabel($monthKey) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reports - MECHANIX</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0/dist/css/tabler.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+    <link rel="stylesheet" href="../assets/css/tabler-mechanix-bridge.css">
     <link rel="stylesheet" href="../assets/css/styles.css">
+    <link rel="stylesheet" href="../assets/css/superadmin-landing-theme.css">
 </head>
-<body class="page-shell">
+<body class="page-shell antialiased tenant-app">
     <div class="dashboard">
         <?= renderTenantAdminSidebar($businessName, $visibleModuleLinks, 'reports.php', $showAnalytics) ?>
 
@@ -439,6 +546,98 @@ function reportsMonthLabel($monthKey) {
                             </div>
                         <?php endif; ?>
                     </div>
+                </article>
+            </section>
+
+            <section class="content-grid dashboard-lower-grid">
+                <article class="content-card">
+                    <h3>Completed Jobs by Mechanic</h3>
+                    <p>Completed job counts in the selected report range.</p>
+                    <?php if (!empty($completedJobsByMechanic)): ?>
+                        <div class="dashboard-list">
+                            <?php foreach ($completedJobsByMechanic as $row): ?>
+                                <div class="dashboard-list-item">
+                                    <div>
+                                        <strong><?= htmlspecialchars($row['mechanic_name'], ENT_QUOTES, 'UTF-8') ?></strong>
+                                        <p>Completed jobs assigned in this range.</p>
+                                    </div>
+                                    <span class="metric-pill"><?= number_format((int) $row['completed_jobs']) ?></span>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else: ?>
+                        <div class="table-placeholder">No completed mechanic jobs were found for this range.</div>
+                    <?php endif; ?>
+                </article>
+
+                <article class="content-card">
+                    <h3>Inventory Usage</h3>
+                    <p>Parts deducted from jobs in the selected report range.</p>
+                    <?php if (!empty($inventoryUsageReport)): ?>
+                        <div class="dashboard-list">
+                            <?php foreach ($inventoryUsageReport as $row): ?>
+                                <div class="dashboard-list-item">
+                                    <div>
+                                        <strong><?= htmlspecialchars($row['part_name'], ENT_QUOTES, 'UTF-8') ?></strong>
+                                        <p>
+                                            <?= htmlspecialchars($row['sku'] ?: 'No SKU', ENT_QUOTES, 'UTF-8') ?>
+                                            | Qty <?= number_format((int) $row['quantity_used']) ?>
+                                        </p>
+                                    </div>
+                                    <span class="metric-pill"><?= htmlspecialchars(reportsCurrency($row['estimated_cost']), ENT_QUOTES, 'UTF-8') ?></span>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else: ?>
+                        <div class="table-placeholder">No inventory usage was recorded for this range.</div>
+                    <?php endif; ?>
+                </article>
+            </section>
+
+            <section class="content-grid dashboard-lower-grid">
+                <article class="content-card">
+                    <h3>Payment Report</h3>
+                    <p>Customer collections grouped by payment method.</p>
+                    <?php if (!empty($paymentReport)): ?>
+                        <div class="dashboard-list">
+                            <?php foreach ($paymentReport as $row): ?>
+                                <div class="dashboard-list-item">
+                                    <div>
+                                        <strong><?= htmlspecialchars($row['payment_method'], ENT_QUOTES, 'UTF-8') ?></strong>
+                                        <p><?= number_format((int) $row['payment_count']) ?> payment(s)</p>
+                                    </div>
+                                    <span class="metric-pill"><?= htmlspecialchars(reportsCurrency($row['total_amount']), ENT_QUOTES, 'UTF-8') ?></span>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else: ?>
+                        <div class="table-placeholder">No payments were collected for this range.</div>
+                    <?php endif; ?>
+                </article>
+
+                <article class="content-card">
+                    <h3>Customer Service History</h3>
+                    <p>Recent customer service activity within the selected dates.</p>
+                    <?php if (!empty($customerServiceHistory)): ?>
+                        <div class="dashboard-list">
+                            <?php foreach ($customerServiceHistory as $row): ?>
+                                <div class="dashboard-list-item">
+                                    <div>
+                                        <strong><?= htmlspecialchars($row['customer_name'], ENT_QUOTES, 'UTF-8') ?></strong>
+                                        <p>
+                                            Job #<?= (int) $row['job_id'] ?>
+                                            | <?= htmlspecialchars(trim(($row['make'] ?? '') . ' ' . ($row['model'] ?? '')), ENT_QUOTES, 'UTF-8') ?>
+                                            <?= !empty($row['plate']) ? '| ' . htmlspecialchars($row['plate'], ENT_QUOTES, 'UTF-8') : '' ?>
+                                            | <?= htmlspecialchars($row['appointment_date'], ENT_QUOTES, 'UTF-8') ?>
+                                        </p>
+                                    </div>
+                                    <span class="metric-pill"><?= htmlspecialchars(reportsCurrency($row['total'] ?? 0), ENT_QUOTES, 'UTF-8') ?></span>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else: ?>
+                        <div class="table-placeholder">No service history entries matched this range.</div>
+                    <?php endif; ?>
                 </article>
             </section>
         </main>

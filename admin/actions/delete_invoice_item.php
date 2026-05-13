@@ -27,7 +27,7 @@ try {
     $pdo->beginTransaction();
 
     $invoiceStmt = $pdo->prepare("
-        SELECT invoice_id, total, amount_paid, status
+        SELECT invoice_id, subtotal, tax_rate, total, amount_paid, status
         FROM invoices
         WHERE invoice_id = :invoice_id
           AND tenant_id = :tenant_id
@@ -84,7 +84,10 @@ try {
         exit;
     }
 
-    $newTotal = (float) $invoice['total'] - (float) $item['line_total'];
+    $baseSubtotal = (float) ($invoice['subtotal'] ?? 0) > 0 ? (float) $invoice['subtotal'] : (float) $invoice['total'];
+    $newSubtotal = $baseSubtotal - (float) $item['line_total'];
+    $newTaxAmount = $newSubtotal * ((float) ($invoice['tax_rate'] ?? 0) / 100);
+    $newTotal = $newSubtotal + $newTaxAmount;
     if ($newTotal <= 0) {
         $pdo->rollBack();
         $_SESSION['invoice_item_error'] = 'This removal would make the invoice total zero or negative.';
@@ -119,12 +122,16 @@ try {
 
     $updateStmt = $pdo->prepare("
         UPDATE invoices
-        SET total = :total,
+        SET subtotal = :subtotal,
+            tax_amount = :tax_amount,
+            total = :total,
             status = :status
         WHERE invoice_id = :invoice_id
           AND tenant_id = :tenant_id
     ");
     $updateStmt->execute([
+        'subtotal' => number_format($newSubtotal, 2, '.', ''),
+        'tax_amount' => number_format($newTaxAmount, 2, '.', ''),
         'total' => number_format($newTotal, 2, '.', ''),
         'status' => $newStatus,
         'invoice_id' => $invoiceId,

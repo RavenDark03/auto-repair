@@ -22,6 +22,7 @@ unset($_SESSION['customer_success'], $_SESSION['customer_error'], $_SESSION['cus
 
 $customers = [];
 $selectedCustomer = null;
+$customerAccount = null;
 $customerVehicles = [];
 $customerActivity = [];
 $customerSummary = [
@@ -301,7 +302,7 @@ try {
                    AND a.tenant_id = j.tenant_id
                 WHERE j.tenant_id = :tenant_id
                   AND a.customer_id = :customer_id
-                  AND j.status = 'ongoing'
+                  AND j.status IN ('pending_inspection', 'in_repair', 'waiting_for_parts', 'ongoing')
             ");
             $ongoingJobsStmt->execute([
                 'tenant_id' => $tenantId,
@@ -364,6 +365,20 @@ try {
                 'customer_id' => $selectedCustomerId,
             ]);
             $customerActivity = $customerActivityStmt->fetchAll();
+
+            $customerAccountStmt = $pdo->prepare("
+                SELECT user_id, username, status, must_change_password, created_at
+                FROM users
+                WHERE tenant_id = :tenant_id
+                  AND customer_id = :customer_id
+                  AND role = 'customer'
+                LIMIT 1
+            ");
+            $customerAccountStmt->execute([
+                'tenant_id' => $tenantId,
+                'customer_id' => $selectedCustomerId,
+            ]);
+            $customerAccount = $customerAccountStmt->fetch() ?: null;
         }
     }
 } catch (PDOException $e) {
@@ -455,9 +470,13 @@ function customerContextLabel(array $customer) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Customers - MECHANIX</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0/dist/css/tabler.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+    <link rel="stylesheet" href="../assets/css/tabler-mechanix-bridge.css">
     <link rel="stylesheet" href="../assets/css/styles.css">
+    <link rel="stylesheet" href="../assets/css/superadmin-landing-theme.css">
 </head>
-<body class="page-shell">
+<body class="page-shell antialiased tenant-app">
     <div class="dashboard">
         <?= renderTenantAdminSidebar($businessName, $visibleModuleLinks, 'customers.php', $showAnalytics) ?>
 
@@ -654,6 +673,68 @@ function customerContextLabel(array $customer) {
                             </div>
                         </div>
 
+                        <div class="dashboard-list compact-list">
+                            <div class="dashboard-list-item">
+                                <div>
+                                    <strong>Mobile Login</strong>
+                                    <p>
+                                        <?= $customerAccount ? 'Username: @' . htmlspecialchars($customerAccount['username'], ENT_QUOTES, 'UTF-8') : 'No customer mobile login has been issued yet.' ?>
+                                        <?php if ($customerAccount && (int) $customerAccount['must_change_password'] === 1): ?>
+                                            | Password change required
+                                        <?php endif; ?>
+                                    </p>
+                                </div>
+                                <?php if ($customerAccount): ?>
+                                    <span class="status-chip status-<?= htmlspecialchars($customerAccount['status'], ENT_QUOTES, 'UTF-8') ?>">
+                                        <?= htmlspecialchars(ucfirst($customerAccount['status']), ENT_QUOTES, 'UTF-8') ?>
+                                    </span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+
+                        <form action="actions/save_customer_account.php" method="POST" class="feature-toggle-form">
+                            <input type="hidden" name="customer_id" value="<?= (int) $selectedCustomer['customer_id'] ?>">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="customer_account_username">Login Username</label>
+                                    <input
+                                        class="form-control"
+                                        type="text"
+                                        id="customer_account_username"
+                                        name="username"
+                                        value="<?= htmlspecialchars($customerAccount['username'] ?? ($selectedCustomer['email'] ?: $selectedCustomer['contact']), ENT_QUOTES, 'UTF-8') ?>"
+                                        required
+                                    >
+                                </div>
+                                <div class="form-group">
+                                    <label for="customer_account_status">Access</label>
+                                    <select class="form-control" id="customer_account_status" name="status" required>
+                                        <option value="active"<?= (($customerAccount['status'] ?? 'active') === 'active') ? ' selected' : '' ?>>Active</option>
+                                        <option value="inactive"<?= (($customerAccount['status'] ?? '') === 'inactive') ? ' selected' : '' ?>>Inactive</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="customer_account_password">Temporary Password</label>
+                                    <input class="form-control" type="password" id="customer_account_password" name="password" minlength="8"<?= $customerAccount ? '' : ' required' ?>>
+                                </div>
+                                <div class="form-group">
+                                    <label for="customer_account_confirm_password">Confirm Password</label>
+                                    <input class="form-control" type="password" id="customer_account_confirm_password" name="confirm_password" minlength="8"<?= $customerAccount ? '' : ' required' ?>>
+                                </div>
+                            </div>
+                            <label class="toggle-option" for="customer_account_must_change">
+                                <input type="checkbox" id="customer_account_must_change" name="must_change_password" value="1"<?= !$customerAccount || (int) ($customerAccount['must_change_password'] ?? 0) === 1 ? ' checked' : '' ?>>
+                                <span>Require password change after login</span>
+                            </label>
+                            <div class="approval-actions">
+                                <button type="submit" class="btn btn-secondary">
+                                    <?= $customerAccount ? 'Save Customer Login' : 'Issue Customer Login' ?>
+                                </button>
+                            </div>
+                        </form>
+
                         <?php if (
                             $selectedCustomer['status'] === 'active'
                             && (
@@ -778,8 +859,8 @@ function customerContextLabel(array $customer) {
                                                 <?= htmlspecialchars(ucfirst($activity['appointment_status']), ENT_QUOTES, 'UTF-8') ?>
                                             </span>
                                             <?php if ($showJobs && !empty($activity['job_status'])): ?>
-                                                <span class="status-chip status-<?= htmlspecialchars($activity['job_status'], ENT_QUOTES, 'UTF-8') ?>">
-                                                    <?= htmlspecialchars(ucfirst($activity['job_status']), ENT_QUOTES, 'UTF-8') ?>
+                                                <span class="status-chip status-<?= htmlspecialchars(jobStatusClass($activity['job_status']), ENT_QUOTES, 'UTF-8') ?>">
+                                                    <?= htmlspecialchars(jobStatusLabel($activity['job_status']), ENT_QUOTES, 'UTF-8') ?>
                                                 </span>
                                             <?php endif; ?>
                                             <?php if ($showInvoicing && !empty($activity['invoice_status'])): ?>

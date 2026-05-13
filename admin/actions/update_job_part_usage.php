@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../includes/session.php';
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../includes/db.php';
 require_once __DIR__ . '/../../includes/feature_access.php';
+require_once __DIR__ . '/../../includes/functions.php';
 
 requireAdmin();
 requireTenantFeature('jobs', '../jobs.php');
@@ -64,9 +65,9 @@ try {
         exit;
     }
 
-    if ($job['status'] !== 'ongoing') {
+    if (!isJobOpenStatus($job['status'])) {
         $pdo->rollBack();
-        $_SESSION['job_error'] = 'Parts usage can only be updated while a job is ongoing.';
+        $_SESSION['job_error'] = 'Parts usage can only be updated while a job is still active.';
         header('Location: ../jobs.php?job_id=' . $jobId);
         exit;
     }
@@ -159,6 +160,7 @@ try {
     $oldInventoryId = (int) $existingUsage['inventory_id'];
 
     if ($inventoryId === $oldInventoryId) {
+        $quantityBefore = (int) $newInventory['quantity'];
         $availableQuantity = (int) $newInventory['quantity'] + $oldQuantity;
         if ($availableQuantity < $requestedQuantity) {
             $pdo->rollBack();
@@ -178,6 +180,51 @@ try {
             'inventory_id' => $inventoryId,
             'tenant_id' => $tenantId,
         ]);
+
+        $quantityAfter = $availableQuantity - $requestedQuantity;
+        $quantityChange = $quantityAfter - $quantityBefore;
+
+        if ($quantityChange !== 0) {
+            $movementStmt = $pdo->prepare("
+                INSERT INTO inventory_movements (
+                    tenant_id,
+                    inventory_id,
+                    job_id,
+                    user_id,
+                    movement_type,
+                    quantity_change,
+                    quantity_before,
+                    quantity_after,
+                    reference_type,
+                    reference_id,
+                    notes
+                ) VALUES (
+                    :tenant_id,
+                    :inventory_id,
+                    :job_id,
+                    :user_id,
+                    :movement_type,
+                    :quantity_change,
+                    :quantity_before,
+                    :quantity_after,
+                    'job_part_usage',
+                    :reference_id,
+                    :notes
+                )
+            ");
+            $movementStmt->execute([
+                'tenant_id' => $tenantId,
+                'inventory_id' => $inventoryId,
+                'job_id' => $jobId,
+                'user_id' => (int) ($_SESSION['user_id'] ?? 0) ?: null,
+                'movement_type' => $quantityChange > 0 ? 'return' : 'deduct',
+                'quantity_change' => $quantityChange,
+                'quantity_before' => $quantityBefore,
+                'quantity_after' => $quantityAfter,
+                'reference_id' => $jobPartUsageId,
+                'notes' => 'Adjusted parts usage on job #' . $jobId,
+            ]);
+        }
     } else {
         if ((int) $newInventory['quantity'] < $requestedQuantity) {
             $pdo->rollBack();
@@ -208,6 +255,58 @@ try {
             'quantity' => $requestedQuantity,
             'inventory_id' => $inventoryId,
             'tenant_id' => $tenantId,
+        ]);
+
+        $movementStmt = $pdo->prepare("
+            INSERT INTO inventory_movements (
+                tenant_id,
+                inventory_id,
+                job_id,
+                user_id,
+                movement_type,
+                quantity_change,
+                quantity_before,
+                quantity_after,
+                reference_type,
+                reference_id,
+                notes
+            ) VALUES (
+                :tenant_id,
+                :inventory_id,
+                :job_id,
+                :user_id,
+                :movement_type,
+                :quantity_change,
+                :quantity_before,
+                :quantity_after,
+                'job_part_usage',
+                :reference_id,
+                :notes
+            )
+        ");
+        $movementStmt->execute([
+            'tenant_id' => $tenantId,
+            'inventory_id' => $oldInventoryId,
+            'job_id' => $jobId,
+            'user_id' => (int) ($_SESSION['user_id'] ?? 0) ?: null,
+            'movement_type' => 'return',
+            'quantity_change' => $oldQuantity,
+            'quantity_before' => (int) $oldInventory['quantity'],
+            'quantity_after' => (int) $oldInventory['quantity'] + $oldQuantity,
+            'reference_id' => $jobPartUsageId,
+            'notes' => 'Returned previous part usage on job #' . $jobId,
+        ]);
+        $movementStmt->execute([
+            'tenant_id' => $tenantId,
+            'inventory_id' => $inventoryId,
+            'job_id' => $jobId,
+            'user_id' => (int) ($_SESSION['user_id'] ?? 0) ?: null,
+            'movement_type' => 'deduct',
+            'quantity_change' => -1 * $requestedQuantity,
+            'quantity_before' => (int) $newInventory['quantity'],
+            'quantity_after' => (int) $newInventory['quantity'] - $requestedQuantity,
+            'reference_id' => $jobPartUsageId,
+            'notes' => 'Deducted replacement part usage on job #' . $jobId,
         ]);
     }
 

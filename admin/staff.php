@@ -103,9 +103,13 @@ function staffDate($date) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Staff Management - MECHANIX</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0/dist/css/tabler.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+    <link rel="stylesheet" href="../assets/css/tabler-mechanix-bridge.css">
     <link rel="stylesheet" href="../assets/css/styles.css">
+    <link rel="stylesheet" href="../assets/css/superadmin-landing-theme.css">
 </head>
-<body class="page-shell">
+<body class="page-shell antialiased tenant-app">
     <div class="dashboard">
         <?= renderTenantAdminSidebar($businessName, $visibleModuleLinks, 'staff.php', $showAnalytics) ?>
 
@@ -184,6 +188,63 @@ function staffDate($date) {
                                                 </button>
                                             </form>
                                         <?php endif; ?>
+                                    </div>
+
+                                    <div class="staff-inline-editor">
+                                        <form action="actions/update_staff.php" method="POST" class="feature-toggle-form">
+                                            <input type="hidden" name="user_id" value="<?= (int) $staff['user_id'] ?>">
+                                            <div class="form-grid">
+                                                <div class="form-group">
+                                                    <label for="staff_full_name_<?= (int) $staff['user_id'] ?>">Name</label>
+                                                    <input class="form-control" type="text" id="staff_full_name_<?= (int) $staff['user_id'] ?>" name="full_name" value="<?= htmlspecialchars($staff['full_name'], ENT_QUOTES, 'UTF-8') ?>" required>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="staff_username_<?= (int) $staff['user_id'] ?>">Username</label>
+                                                    <input class="form-control" type="text" id="staff_username_<?= (int) $staff['user_id'] ?>" name="username" value="<?= htmlspecialchars($staff['username'], ENT_QUOTES, 'UTF-8') ?>" required>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="staff_role_<?= (int) $staff['user_id'] ?>">Role</label>
+                                                    <select class="form-control" id="staff_role_<?= (int) $staff['user_id'] ?>" name="role" required<?= $isCurrentUser ? ' disabled' : '' ?>>
+                                                        <?php foreach (['admin' => 'Admin', 'cashier' => 'Cashier', 'mechanic' => 'Mechanic'] as $roleValue => $roleLabel): ?>
+                                                            <option value="<?= htmlspecialchars($roleValue, ENT_QUOTES, 'UTF-8') ?>"<?= $staff['role'] === $roleValue ? ' selected' : '' ?>>
+                                                                <?= htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8') ?>
+                                                            </option>
+                                                        <?php endforeach; ?>
+                                                    </select>
+                                                    <?php if ($isCurrentUser): ?>
+                                                        <input type="hidden" name="role" value="<?= htmlspecialchars($staff['role'], ENT_QUOTES, 'UTF-8') ?>">
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                            <div class="approval-actions">
+                                                <button type="submit" class="btn btn-secondary btn-small">Save Details</button>
+                                            </div>
+                                        </form>
+
+                                        <form action="actions/reset_staff_credentials.php" method="POST" class="feature-toggle-form">
+                                            <input type="hidden" name="user_id" value="<?= (int) $staff['user_id'] ?>">
+                                            <div class="form-grid">
+                                                <div class="form-group">
+                                                    <label for="staff_reset_username_<?= (int) $staff['user_id'] ?>">Reset Username</label>
+                                                    <input class="form-control" type="text" id="staff_reset_username_<?= (int) $staff['user_id'] ?>" name="username" value="<?= htmlspecialchars($staff['username'], ENT_QUOTES, 'UTF-8') ?>" required>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="staff_reset_password_<?= (int) $staff['user_id'] ?>">Temporary Password</label>
+                                                    <input class="form-control" type="password" id="staff_reset_password_<?= (int) $staff['user_id'] ?>" name="password" minlength="8" required>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="staff_reset_confirm_<?= (int) $staff['user_id'] ?>">Confirm Password</label>
+                                                    <input class="form-control" type="password" id="staff_reset_confirm_<?= (int) $staff['user_id'] ?>" name="confirm_password" minlength="8" required>
+                                                </div>
+                                            </div>
+                                            <label class="toggle-option" for="staff_reset_must_change_<?= (int) $staff['user_id'] ?>">
+                                                <input type="checkbox" id="staff_reset_must_change_<?= (int) $staff['user_id'] ?>" name="must_change_password" value="1" checked>
+                                                <span>Require password change after reset</span>
+                                            </label>
+                                            <div class="approval-actions">
+                                                <button type="submit" class="btn btn-secondary btn-small">Reset Credentials</button>
+                                            </div>
+                                        </form>
                                     </div>
                                 </div>
                             <?php endforeach; ?>

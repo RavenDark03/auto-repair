@@ -243,7 +243,7 @@ try {
                    AND a.tenant_id = j.tenant_id
                 WHERE j.tenant_id = :tenant_id
                   AND a.vehicle_id = :vehicle_id
-                  AND j.status = 'ongoing'
+                  AND j.status IN ('pending_inspection', 'in_repair', 'waiting_for_parts', 'ongoing')
             ");
             $ongoingJobsStmt->execute([
                 'tenant_id' => $tenantId,
@@ -432,9 +432,13 @@ function vehicleContextUrl($vehicleId = 0, $customerId = 0, $search = '') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vehicles - MECHANIX</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0/dist/css/tabler.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+    <link rel="stylesheet" href="../assets/css/tabler-mechanix-bridge.css">
     <link rel="stylesheet" href="../assets/css/styles.css">
+    <link rel="stylesheet" href="../assets/css/superadmin-landing-theme.css">
 </head>
-<body class="page-shell">
+<body class="page-shell antialiased tenant-app">
     <div class="dashboard">
         <?= renderTenantAdminSidebar($businessName, $visibleModuleLinks, 'vehicles.php', $showAnalytics) ?>
 
@@ -752,8 +756,8 @@ function vehicleContextUrl($vehicleId = 0, $customerId = 0, $search = '') {
                                                 <?= htmlspecialchars(ucfirst($history['appointment_status']), ENT_QUOTES, 'UTF-8') ?>
                                             </span>
                                             <?php if ($showJobs && !empty($history['job_status'])): ?>
-                                                <span class="status-chip status-<?= htmlspecialchars($history['job_status'], ENT_QUOTES, 'UTF-8') ?>">
-                                                    <?= htmlspecialchars(ucfirst($history['job_status']), ENT_QUOTES, 'UTF-8') ?>
+                                                <span class="status-chip status-<?= htmlspecialchars(jobStatusClass($history['job_status']), ENT_QUOTES, 'UTF-8') ?>">
+                                                    <?= htmlspecialchars(jobStatusLabel($history['job_status']), ENT_QUOTES, 'UTF-8') ?>
                                                 </span>
                                             <?php endif; ?>
                                             <?php if ($showInvoicing && !empty($history['invoice_status'])): ?>
