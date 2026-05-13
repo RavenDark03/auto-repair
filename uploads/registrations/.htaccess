@@ -1,0 +1,5 @@
+# Uploaded ID documents — no directory listing, no PHP execution
+Options -Indexes
+<FilesMatch "\.(php|phtml|php7|phar)$">
+    Require all denied
+</FilesMatch>

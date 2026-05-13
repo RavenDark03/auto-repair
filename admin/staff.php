@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_once __DIR__ . '/../includes/session.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/db.php';
@@ -224,19 +224,26 @@ function staffDate($date) {
                         <div class="form-grid">
                             <div class="form-group">
                                 <label for="password">Temporary Password</label>
-                                <input class="form-control" type="password" id="password" name="password" required minlength="8">
+                                <div class="pw-input-wrap">
+                                    <input class="form-control" type="password" id="password" name="password" required minlength="8">
+                                    <button type="button" class="pw-toggle-btn" data-pw-target="password" aria-label="Show password">
+                                        <svg class="pw-eye" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                                        <svg class="pw-eye-off" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-10-8-10-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 8 10 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                                    </button>
+                                </div>
                             </div>
 
                             <div class="form-group">
                                 <label for="confirm_password">Confirm Password</label>
-                                <input class="form-control" type="password" id="confirm_password" name="confirm_password" required minlength="8">
+                                <div class="pw-input-wrap">
+                                    <input class="form-control" type="password" id="confirm_password" name="confirm_password" required minlength="8">
+                                    <button type="button" class="pw-toggle-btn" data-pw-target="confirm_password" aria-label="Show password">
+                                        <svg class="pw-eye" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                                        <svg class="pw-eye-off" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-10-8-10-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 8 10 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                                    </button>
+                                </div>
                             </div>
                         </div>
-
-                        <label class="toggle-option" for="show-staff-passwords">
-                            <input type="checkbox" id="show-staff-passwords" data-password-toggle-group data-password-targets="password,confirm_password">
-                            <span>Show passwords</span>
-                        </label>
 
                         <label class="toggle-option" for="must_change_password">
                             <input type="checkbox" id="must_change_password" name="must_change_password" value="1"<?= !isset($oldInput['must_change_password']) || !empty($oldInput['must_change_password']) ? ' checked' : '' ?>>

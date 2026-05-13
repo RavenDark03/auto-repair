@@ -516,7 +516,7 @@ CREATE TABLE `supplier_payments` (
 CREATE TABLE `tenants` (
   `tenant_id` int(11) NOT NULL,
   `business_name` varchar(150) NOT NULL,
-  `status` enum('active','inactive') NOT NULL DEFAULT 'active',
+  `status` enum('pending_payment','active','inactive') NOT NULL DEFAULT 'active',
   `access_mode` enum('full_access','read_only') NOT NULL DEFAULT 'full_access',
   `read_only_source_plan` varchar(100) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
@@ -556,6 +556,9 @@ CREATE TABLE `tenant_registrations` (
   `phone` varchar(50) DEFAULT NULL,
   `address` varchar(255) DEFAULT NULL,
   `preferred_username` varchar(50) DEFAULT NULL,
+  `password_hash` varchar(255) DEFAULT NULL,
+  `bir_tin` varchar(20) DEFAULT NULL,
+  `owner_id_document_path` varchar(500) DEFAULT NULL,
   `selected_plan_id` int(11) NOT NULL,
   `billing_cycle` enum('monthly','yearly') NOT NULL DEFAULT 'monthly',
   `registration_status` enum('pending','approved','rejected','billing_sent','paid','converted') NOT NULL DEFAULT 'pending',
@@ -563,6 +566,7 @@ CREATE TABLE `tenant_registrations` (
   `reviewed_by_super_admin_id` int(11) DEFAULT NULL,
   `reviewed_at` datetime DEFAULT NULL,
   `converted_tenant_id` int(11) DEFAULT NULL,
+  `provisioned_tenant_id` int(11) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -823,7 +827,8 @@ ALTER TABLE `tenant_registrations`
   ADD PRIMARY KEY (`registration_id`),
   ADD KEY `selected_plan_id` (`selected_plan_id`),
   ADD KEY `reviewed_by_super_admin_id` (`reviewed_by_super_admin_id`),
-  ADD KEY `converted_tenant_id` (`converted_tenant_id`);
+  ADD KEY `converted_tenant_id` (`converted_tenant_id`),
+  ADD KEY `idx_tr_provisioned_tenant` (`provisioned_tenant_id`);
 
 --
 -- Indexes for table `users`
@@ -1170,7 +1175,8 @@ ALTER TABLE `tenant_features`
 ALTER TABLE `tenant_registrations`
   ADD CONSTRAINT `tenant_registrations_ibfk_1` FOREIGN KEY (`selected_plan_id`) REFERENCES `subscription_plans` (`plan_id`),
   ADD CONSTRAINT `tenant_registrations_ibfk_2` FOREIGN KEY (`reviewed_by_super_admin_id`) REFERENCES `super_admins` (`super_admin_id`),
-  ADD CONSTRAINT `tenant_registrations_ibfk_3` FOREIGN KEY (`converted_tenant_id`) REFERENCES `tenants` (`tenant_id`) ON DELETE SET NULL;
+  ADD CONSTRAINT `tenant_registrations_ibfk_3` FOREIGN KEY (`converted_tenant_id`) REFERENCES `tenants` (`tenant_id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `tenant_registrations_ibfk_4` FOREIGN KEY (`provisioned_tenant_id`) REFERENCES `tenants` (`tenant_id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `users`

@@ -18,7 +18,7 @@ function redirectToPasswordChange() {
 
 function requireLogin() {
     if (!isLoggedIn()) {
-        header("Location: ../login.php");
+        header('Location: ' . BASE_URL . '/login.php');
         exit;
     }
 }
@@ -31,11 +31,35 @@ function currentUserHasTenantRole(array $allowedRoles) {
     return in_array((string) getCurrentUserRole(), $allowedRoles, true);
 }
 
-function requireTenantRoles(array $allowedRoles, $redirectPath = '../login.php') {
+function requireTenantRoles(array $allowedRoles, $redirectPath = null) {
     requireLogin();
+
+    if ($redirectPath === null) {
+        $redirectPath = BASE_URL . '/login.php';
+    }
 
     if (mustChangePassword()) {
         redirectToPasswordChange();
+    }
+
+    $scriptName = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+    if (strpos($scriptName, 'pending_payment.php') === false) {
+        try {
+            $pdo = Database::getInstance();
+            $tenantStmt = $pdo->prepare("
+                SELECT status
+                FROM tenants
+                WHERE tenant_id = :tenant_id
+                LIMIT 1
+            ");
+            $tenantStmt->execute(['tenant_id' => (int) ($_SESSION['tenant_id'] ?? 0)]);
+            $tenantStatus = (string) $tenantStmt->fetchColumn();
+            if ($tenantStatus === 'pending_payment') {
+                header('Location: ' . BASE_URL . '/pending_payment.php');
+                exit;
+            }
+        } catch (PDOException $e) {
+        }
     }
 
     if (!currentUserHasTenantRole($allowedRoles)) {

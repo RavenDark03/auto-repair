@@ -102,7 +102,7 @@ function registerFeatureLabel($featureName) {
                 <div class="register-header">
                     <p class="eyebrow">New Business Application</p>
                     <h2>Register your repair shop</h2>
-                    <p>Fill in your business details, choose a plan, and submit for super admin review (about 3 minutes). No password here—accounts are created after approval. You will receive a tenant admin username and temporary password when the super admin converts your registration; then use the <a href="login.php">Log in</a> page (username + password) and change your password if the system asks you to.</p>
+                    <p>Submit your business profile, <strong>owner ID</strong>, <strong>BIR TIN</strong>, and an <strong>admin password</strong>. After super admin approval you can <a href="login.php">log in</a> with your preferred username and that password to <strong>complete PayMongo billing</strong>. The full admin dashboard unlocks once payment is confirmed and the workspace is converted.</p>
                 </div>
 
                 <?php if ($successMessage !== null): ?>
@@ -119,7 +119,7 @@ function registerFeatureLabel($featureName) {
                     </div>
                 <?php endif; ?>
 
-                <form id="registration-form" action="actions/register_business.php" method="POST" novalidate>
+                <form id="registration-form" action="actions/register_business.php" method="POST" enctype="multipart/form-data" novalidate>
                     <script type="application/json" id="register-old-json"><?= htmlspecialchars(json_encode($oldInput, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8') ?></script>
 
                     <!-- ─ Section 01: Business Profile ─ -->
@@ -178,6 +178,61 @@ function registerFeatureLabel($featureName) {
                                 <?php endif; ?>
                             </div>
                         </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="password">Admin password</label>
+                                <div class="pw-input-wrap">
+                                    <input class="form-control<?= registerFieldErr($fieldErrors, 'password') !== '' ? ' is-invalid' : '' ?>"
+                                        type="password" id="password" name="password" autocomplete="new-password"
+                                        minlength="10" required>
+                                    <button type="button" class="pw-toggle-btn" data-pw-target="password" aria-label="Show password">
+                                        <svg class="pw-eye" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                                        <svg class="pw-eye-off" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-10-8-10-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 8 10 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                                    </button>
+                                </div>
+                                <?php if (registerFieldErr($fieldErrors, 'password') !== ''): ?>
+                                    <p class="field-error"><?= htmlspecialchars(registerFieldErr($fieldErrors, 'password'), ENT_QUOTES, 'UTF-8') ?></p>
+                                <?php else: ?>
+                                    <p class="field-hint">At least 10 characters, with at least one letter and one number.</p>
+                                <?php endif; ?>
+                            </div>
+                            <div class="form-group">
+                                <label for="password_confirm">Confirm password</label>
+                                <div class="pw-input-wrap">
+                                    <input class="form-control<?= registerFieldErr($fieldErrors, 'password_confirm') !== '' ? ' is-invalid' : '' ?>"
+                                        type="password" id="password_confirm" name="password_confirm" autocomplete="new-password" required>
+                                    <button type="button" class="pw-toggle-btn" data-pw-target="password_confirm" aria-label="Show password">
+                                        <svg class="pw-eye" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                                        <svg class="pw-eye-off" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-10-8-10-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 8 10 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                                    </button>
+                                </div>
+                                <?php if (registerFieldErr($fieldErrors, 'password_confirm') !== ''): ?>
+                                    <p class="field-error"><?= htmlspecialchars(registerFieldErr($fieldErrors, 'password_confirm'), ENT_QUOTES, 'UTF-8') ?></p>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="bir_tin">BIR TIN</label>
+                                <input class="form-control<?= registerFieldErr($fieldErrors, 'bir_tin') !== '' ? ' is-invalid' : '' ?>"
+                                    type="text" id="bir_tin" name="bir_tin" inputmode="numeric" autocomplete="off"
+                                    placeholder="9–12 digits"
+                                    value="<?= registerValue($oldInput, 'bir_tin') ?>" required>
+                                <?php if (registerFieldErr($fieldErrors, 'bir_tin') !== ''): ?>
+                                    <p class="field-error"><?= htmlspecialchars(registerFieldErr($fieldErrors, 'bir_tin'), ENT_QUOTES, 'UTF-8') ?></p>
+                                <?php endif; ?>
+                            </div>
+                            <div class="form-group">
+                                <label for="owner_id_document">Government or business ID <span class="field-optional">PDF / image</span></label>
+                                <input class="form-control<?= registerFieldErr($fieldErrors, 'owner_id_document') !== '' ? ' is-invalid' : '' ?>"
+                                    type="file" id="owner_id_document" name="owner_id_document" accept=".pdf,.jpg,.jpeg,.png,.webp,image/*,application/pdf" required>
+                                <?php if (registerFieldErr($fieldErrors, 'owner_id_document') !== ''): ?>
+                                    <p class="field-error"><?= htmlspecialchars(registerFieldErr($fieldErrors, 'owner_id_document'), ENT_QUOTES, 'UTF-8') ?></p>
+                                <?php else: ?>
+                                    <p class="field-hint">Max 5 MB. JPG, PNG, WebP, or PDF.</p>
+                                <?php endif; ?>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- ─ Section 02: Account Setup ─ -->
@@ -191,11 +246,17 @@ function registerFeatureLabel($featureName) {
                         </div>
                         <div class="form-grid">
                             <div class="form-group">
-                                <label for="preferred_username">Preferred Admin Username</label>
-                                <input class="form-control" type="text" id="preferred_username" name="preferred_username"
+                                <label for="preferred_username">Preferred Admin Username <span class="field-optional">required</span></label>
+                                <input class="form-control<?= registerFieldErr($fieldErrors, 'preferred_username') !== '' ? ' is-invalid' : '' ?>"
+                                    type="text" id="preferred_username" name="preferred_username"
+                                    pattern="[a-zA-Z0-9_]{3,30}" minlength="3" maxlength="30" required
                                     value="<?= registerValue($oldInput, 'preferred_username') ?>"
                                     placeholder="e.g. santosauto">
-                                <p class="field-hint">Used for your tenant admin login.</p>
+                                <?php if (registerFieldErr($fieldErrors, 'preferred_username') !== ''): ?>
+                                    <p class="field-error"><?= htmlspecialchars(registerFieldErr($fieldErrors, 'preferred_username'), ENT_QUOTES, 'UTF-8') ?></p>
+                                <?php else: ?>
+                                    <p class="field-hint">3–30 characters: letters, numbers, underscore only.</p>
+                                <?php endif; ?>
                             </div>
                             <div class="form-group">
                                 <label for="billing_cycle">Billing Cycle</label>
@@ -381,22 +442,22 @@ function registerFeatureLabel($featureName) {
                         <div class="sidebar-step">
                             <span class="sidebar-step-dot"></span>
                             <div>
-                                <strong>Review & Approval</strong>
-                                <p>Admin checks your details and approves the tenant workspace.</p>
+                                <strong>Review &amp; approval</strong>
+                                <p>MECHANIX verifies your plan, ID, and TIN, then enables your login.</p>
                             </div>
                         </div>
                         <div class="sidebar-step">
                             <span class="sidebar-step-dot"></span>
                             <div>
-                                <strong>Billing Setup</strong>
-                                <p>PayMongo billing instructions sent once workspace is ready.</p>
+                                <strong>Log in &amp; pay</strong>
+                                <p>Use your username and password to open the payment page and complete PayMongo checkout.</p>
                             </div>
                         </div>
                         <div class="sidebar-step">
                             <span class="sidebar-step-dot sidebar-step-dot--last"></span>
                             <div>
-                                <strong>Go Live</strong>
-                                <p>Log in to your tenant dashboard and start running operations.</p>
+                                <strong>Go live</strong>
+                                <p>After payment is confirmed, your full admin dashboard unlocks.</p>
                             </div>
                         </div>
                     </div>

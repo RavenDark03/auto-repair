@@ -21,7 +21,6 @@
         const currentTheme = root.getAttribute('data-theme') || 'light';
         toggleButtons.forEach(function (button) {
             if (button.querySelector('svg')) {
-                // Icon button — update aria-label only, CSS handles icon visibility
                 button.setAttribute('aria-label', currentTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
             } else {
                 button.textContent = currentTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
@@ -42,16 +41,30 @@
         });
     });
 
-    const passwordToggles = document.querySelectorAll('[data-password-toggle]');
+    /* ------------------------------------------------------------------
+       PASSWORD VISIBILITY TOGGLE
+       Handles .pw-toggle-btn buttons next to password inputs.
+       Swaps input type and icon, keeps aria-label accessible.
+    ------------------------------------------------------------------ */
+    document.querySelectorAll('.pw-toggle-btn').forEach(function (btn) {
+        const targetId = btn.getAttribute('data-pw-target');
+        const input = targetId ? document.getElementById(targetId) : null;
+        if (!input) return;
 
-    passwordToggles.forEach(function (toggle) {
+        btn.addEventListener('click', function () {
+            const isHidden = input.type === 'password';
+            input.type = isHidden ? 'text' : 'password';
+            btn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+            btn.querySelector('.pw-eye').style.display     = isHidden ? 'none' : '';
+            btn.querySelector('.pw-eye-off').style.display = isHidden ? '' : 'none';
+        });
+    });
+
+    /* Legacy checkbox toggles (kept for backwards compatibility) */
+    document.querySelectorAll('[data-password-toggle]').forEach(function (toggle) {
         const targetId = toggle.getAttribute('data-password-target');
         const input = targetId ? document.getElementById(targetId) : null;
-
-        if (!input) {
-            return;
-        }
-
+        if (!input) return;
         toggle.addEventListener('change', function () {
             input.type = toggle.checked ? 'text' : 'password';
         });

@@ -90,7 +90,7 @@ try {
         exit;
     }
 
-    if ($user['tenant_status'] !== 'active') {
+    if ($user['tenant_status'] !== 'active' && $user['tenant_status'] !== 'pending_payment') {
         $_SESSION['error_message'] = 'This tenant is currently inactive.';
         header('Location: ' . mechanix_login_redirect('/login.php'));
         exit;
@@ -117,6 +117,11 @@ try {
 
     if ((int) $user['must_change_password'] === 1) {
         header('Location: ' . mechanix_login_redirect('/change_password.php'));
+        exit;
+    }
+
+    if (($user['tenant_status'] ?? '') === 'pending_payment' && ($user['role'] ?? '') === 'admin') {
+        header('Location: ' . mechanix_login_redirect('/pending_payment.php'));
         exit;
     }
 

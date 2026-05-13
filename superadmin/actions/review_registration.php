@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../includes/session.php';
 require_once __DIR__ . '/../../includes/super_admin_auth.php';
 require_once __DIR__ . '/../../includes/db.php';
+require_once __DIR__ . '/../../includes/registration_provision.php';
 
 requireSuperAdmin();
 
@@ -105,6 +106,10 @@ try {
         'registration_id' => $registrationId,
     ]);
 
+    if ($newStatus === 'approved') {
+        mechanix_provision_registration_tenant($pdo, $registrationId);
+    }
+
     $emailTypeMap = [
         'approved' => 'approval_notice',
         'rejected' => 'rejection_notice',
@@ -118,7 +123,7 @@ try {
     ];
 
     $bodyMap = [
-        'approved' => 'Your registration has been approved and is ready for the billing and onboarding process.',
+        'approved' => 'Your registration has been approved. Log in with your chosen admin username and password to complete subscription payment when billing is ready.',
         'rejected' => 'Your registration has been reviewed and is not approved at this time.',
         'billing_sent' => 'Your registration is approved and billing instructions are ready for the next step.',
     ];

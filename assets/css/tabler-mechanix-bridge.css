@@ -44,3 +44,16 @@ html[data-theme="light"] .theme-icon--sun,
 html[data-theme="dark"] .theme-icon--moon {
     display: none;
 }
+
+/* ================================================================
+   PASSWORD EYE TOGGLE — Tabler context override
+   Ensures .pw-toggle-btn sits correctly inside Tabler .input-group
+   without conflicting with Bootstrap's input-group-text pattern.
+================================================================ */
+.pw-input-wrap .form-control {
+    border-radius: var(--tblr-border-radius) !important;
+}
+
+.pw-toggle-btn {
+    z-index: 2;
+}

@@ -328,6 +328,13 @@
                 ok = false;
             }
 
+            var pw = $('password');
+            var pwc = $('password_confirm');
+            if (pw && pwc && pw.value !== pwc.value) {
+                ok = false;
+                alert('Passwords do not match.');
+            }
+
             if (!ok) {
                 e.preventDefault();
             }

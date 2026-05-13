@@ -483,3 +483,96 @@ html[data-theme="dark"] .superadmin-app .list-group-item.list-group-item-action:
         transition: none !important;
     }
 }
+
+
+/* ================================================================
+   VISUAL FIXES — Phase 3
+   Fix nested alert radius, operational alert list, compact
+   status bar, sidebar section heading, and nav gap.
+================================================================ */
+
+/* ----------------------------------------------------------------
+   ALERT RADIUS — scope to top-level alerts only.
+   Nested alerts inside .card get a tighter radius so they don't
+   look like giant pill blobs inside card bodies.
+---------------------------------------------------------------- */
+.superadmin-app .card .alert,
+.superadmin-app .card-body .alert {
+    border-radius: 10px !important;
+}
+
+/* ----------------------------------------------------------------
+   OPERATIONAL ALERT LIST ITEMS (sa-op-alert)
+   Replaces stacked alert-danger boxes with clean list rows
+   that use a 3px colored left rail as the status indicator.
+---------------------------------------------------------------- */
+.superadmin-app .sa-op-alert {
+    padding: 12px 18px !important;
+    border-left: 3px solid transparent !important;
+    border-radius: 0 !important;
+}
+
+.superadmin-app .sa-op-alert--danger {
+    border-left-color: var(--tblr-danger, #d63939) !important;
+}
+
+.superadmin-app .sa-op-alert--success {
+    border-left-color: var(--tblr-success, #2fb344) !important;
+}
+
+.superadmin-app .sa-op-alert i {
+    font-size: 1rem;
+    margin-top: 1px;
+}
+
+/* ----------------------------------------------------------------
+   COMPACT STATUS BAR (sa-status-bar)
+   Replaces the full-width PayMongo alert banner with a single
+   pill badge + short description line.
+---------------------------------------------------------------- */
+.superadmin-app .sa-status-bar {
+    padding: 4px 0;
+}
+
+.superadmin-app .sa-status-bar .badge {
+    font-size: 0.8rem !important;
+    padding: 5px 12px !important;
+}
+
+/* ----------------------------------------------------------------
+   SIDEBAR SECTION HEADING (sa-nav-section-heading)
+   Used for Platform / Lifecycle labels inside the unified <ul>.
+   Prevents them from looking like clickable nav items.
+---------------------------------------------------------------- */
+.superadmin-app .sa-nav-section-heading {
+    pointer-events: none;
+    padding: 6px 4px 2px !important;
+}
+
+.superadmin-app .sa-nav-section-heading .navbar-heading {
+    display: block;
+    font-size: 0.62rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.14em !important;
+    color: rgba(255, 255, 255, 0.28) !important;
+}
+
+/* ----------------------------------------------------------------
+   SIDEBAR NAV — collapse section gap fix
+   Force the navbar-collapse to stack items from the top so the
+   single <ul> fills naturally without phantom spacing.
+---------------------------------------------------------------- */
+.superadmin-app .navbar-vertical .navbar-collapse {
+    justify-content: flex-start !important;
+}
+
+.superadmin-app .navbar-vertical .navbar-collapse > ul.navbar-nav {
+    flex: 0 0 auto !important;
+}
+
+/* ----------------------------------------------------------------
+   CARD TITLE ICON — subtle opacity (not full text-muted grey)
+---------------------------------------------------------------- */
+.superadmin-app .card-header .card-title i.ti {
+    opacity: 0.38;
+}

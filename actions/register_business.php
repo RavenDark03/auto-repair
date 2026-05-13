@@ -24,6 +24,10 @@ $addressProvinceName = trim($_POST['address_province_name'] ?? '');
 $addressCityName = trim($_POST['address_city_name'] ?? '');
 $addressBrgyName = trim($_POST['address_brgy_name'] ?? '');
 $preferredUsername = trim($_POST['preferred_username'] ?? '');
+$password = (string) ($_POST['password'] ?? '');
+$passwordConfirm = (string) ($_POST['password_confirm'] ?? '');
+$birTinRaw = trim($_POST['bir_tin'] ?? '');
+$birTinDigits = preg_replace('/\D+/', '', $birTinRaw) ?? '';
 $selectedPlanId = (int) ($_POST['selected_plan_id'] ?? 0);
 $billingCycle = $_POST['billing_cycle'] ?? 'monthly';
 $requestedFeatures = $_POST['requested_features'] ?? [];
@@ -51,6 +55,7 @@ $_SESSION['registration_old_input'] = [
     'address_city_name' => $addressCityName,
     'address_brgy_name' => $addressBrgyName,
     'preferred_username' => $preferredUsername,
+    'bir_tin' => $birTinRaw,
     'selected_plan_id' => $selectedPlanId,
     'billing_cycle' => $billingCycle,
     'requested_features' => $requestedFeatureIds,
@@ -60,6 +65,29 @@ $fieldErrors = [];
 
 if ($businessName === '' || $ownerFullName === '' || $email === '' || $selectedPlanId <= 0) {
     $fieldErrors['general'] = 'Please complete the required registration fields.';
+}
+
+if ($preferredUsername === '' || !preg_match('/^[a-zA-Z0-9_]{3,30}$/', $preferredUsername)) {
+    $fieldErrors['preferred_username'] = 'Choose an admin username: 3–30 letters, numbers, or underscore only.';
+}
+
+if (strlen($password) < 10) {
+    $fieldErrors['password'] = 'Password must be at least 10 characters.';
+} elseif (!preg_match('/[A-Za-z]/', $password) || !preg_match('/[0-9]/', $password)) {
+    $fieldErrors['password'] = 'Password must include at least one letter and one number.';
+} elseif ($password !== $passwordConfirm) {
+    $fieldErrors['password_confirm'] = 'Passwords do not match.';
+}
+
+if ($birTinDigits === '' || strlen($birTinDigits) < 9 || strlen($birTinDigits) > 12) {
+    $fieldErrors['bir_tin'] = 'Enter a valid BIR TIN (9–12 digits).';
+}
+
+$uploadedFile = $_FILES['owner_id_document'] ?? null;
+if (!$uploadedFile || ($uploadedFile['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+    $fieldErrors['owner_id_document'] = 'Upload a valid government or business ID (PDF, JPG, or PNG).';
+} elseif (($uploadedFile['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+    $fieldErrors['owner_id_document'] = 'ID upload failed. Try a smaller file or a different format.';
 }
 
 if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -135,6 +163,33 @@ if (!empty($fieldErrors)) {
     exit;
 }
 
+$ownerIdMime = null;
+$ownerIdExtension = null;
+if ($uploadedFile && (int) ($uploadedFile['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
+    $maxBytes = 5 * 1024 * 1024;
+    if ((int) ($uploadedFile['size'] ?? 0) > $maxBytes) {
+        $_SESSION['registration_field_errors'] = ['owner_id_document' => 'ID file must be 5 MB or smaller.'];
+        header('Location: ../register.php?plan_id=' . $selectedPlanId);
+        exit;
+    }
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime = $finfo->file((string) $uploadedFile['tmp_name']) ?: '';
+    $mimeMap = [
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png',
+        'image/webp' => 'webp',
+        'application/pdf' => 'pdf',
+    ];
+    if (!isset($mimeMap[$mime])) {
+        $_SESSION['registration_field_errors'] = ['owner_id_document' => 'Allowed types: PDF, JPG, PNG, or WebP.'];
+        header('Location: ../register.php?plan_id=' . $selectedPlanId);
+        exit;
+    }
+    $ownerIdExtension = $mimeMap[$mime];
+}
+
+$passwordHash = password_hash($password, PASSWORD_DEFAULT);
+
 $addressParts = [$addressLine1];
 if ($addressLine2 !== '') {
     $addressParts[] = $addressLine2;
@@ -189,6 +244,9 @@ try {
             phone,
             address,
             preferred_username,
+            password_hash,
+            bir_tin,
+            owner_id_document_path,
             selected_plan_id,
             billing_cycle,
             registration_status
@@ -199,6 +257,9 @@ try {
             :phone,
             :address,
             :preferred_username,
+            :password_hash,
+            :bir_tin,
+            NULL,
             :selected_plan_id,
             :billing_cycle,
             'pending'
@@ -211,12 +272,29 @@ try {
         'email' => $email,
         'phone' => $phone,
         'address' => $address,
-        'preferred_username' => $preferredUsername !== '' ? $preferredUsername : null,
+        'preferred_username' => $preferredUsername,
+        'password_hash' => $passwordHash,
+        'bir_tin' => $birTinDigits,
         'selected_plan_id' => $selectedPlanId,
         'billing_cycle' => $billingCycle,
     ]);
 
     $registrationId = (int) $pdo->lastInsertId();
+
+    $relativeDocPath = null;
+    if ($ownerIdExtension !== null && $uploadedFile && (int) $uploadedFile['error'] === UPLOAD_ERR_OK) {
+        $destDir = __DIR__ . '/../uploads/registrations/' . $registrationId;
+        if (!is_dir($destDir) && !mkdir($destDir, 0755, true) && !is_dir($destDir)) {
+            throw new RuntimeException('Could not create upload directory for your ID document.');
+        }
+        $destFile = $destDir . '/owner_id.' . $ownerIdExtension;
+        if (!move_uploaded_file((string) $uploadedFile['tmp_name'], $destFile)) {
+            throw new RuntimeException('Could not save the uploaded ID document.');
+        }
+        $relativeDocPath = 'uploads/registrations/' . $registrationId . '/owner_id.' . $ownerIdExtension;
+        $pathUpdate = $pdo->prepare('UPDATE tenant_registrations SET owner_id_document_path = :path WHERE registration_id = :id');
+        $pathUpdate->execute(['path' => $relativeDocPath, 'id' => $registrationId]);
+    }
 
     if (!empty($requestedFeatureIds)) {
         $featureInsertStmt = $pdo->prepare(" 
@@ -266,7 +344,7 @@ try {
     $pdo->commit();
 
     unset($_SESSION['registration_old_input'], $_SESSION['error_message'], $_SESSION['registration_field_errors']);
-    $_SESSION['registration_success'] = 'Your registration was submitted successfully. The super admin can now review your plan and requested features.';
+    $_SESSION['registration_success'] = 'Your registration was submitted. After super admin approval, log in with your username and password to complete subscription payment.';
     header('Location: ../register.php');
     exit;
 } catch (Throwable $e) {

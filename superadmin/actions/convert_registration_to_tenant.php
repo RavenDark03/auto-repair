@@ -81,6 +81,7 @@ try {
             tr.preferred_username,
             tr.billing_cycle,
             tr.registration_status,
+            tr.provisioned_tenant_id,
             sp.plan_id,
             sp.plan_name
         FROM tenant_registrations tr
@@ -117,14 +118,56 @@ try {
         throw new RuntimeException('The latest billing request is not marked as paid yet.');
     }
 
-    $tenantInsertStmt = $pdo->prepare("
-        INSERT INTO tenants (business_name, status)
-        VALUES (:business_name, 'active')
-    ");
-    $tenantInsertStmt->execute([
-        'business_name' => $registration['business_name'],
-    ]);
-    $tenantId = (int) $pdo->lastInsertId();
+    $provisionedTenantId = (int) ($registration['provisioned_tenant_id'] ?? 0);
+    $usedPreProvision = $provisionedTenantId > 0;
+    $temporaryPassword = null;
+    $candidateUsername = '';
+
+    if ($usedPreProvision) {
+        $tenantId = $provisionedTenantId;
+        $tenantRowStmt = $pdo->prepare("
+            SELECT tenant_id, status
+            FROM tenants
+            WHERE tenant_id = :tenant_id
+            LIMIT 1
+        ");
+        $tenantRowStmt->execute(['tenant_id' => $tenantId]);
+        $tenantRow = $tenantRowStmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$tenantRow) {
+            throw new RuntimeException('Provisioned tenant record is missing.');
+        }
+
+        if (($tenantRow['status'] ?? '') !== 'pending_payment') {
+            throw new RuntimeException('Provisioned tenant is not in the pending payment state.');
+        }
+
+        $pdo->prepare("
+            UPDATE tenants
+            SET status = 'active'
+            WHERE tenant_id = :tenant_id
+        ")->execute(['tenant_id' => $tenantId]);
+
+        $adminUserStmt = $pdo->prepare("
+            SELECT username
+            FROM users
+            WHERE tenant_id = :tenant_id
+              AND role = 'admin'
+            ORDER BY user_id ASC
+            LIMIT 1
+        ");
+        $adminUserStmt->execute(['tenant_id' => $tenantId]);
+        $candidateUsername = (string) ($adminUserStmt->fetchColumn() ?: 'admin');
+    } else {
+        $tenantInsertStmt = $pdo->prepare("
+            INSERT INTO tenants (business_name, status)
+            VALUES (:business_name, 'active')
+        ");
+        $tenantInsertStmt->execute([
+            'business_name' => $registration['business_name'],
+        ]);
+        $tenantId = (int) $pdo->lastInsertId();
+    }
 
     $startDate = !empty($billing['paid_at']) ? date('Y-m-d', strtotime((string) $billing['paid_at'])) : date('Y-m-d');
     $endDate = $registration['billing_cycle'] === 'yearly'
@@ -207,44 +250,46 @@ try {
         }
     }
 
-    $usernameBase = buildUsernameBase($registration['preferred_username'] ?: 'admin');
-    $candidateUsername = $usernameBase;
-    $usernameSuffix = 1;
+    if (!$usedPreProvision) {
+        $usernameBase = buildUsernameBase($registration['preferred_username'] ?: 'admin');
+        $candidateUsername = $usernameBase;
+        $usernameSuffix = 1;
 
-    $usernameCheckStmt = $pdo->prepare("
-        SELECT user_id
-        FROM users
-        WHERE tenant_id = :tenant_id
-          AND username = :username
-        LIMIT 1
-    ");
+        $usernameCheckStmt = $pdo->prepare("
+            SELECT user_id
+            FROM users
+            WHERE tenant_id = :tenant_id
+              AND username = :username
+            LIMIT 1
+        ");
 
-    do {
-        $usernameCheckStmt->execute([
+        do {
+            $usernameCheckStmt->execute([
+                'tenant_id' => $tenantId,
+                'username' => $candidateUsername,
+            ]);
+            $exists = $usernameCheckStmt->fetchColumn();
+
+            if ($exists) {
+                $usernameSuffix++;
+                $candidateUsername = substr($usernameBase, 0, 26) . $usernameSuffix;
+            }
+        } while ($exists);
+
+        $temporaryPassword = createTemporaryPassword();
+        $passwordHash = password_hash($temporaryPassword, PASSWORD_DEFAULT);
+
+        $userInsertStmt = $pdo->prepare("
+            INSERT INTO users (tenant_id, full_name, username, password_hash, must_change_password, role, status)
+            VALUES (:tenant_id, :full_name, :username, :password_hash, 1, 'admin', 'active')
+        ");
+        $userInsertStmt->execute([
             'tenant_id' => $tenantId,
+            'full_name' => $registration['owner_full_name'],
             'username' => $candidateUsername,
+            'password_hash' => $passwordHash,
         ]);
-        $exists = $usernameCheckStmt->fetchColumn();
-
-        if ($exists) {
-            $usernameSuffix++;
-            $candidateUsername = substr($usernameBase, 0, 26) . $usernameSuffix;
-        }
-    } while ($exists);
-
-    $temporaryPassword = createTemporaryPassword();
-    $passwordHash = password_hash($temporaryPassword, PASSWORD_DEFAULT);
-
-    $userInsertStmt = $pdo->prepare("
-        INSERT INTO users (tenant_id, full_name, username, password_hash, must_change_password, role, status)
-        VALUES (:tenant_id, :full_name, :username, :password_hash, 1, 'admin', 'active')
-    ");
-    $userInsertStmt->execute([
-        'tenant_id' => $tenantId,
-        'full_name' => $registration['owner_full_name'],
-        'username' => $candidateUsername,
-        'password_hash' => $passwordHash,
-    ]);
+    }
 
     $registrationUpdateStmt = $pdo->prepare("
         UPDATE tenant_registrations
@@ -265,9 +310,15 @@ try {
     $registrationUpdateStmt->execute([
         'converted_tenant_id' => $tenantId,
         'reviewed_by_super_admin_id' => (int) $_SESSION['super_admin_id'],
-        'conversion_note' => 'Converted to tenant #' . $tenantId . ' with admin username "' . $candidateUsername . '".',
+        'conversion_note' => $usedPreProvision
+            ? ('Activated pre-provisioned tenant #' . $tenantId . ' (admin "' . $candidateUsername . '").')
+            : ('Converted to tenant #' . $tenantId . ' with admin username "' . $candidateUsername . '".'),
         'registration_id' => $registrationId,
     ]);
+
+    $emailBody = $temporaryPassword !== null
+        ? 'Your tenant account is ready. Username: ' . $candidateUsername . '. Temporary password: ' . $temporaryPassword . '.'
+        : 'Your MECHANIX subscription is now active. Admin username: ' . $candidateUsername . '. Sign in with the password you chose during registration.';
 
     $emailLogStmt = $pdo->prepare("
         INSERT INTO email_logs (
@@ -289,12 +340,12 @@ try {
     $emailLogStmt->execute([
         'registration_id' => $registrationId,
         'recipient_email' => $registration['email'],
-        'body' => 'Your tenant account is ready. Username: ' . $candidateUsername . '. Temporary password: ' . $temporaryPassword . '.',
+        'body' => $emailBody,
     ]);
 
     $pdo->commit();
 
-    $_SESSION['tenant_onboarding'] = [
+    $onboarding = [
         'registration_id' => $registrationId,
         'tenant_id' => $tenantId,
         'business_name' => $registration['business_name'],
@@ -302,7 +353,6 @@ try {
         'billing_cycle' => $registration['billing_cycle'],
         'admin_name' => $registration['owner_full_name'],
         'username' => $candidateUsername,
-        'temporary_password' => $temporaryPassword,
         'subscription_start' => $startDate,
         'subscription_end' => $endDate,
         'assigned_features' => array_values(array_map(
@@ -316,6 +366,10 @@ try {
             $featureCatalog
         )),
     ];
+    if ($temporaryPassword !== null) {
+        $onboarding['temporary_password'] = $temporaryPassword;
+    }
+    $_SESSION['tenant_onboarding'] = $onboarding;
 
     $_SESSION['super_admin_success'] = 'Tenant created for ' . $registration['business_name'] . '.';
     header('Location: ' . buildRegistrationRedirect($registrationId, $tenantId));

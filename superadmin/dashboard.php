@@ -474,6 +474,9 @@ try {
                 tr.phone,
                 tr.address,
                 tr.preferred_username,
+                tr.bir_tin,
+                tr.owner_id_document_path,
+                tr.provisioned_tenant_id,
                 tr.billing_cycle,
                 tr.registration_status,
                 tr.notes,
@@ -882,10 +885,10 @@ try {
                 </a>
             </h1>
             <div class="collapse navbar-collapse" id="sidebar-menu">
-                <div class="navbar-nav flex-column">
-                    <p class="navbar-heading text-muted small text-uppercase fw-bold px-1 mt-2 mb-1">Platform</p>
-                </div>
-                <ul class="navbar-nav pt-lg-1">
+                <ul class="navbar-nav flex-column">
+                    <li class="nav-item sa-nav-section-heading">
+                        <span class="navbar-heading text-muted small text-uppercase fw-bold px-2">Platform</span>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link active" href="#registrations">
                             <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-clipboard-list"></i></span>
@@ -907,11 +910,9 @@ try {
                             <span class="nav-link-title">Plan Catalog</span>
                         </a>
                     </li>
-                </ul>
-                <div class="navbar-nav flex-column mt-2">
-                    <p class="navbar-heading text-muted small text-uppercase fw-bold px-1 mt-2 mb-1">Lifecycle</p>
-                </div>
-                <ul class="navbar-nav pt-lg-1">
+                    <li class="nav-item sa-nav-section-heading mt-2">
+                        <span class="navbar-heading text-muted small text-uppercase fw-bold px-2">Lifecycle</span>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#features">
                             <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-activity"></i></span>
@@ -983,36 +984,38 @@ try {
                 </div>
             <?php endif; ?>
 
-            <div class="alert <?= $isPaymongoConfigured ? 'alert-success' : 'alert-danger' ?>" role="alert">
-                <div class="d-flex">
-                    <div><i class="ti ti-<?= $isPaymongoConfigured ? 'circle-check' : 'alert-circle' ?> icon alert-icon"></i></div>
-                    <div><?= htmlspecialchars(
-                        $isPaymongoConfigured
-                            ? 'PayMongo configuration is ready. Checkout creation and webhook verification can be tested from this dashboard.'
-                            : 'PayMongo configuration is incomplete. Manual billing still works, but checkout creation and webhook verification are not fully ready yet.',
-                        ENT_QUOTES,
-                        'UTF-8'
-                    ) ?></div>
-                </div>
+            <div class="sa-status-bar mb-4 d-flex align-items-center gap-2 flex-wrap">
+                <span class="badge <?= $isPaymongoConfigured ? 'bg-green-lt text-green' : 'bg-orange-lt text-orange' ?>">
+                    <i class="ti ti-<?= $isPaymongoConfigured ? 'circle-check' : 'alert-circle' ?> me-1"></i>
+                    PayMongo <?= $isPaymongoConfigured ? 'Ready' : 'Incomplete' ?>
+                </span>
+                <span class="text-muted small"><?= $isPaymongoConfigured
+                    ? 'Checkout &amp; webhook verification available.'
+                    : 'Manual billing works. Checkout &amp; webhooks not fully configured yet.' ?></span>
             </div>
 
             <?php if (!empty($operationalAlerts)): ?>
+                <?php $alertErrorCount = count(array_filter($operationalAlerts, fn($a) => $a['class'] === 'alert-error')); ?>
                 <div class="card mb-4">
                     <div class="card-header">
-                        <h3 class="card-title"><i class="ti ti-alert-triangle me-2 text-muted"></i>Operational Alerts</h3>
+                        <h3 class="card-title"><i class="ti ti-alert-triangle me-2"></i>Operational Alerts</h3>
+                        <div class="card-options">
+                            <?php if ($alertErrorCount > 0): ?>
+                                <span class="badge bg-red-lt text-red"><?= $alertErrorCount ?> issue<?= $alertErrorCount !== 1 ? 's' : '' ?></span>
+                            <?php else: ?>
+                                <span class="badge bg-green-lt text-green">All clear</span>
+                            <?php endif; ?>
+                        </div>
                     </div>
-                    <div class="card-body pb-0">
-                        <p class="text-muted small">These checks surface tenant, subscription, and registration states that are most likely to cause onboarding, billing, or demo issues.</p>
-                    </div>
-                    <div class="card-body pt-0">
+                    <div class="list-group list-group-flush">
                         <?php foreach ($operationalAlerts as $alert): ?>
-                            <?php $alertTablerClass = ($alert['class'] === 'alert-error') ? 'alert-danger' : 'alert-success'; ?>
-                            <div class="alert <?= $alertTablerClass ?>" role="alert">
-                                <div class="d-flex">
-                                    <div><i class="ti ti-<?= ($alert['class'] === 'alert-error') ? 'alert-circle' : 'info-circle' ?> icon alert-icon"></i></div>
+                            <?php $isError = $alert['class'] === 'alert-error'; ?>
+                            <div class="list-group-item sa-op-alert <?= $isError ? 'sa-op-alert--danger' : 'sa-op-alert--success' ?>">
+                                <div class="d-flex align-items-start gap-3">
+                                    <i class="ti ti-<?= $isError ? 'alert-circle' : 'circle-check' ?> flex-shrink-0 mt-1 <?= $isError ? 'text-danger' : 'text-success' ?>"></i>
                                     <div>
-                                        <strong><?= htmlspecialchars($alert['title'], ENT_QUOTES, 'UTF-8') ?></strong><br>
-                                        <?= htmlspecialchars($alert['detail'], ENT_QUOTES, 'UTF-8') ?>
+                                        <div class="fw-semibold small"><?= htmlspecialchars($alert['title'], ENT_QUOTES, 'UTF-8') ?></div>
+                                        <div class="text-muted small mt-1"><?= htmlspecialchars($alert['detail'], ENT_QUOTES, 'UTF-8') ?></div>
                                     </div>
                                 </div>
                             </div>
@@ -1710,9 +1713,48 @@ try {
                                 </div>
                             </div>
                             <div class="list-group-item">
-                                <div class="font-weight-medium">Address</div>
-                                <div class="text-muted small"><?= nl2br(htmlspecialchars($selectedRegistration['address'] ?: 'No address provided.', ENT_QUOTES, 'UTF-8')) ?></div>
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <div class="font-weight-medium">Address</div>
+                                        <div class="text-muted small"><?= nl2br(htmlspecialchars($selectedRegistration['address'] ?: 'No address provided.', ENT_QUOTES, 'UTF-8')) ?></div>
+                                    </div>
+                                </div>
                             </div>
+                            <div class="list-group-item">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <div class="font-weight-medium">BIR TIN</div>
+                                        <div class="text-muted small"><?= htmlspecialchars((string) ($selectedRegistration['bir_tin'] ?? ''), ENT_QUOTES, 'UTF-8') ?: 'Not provided' ?></div>
+                                    </div>
+                                    <div class="col-auto"><span class="badge bg-secondary-lt">Tax</span></div>
+                                </div>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <div class="font-weight-medium">Owner / business ID</div>
+                                        <div class="text-muted small">
+                                            <?php if (!empty($selectedRegistration['owner_id_document_path'])): ?>
+                                                <a href="serve_registration_document.php?registration_id=<?= (int) $selectedRegistration['registration_id'] ?>" target="_blank" rel="noopener noreferrer">View uploaded document</a>
+                                            <?php else: ?>
+                                                No file on record (legacy registration).
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                    <div class="col-auto"><span class="badge bg-secondary-lt">KYC</span></div>
+                                </div>
+                            </div>
+                            <?php if (!empty($selectedRegistration['provisioned_tenant_id'])): ?>
+                            <div class="list-group-item">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <div class="font-weight-medium">Owner workspace</div>
+                                        <div class="text-muted small">Tenant #<?= (int) $selectedRegistration['provisioned_tenant_id'] ?> created at approval — owner can log in while billing is pending.</div>
+                                    </div>
+                                    <div class="col-auto"><span class="badge bg-azure-lt text-azure">Provisioned</span></div>
+                                </div>
+                            </div>
+                            <?php endif; ?>
                         </div>
 
                         <div class="card-header mt-2">
@@ -1889,7 +1931,7 @@ try {
                                         <div class="alert alert-info mb-2" role="alert">
                                             <div class="d-flex">
                                                 <div><i class="ti ti-info-circle icon alert-icon"></i></div>
-                                                <div>This creates the live tenant record, the active subscription, the enabled tenant features, and the initial tenant admin account.</div>
+                                                <div>This activates the subscription on an existing owner workspace (or creates a new tenant for legacy registrations), enables plan features, and finalizes onboarding.</div>
                                             </div>
                                         </div>
                                         <button type="submit" class="btn btn-primary btn-sm">Convert Paid Registration to Tenant</button>

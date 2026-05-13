@@ -175,3 +175,59 @@ img {
     font-size: 0.9rem;
 }
 
+
+/* ================================================================
+   PASSWORD EYE TOGGLE — shared across all pages
+================================================================ */
+.pw-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+}
+
+.pw-input-wrap .form-control {
+    padding-right: 44px;
+    flex: 1;
+}
+
+.pw-toggle-btn {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--text-soft);
+    cursor: pointer;
+    border-radius: 0 var(--radius-sm, 10px) var(--radius-sm, 10px) 0;
+    transition: color 0.15s ease;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.pw-toggle-btn:hover {
+    color: var(--text);
+}
+
+.pw-toggle-btn:focus-visible {
+    outline: 2px solid var(--border-strong);
+    outline-offset: -2px;
+    border-radius: 0 var(--radius-sm, 10px) var(--radius-sm, 10px) 0;
+}
+
+.pw-toggle-btn svg {
+    width: 18px;
+    height: 18px;
+    display: block;
+    pointer-events: none;
+    flex-shrink: 0;
+}
+
+/* eye-off hidden by default; shown when field is revealed */
+.pw-eye-off {
+    display: none;
+}
