@@ -1,6 +1,7 @@
 ﻿<?php
 require_once __DIR__ . '/includes/session.php';
 require_once __DIR__ . '/config/config.php';
+require_once __DIR__ . '/includes/mechanix_urls.php';
 require_once __DIR__ . '/includes/super_admin_auth.php';
 require_once __DIR__ . '/includes/mechanix_ui.php';
 
