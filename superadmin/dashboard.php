@@ -433,6 +433,8 @@ try {
                 tr.business_name LIKE :registration_search
                 OR tr.owner_full_name LIKE :registration_search
                 OR tr.email LIKE :registration_search
+                OR tr.bir_tin LIKE :registration_search
+                OR tr.owner_id_number LIKE :registration_search
             )
         ";
         $registrationParams['registration_search'] = '%' . $registrationSearch . '%';
@@ -475,7 +477,9 @@ try {
                 tr.address,
                 tr.preferred_username,
                 tr.bir_tin,
+                tr.owner_id_number,
                 tr.owner_id_document_path,
+                (tr.password_hash IS NOT NULL AND tr.password_hash <> '') AS has_registration_password,
                 tr.provisioned_tenant_id,
                 tr.billing_cycle,
                 tr.registration_status,
@@ -1727,6 +1731,24 @@ try {
                                         <div class="text-muted small"><?= htmlspecialchars((string) ($selectedRegistration['bir_tin'] ?? ''), ENT_QUOTES, 'UTF-8') ?: 'Not provided' ?></div>
                                     </div>
                                     <div class="col-auto"><span class="badge bg-secondary-lt">Tax</span></div>
+                                </div>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <div class="font-weight-medium">Government ID number</div>
+                                        <div class="text-muted small"><?= htmlspecialchars((string) ($selectedRegistration['owner_id_number'] ?? ''), ENT_QUOTES, 'UTF-8') ?: 'Not provided' ?></div>
+                                    </div>
+                                    <div class="col-auto"><span class="badge bg-secondary-lt">ID #</span></div>
+                                </div>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <div class="font-weight-medium">Admin password (registration)</div>
+                                        <div class="text-muted small"><?= !empty($selectedRegistration['has_registration_password']) ? 'A bcrypt hash is stored from signup — never the plain password.' : 'No hash on file (legacy row or incomplete signup).' ?></div>
+                                    </div>
+                                    <div class="col-auto"><span class="badge bg-secondary-lt"><?= !empty($selectedRegistration['has_registration_password']) ? 'Stored' : 'Missing' ?></span></div>
                                 </div>
                             </div>
                             <div class="list-group-item">

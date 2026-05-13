@@ -223,6 +223,19 @@ function registerFeatureLabel($featureName) {
                                 <?php endif; ?>
                             </div>
                             <div class="form-group">
+                                <label for="owner_id_number">Government ID number</label>
+                                <input class="form-control<?= registerFieldErr($fieldErrors, 'owner_id_number') !== '' ? ' is-invalid' : '' ?>"
+                                    type="text" id="owner_id_number" name="owner_id_number" autocomplete="off"
+                                    placeholder="As printed on the ID (no spaces)"
+                                    maxlength="32" pattern="[A-Za-z0-9\-]{4,32}" required
+                                    value="<?= registerValue($oldInput, 'owner_id_number') ?>">
+                                <?php if (registerFieldErr($fieldErrors, 'owner_id_number') !== ''): ?>
+                                    <p class="field-error"><?= htmlspecialchars(registerFieldErr($fieldErrors, 'owner_id_number'), ENT_QUOTES, 'UTF-8') ?></p>
+                                <?php else: ?>
+                                    <p class="field-hint">4–32 characters: letters, digits, or hyphens only (matches the uploaded ID).</p>
+                                <?php endif; ?>
+                            </div>
+                            <div class="form-group">
                                 <label for="owner_id_document">Government or business ID <span class="field-optional">PDF / image</span></label>
                                 <input class="form-control<?= registerFieldErr($fieldErrors, 'owner_id_document') !== '' ? ' is-invalid' : '' ?>"
                                     type="file" id="owner_id_document" name="owner_id_document" accept=".pdf,.jpg,.jpeg,.png,.webp,image/*,application/pdf" required>
@@ -477,7 +490,7 @@ function registerFeatureLabel($featureName) {
         </div>
     </main>
 
-    <script src="assets/js/theme.js?v=2"></script>
+    <script src="assets/js/theme.js?v=3"></script>
     <script src="assets/js/register-form.js"></script>
 </body>
 </html>

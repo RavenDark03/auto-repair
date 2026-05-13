@@ -82,6 +82,10 @@ try {
             tr.billing_cycle,
             tr.registration_status,
             tr.provisioned_tenant_id,
+            tr.bir_tin,
+            tr.owner_id_number,
+            tr.owner_id_document_path,
+            tr.password_hash,
             sp.plan_id,
             sp.plan_name
         FROM tenant_registrations tr
@@ -142,11 +146,20 @@ try {
             throw new RuntimeException('Provisioned tenant is not in the pending payment state.');
         }
 
-        $pdo->prepare("
+        $identityUpdate = $pdo->prepare("
             UPDATE tenants
-            SET status = 'active'
+            SET status = 'active',
+                bir_tin = :bir_tin,
+                owner_id_number = :owner_id_number,
+                owner_id_document_path = :owner_id_document_path
             WHERE tenant_id = :tenant_id
-        ")->execute(['tenant_id' => $tenantId]);
+        ");
+        $identityUpdate->execute([
+            'tenant_id' => $tenantId,
+            'bir_tin' => $registration['bir_tin'] ?? null,
+            'owner_id_number' => $registration['owner_id_number'] ?? null,
+            'owner_id_document_path' => $registration['owner_id_document_path'] ?? null,
+        ]);
 
         $adminUserStmt = $pdo->prepare("
             SELECT username
@@ -160,11 +173,14 @@ try {
         $candidateUsername = (string) ($adminUserStmt->fetchColumn() ?: 'admin');
     } else {
         $tenantInsertStmt = $pdo->prepare("
-            INSERT INTO tenants (business_name, status)
-            VALUES (:business_name, 'active')
+            INSERT INTO tenants (business_name, status, bir_tin, owner_id_number, owner_id_document_path)
+            VALUES (:business_name, 'active', :bir_tin, :owner_id_number, :owner_id_document_path)
         ");
         $tenantInsertStmt->execute([
             'business_name' => $registration['business_name'],
+            'bir_tin' => $registration['bir_tin'] ?? null,
+            'owner_id_number' => $registration['owner_id_number'] ?? null,
+            'owner_id_document_path' => $registration['owner_id_document_path'] ?? null,
         ]);
         $tenantId = (int) $pdo->lastInsertId();
     }
@@ -276,18 +292,27 @@ try {
             }
         } while ($exists);
 
-        $temporaryPassword = createTemporaryPassword();
-        $passwordHash = password_hash($temporaryPassword, PASSWORD_DEFAULT);
+        $registrationPasswordHash = trim((string) ($registration['password_hash'] ?? ''));
+        if ($registrationPasswordHash !== '') {
+            $passwordHash = $registrationPasswordHash;
+            $temporaryPassword = null;
+            $mustChangePassword = 0;
+        } else {
+            $temporaryPassword = createTemporaryPassword();
+            $passwordHash = password_hash($temporaryPassword, PASSWORD_DEFAULT);
+            $mustChangePassword = 1;
+        }
 
         $userInsertStmt = $pdo->prepare("
             INSERT INTO users (tenant_id, full_name, username, password_hash, must_change_password, role, status)
-            VALUES (:tenant_id, :full_name, :username, :password_hash, 1, 'admin', 'active')
+            VALUES (:tenant_id, :full_name, :username, :password_hash, :must_change_password, 'admin', 'active')
         ");
         $userInsertStmt->execute([
             'tenant_id' => $tenantId,
             'full_name' => $registration['owner_full_name'],
             'username' => $candidateUsername,
             'password_hash' => $passwordHash,
+            'must_change_password' => $mustChangePassword,
         ]);
     }
 

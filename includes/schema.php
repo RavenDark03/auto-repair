@@ -56,6 +56,43 @@ function ensurePlatformSchema(PDO $pdo): void
                 AFTER access_mode
             ");
         }
+
+        if (!columnExists($pdo, 'tenants', 'bir_tin')) {
+            $pdo->exec("
+                ALTER TABLE tenants
+                ADD COLUMN bir_tin VARCHAR(20) NULL DEFAULT NULL AFTER business_name
+            ");
+        }
+
+        if (!columnExists($pdo, 'tenants', 'owner_id_number')) {
+            $pdo->exec("
+                ALTER TABLE tenants
+                ADD COLUMN owner_id_number VARCHAR(64) NULL DEFAULT NULL AFTER bir_tin
+            ");
+        }
+
+        if (!columnExists($pdo, 'tenants', 'owner_id_document_path')) {
+            $pdo->exec("
+                ALTER TABLE tenants
+                ADD COLUMN owner_id_document_path VARCHAR(500) NULL DEFAULT NULL AFTER owner_id_number
+            ");
+        }
+    }
+
+    if (tableExists($pdo, 'tenant_registrations')) {
+        if (!columnExists($pdo, 'tenant_registrations', 'owner_id_number')) {
+            if (columnExists($pdo, 'tenant_registrations', 'bir_tin')) {
+                $pdo->exec("
+                    ALTER TABLE tenant_registrations
+                    ADD COLUMN owner_id_number VARCHAR(64) NULL DEFAULT NULL AFTER bir_tin
+                ");
+            } else {
+                $pdo->exec("
+                    ALTER TABLE tenant_registrations
+                    ADD COLUMN owner_id_number VARCHAR(64) NULL DEFAULT NULL
+                ");
+            }
+        }
     }
 
     if (tableExists($pdo, 'billing_requests')) {

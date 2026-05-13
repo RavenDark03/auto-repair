@@ -186,7 +186,7 @@ function getVisibleTenantAdminModuleLinks($tenantId, $role = null) {
 
 function renderTenantAdminFooterScripts() {
     return '<script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0/dist/js/tabler.min.js"></script>'
-        . '<script src="../assets/js/theme.js"></script>';
+        . '<script src="../assets/js/theme.js?v=3"></script>';
 }
 
 function renderTenantAdminSidebar($businessName, array $visibleModuleLinks, $activeHref, $showAnalytics, $logoutHref = '../logout.php') {

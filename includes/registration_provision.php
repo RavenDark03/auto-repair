@@ -35,6 +35,9 @@ function mechanix_provision_registration_tenant(PDO $pdo, int $registrationId): 
             tr.email,
             tr.preferred_username,
             tr.password_hash,
+            tr.bir_tin,
+            tr.owner_id_number,
+            tr.owner_id_document_path,
             tr.registration_status,
             tr.provisioned_tenant_id
         FROM tenant_registrations tr
@@ -64,9 +67,14 @@ function mechanix_provision_registration_tenant(PDO $pdo, int $registrationId): 
     }
 
     $pdo->prepare("
-        INSERT INTO tenants (business_name, status)
-        VALUES (:business_name, 'pending_payment')
-    ")->execute(['business_name' => $row['business_name']]);
+        INSERT INTO tenants (business_name, status, bir_tin, owner_id_number, owner_id_document_path)
+        VALUES (:business_name, 'pending_payment', :bir_tin, :owner_id_number, :owner_id_document_path)
+    ")->execute([
+        'business_name' => $row['business_name'],
+        'bir_tin' => $row['bir_tin'] ?? null,
+        'owner_id_number' => $row['owner_id_number'] ?? null,
+        'owner_id_document_path' => $row['owner_id_document_path'] ?? null,
+    ]);
     $tenantId = (int) $pdo->lastInsertId();
 
     $usernameBase = mechanix_registration_username_base(

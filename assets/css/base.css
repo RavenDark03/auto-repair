@@ -222,8 +222,12 @@ img {
 .pw-toggle-btn svg {
     width: 18px;
     height: 18px;
-    display: block;
     pointer-events: none;
     flex-shrink: 0;
+}
+
+/* Enforce hidden attribute — prevents display:block/inline overrides */
+.pw-toggle-btn svg[hidden] {
+    display: none !important;
 }
 

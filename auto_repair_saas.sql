@@ -516,6 +516,9 @@ CREATE TABLE `supplier_payments` (
 CREATE TABLE `tenants` (
   `tenant_id` int(11) NOT NULL,
   `business_name` varchar(150) NOT NULL,
+  `bir_tin` varchar(20) DEFAULT NULL,
+  `owner_id_number` varchar(64) DEFAULT NULL,
+  `owner_id_document_path` varchar(500) DEFAULT NULL,
   `status` enum('pending_payment','active','inactive') NOT NULL DEFAULT 'active',
   `access_mode` enum('full_access','read_only') NOT NULL DEFAULT 'full_access',
   `read_only_source_plan` varchar(100) DEFAULT NULL,
@@ -526,8 +529,8 @@ CREATE TABLE `tenants` (
 -- Dumping data for table `tenants`
 --
 
-INSERT INTO `tenants` (`tenant_id`, `business_name`, `status`, `access_mode`, `read_only_source_plan`, `created_at`) VALUES
-(1, 'Policarpio Auto Shop', 'active', 'full_access', NULL, '2026-04-20 04:54:43');
+INSERT INTO `tenants` (`tenant_id`, `business_name`, `bir_tin`, `owner_id_number`, `owner_id_document_path`, `status`, `access_mode`, `read_only_source_plan`, `created_at`) VALUES
+(1, 'Policarpio Auto Shop', NULL, NULL, NULL, 'active', 'full_access', NULL, '2026-04-20 04:54:43');
 
 -- --------------------------------------------------------
 
@@ -558,6 +561,7 @@ CREATE TABLE `tenant_registrations` (
   `preferred_username` varchar(50) DEFAULT NULL,
   `password_hash` varchar(255) DEFAULT NULL,
   `bir_tin` varchar(20) DEFAULT NULL,
+  `owner_id_number` varchar(64) DEFAULT NULL,
   `owner_id_document_path` varchar(500) DEFAULT NULL,
   `selected_plan_id` int(11) NOT NULL,
   `billing_cycle` enum('monthly','yearly') NOT NULL DEFAULT 'monthly',

@@ -110,7 +110,7 @@ unset($_SESSION['change_password_error'], $_SESSION['change_password_success']);
         </div>
     </main>
 
-    <script src="assets/js/theme.js"></script>
+    <script src="assets/js/theme.js?v=3"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const toggle = document.querySelector('[data-password-toggle-group]');

@@ -28,6 +28,7 @@ $password = (string) ($_POST['password'] ?? '');
 $passwordConfirm = (string) ($_POST['password_confirm'] ?? '');
 $birTinRaw = trim($_POST['bir_tin'] ?? '');
 $birTinDigits = preg_replace('/\D+/', '', $birTinRaw) ?? '';
+$ownerIdNumber = preg_replace('/\s+/', '', trim($_POST['owner_id_number'] ?? ''));
 $selectedPlanId = (int) ($_POST['selected_plan_id'] ?? 0);
 $billingCycle = $_POST['billing_cycle'] ?? 'monthly';
 $requestedFeatures = $_POST['requested_features'] ?? [];
@@ -56,6 +57,7 @@ $_SESSION['registration_old_input'] = [
     'address_brgy_name' => $addressBrgyName,
     'preferred_username' => $preferredUsername,
     'bir_tin' => $birTinRaw,
+    'owner_id_number' => $ownerIdNumber,
     'selected_plan_id' => $selectedPlanId,
     'billing_cycle' => $billingCycle,
     'requested_features' => $requestedFeatureIds,
@@ -81,6 +83,12 @@ if (strlen($password) < 10) {
 
 if ($birTinDigits === '' || strlen($birTinDigits) < 9 || strlen($birTinDigits) > 12) {
     $fieldErrors['bir_tin'] = 'Enter a valid BIR TIN (9–12 digits).';
+}
+
+if ($ownerIdNumber === '' || strlen($ownerIdNumber) < 4 || strlen($ownerIdNumber) > 32) {
+    $fieldErrors['owner_id_number'] = 'Enter the ID number as shown on the document (4–32 characters, no spaces).';
+} elseif (!preg_match('/^[A-Za-z0-9\-]+$/', $ownerIdNumber)) {
+    $fieldErrors['owner_id_number'] = 'ID number may contain only letters, digits, and hyphens.';
 }
 
 $uploadedFile = $_FILES['owner_id_document'] ?? null;
@@ -246,6 +254,7 @@ try {
             preferred_username,
             password_hash,
             bir_tin,
+            owner_id_number,
             owner_id_document_path,
             selected_plan_id,
             billing_cycle,
@@ -259,6 +268,7 @@ try {
             :preferred_username,
             :password_hash,
             :bir_tin,
+            :owner_id_number,
             NULL,
             :selected_plan_id,
             :billing_cycle,
@@ -275,6 +285,7 @@ try {
         'preferred_username' => $preferredUsername,
         'password_hash' => $passwordHash,
         'bir_tin' => $birTinDigits,
+        'owner_id_number' => $ownerIdNumber,
         'selected_plan_id' => $selectedPlanId,
         'billing_cycle' => $billingCycle,
     ]);

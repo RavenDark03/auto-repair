@@ -90,6 +90,6 @@ if (isset($_SESSION['user_id'])) {
         </div>
     </main>
 
-    <script src="assets/js/theme.js"></script>
+    <script src="assets/js/theme.js?v=3"></script>
 </body>
 </html>
