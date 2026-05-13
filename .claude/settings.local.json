@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root -e \"USE auto_repair_saas; SELECT username, role FROM staff LIMIT 10;\")",
+      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root -e \"USE auto_repair_saas; SHOW TABLES;\")"
+    ]
+  }
+}

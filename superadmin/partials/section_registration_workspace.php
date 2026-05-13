@@ -398,100 +398,53 @@
                                     </div>
                                 <?php endif; ?>
 
-                                <?php if ($canConvertTenant): ?>
-                                    <form action="actions/convert_registration_to_tenant.php" method="POST" class="mb-3">
-                                        <input type="hidden" name="superadmin_context" value="<?= htmlspecialchars($mechanixSuperadminContext, ENT_QUOTES, 'UTF-8') ?>">
-                                        <input type="hidden" name="registration_id" value="<?= (int) $selectedRegistration['registration_id'] ?>">
-                                        <input type="hidden" name="registration_search" value="<?= htmlspecialchars($registrationSearch, ENT_QUOTES, 'UTF-8') ?>">
-                                        <input type="hidden" name="registration_status_filter" value="<?= htmlspecialchars($registrationStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-                                        <input type="hidden" name="registration_billing_status_filter" value="<?= htmlspecialchars($registrationBillingStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-                                        <div class="alert alert-info mb-2" role="alert">
-                                            <div class="d-flex">
-                                                <div><i class="ti ti-info-circle icon alert-icon"></i></div>
-                                                <div>This activates the subscription on an existing owner workspace (or creates a new tenant for legacy registrations), enables plan features, and finalizes onboarding.</div>
-                                            </div>
-                                        </div>
-                                        <button type="submit" class="btn btn-primary btn-sm">Convert Paid Registration to Tenant</button>
-                                    </form>
-                                <?php elseif ($registrationStatus === 'converted'): ?>
-                                    <div class="alert alert-success mb-3" role="alert">
+                            <?php if ($canConvertTenant): ?>
+                                <form action="actions/convert_registration_to_tenant.php" method="POST" class="mb-3">
+                                    <input type="hidden" name="superadmin_context" value="<?= htmlspecialchars($mechanixSuperadminContext, ENT_QUOTES, 'UTF-8') ?>">
+                                    <input type="hidden" name="registration_id" value="<?= (int) $selectedRegistration['registration_id'] ?>">
+                                    <input type="hidden" name="registration_search" value="<?= htmlspecialchars($registrationSearch, ENT_QUOTES, 'UTF-8') ?>">
+                                    <input type="hidden" name="registration_status_filter" value="<?= htmlspecialchars($registrationStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
+                                    <input type="hidden" name="registration_billing_status_filter" value="<?= htmlspecialchars($registrationBillingStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
+                                    <div class="alert alert-info mb-2" role="alert">
                                         <div class="d-flex">
-                                            <div><i class="ti ti-circle-check icon alert-icon"></i></div>
-                                            <div><strong>Tenant Conversion Complete</strong><br>This registration has already been converted into a live tenant account.</div>
+                                            <div><i class="ti ti-info-circle icon alert-icon"></i></div>
+                                            <div>Payment confirmed by PayMongo. Click to finalize as a live tenant if auto-activation did not trigger.</div>
                                         </div>
                                     </div>
-                                <?php endif; ?>
-
-                                <?php if ($canUpdateBillingStatus): ?>
-                                    <form action="actions/update_billing_status.php" method="POST" class="mb-3">
-                                        <input type="hidden" name="superadmin_context" value="<?= htmlspecialchars($mechanixSuperadminContext, ENT_QUOTES, 'UTF-8') ?>">
-                                        <input type="hidden" name="registration_id" value="<?= (int) $selectedRegistration['registration_id'] ?>">
-                                        <input type="hidden" name="billing_request_id" value="<?= (int) $selectedBillingRequest['billing_request_id'] ?>">
-                                        <input type="hidden" name="registration_search" value="<?= htmlspecialchars($registrationSearch, ENT_QUOTES, 'UTF-8') ?>">
-                                        <input type="hidden" name="registration_status_filter" value="<?= htmlspecialchars($registrationStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-                                        <input type="hidden" name="registration_billing_status_filter" value="<?= htmlspecialchars($registrationBillingStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-                                        <div class="row g-2 mb-2">
-                                            <div class="col-sm-6">
-                                                <label class="form-label" for="billing_status">Billing Status</label>
-                                                <select class="form-control" id="billing_status" name="billing_status" required>
-                                                    <option value="draft"<?= ($selectedBillingRequest['billing_status'] === 'draft') ? ' selected' : '' ?>>Draft</option>
-                                                    <option value="sent"<?= ($selectedBillingRequest['billing_status'] === 'sent') ? ' selected' : '' ?>>Sent</option>
-                                                    <option value="paid"<?= ($selectedBillingRequest['billing_status'] === 'paid') ? ' selected' : '' ?>>Paid</option>
-                                                    <option value="cancelled"<?= ($selectedBillingRequest['billing_status'] === 'cancelled') ? ' selected' : '' ?>>Cancelled</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-sm-6">
-                                                <label class="form-label" for="payment_reference">Payment / External Reference</label>
-                                                <input class="form-control" type="text" id="payment_reference" name="payment_reference" value="<?= htmlspecialchars($selectedBillingRequest['payment_reference'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
-                                            </div>
-                                        </div>
-                                        <button type="submit" class="btn btn-primary btn-sm">Update Billing Status</button>
-                                    </form>
-
-                                    <form action="actions/update_billing_verification.php" method="POST" class="mb-3">
-                                        <input type="hidden" name="superadmin_context" value="<?= htmlspecialchars($mechanixSuperadminContext, ENT_QUOTES, 'UTF-8') ?>">
-                                        <input type="hidden" name="registration_id" value="<?= (int) $selectedRegistration['registration_id'] ?>">
-                                        <input type="hidden" name="billing_request_id" value="<?= (int) $selectedBillingRequest['billing_request_id'] ?>">
-                                        <input type="hidden" name="registration_search" value="<?= htmlspecialchars($registrationSearch, ENT_QUOTES, 'UTF-8') ?>">
-                                        <input type="hidden" name="registration_status_filter" value="<?= htmlspecialchars($registrationStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-                                        <input type="hidden" name="registration_billing_status_filter" value="<?= htmlspecialchars($registrationBillingStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-                                        <div class="mb-2">
-                                            <label class="form-label" for="payment_reference_check_notes">Verification Notes</label>
-                                            <textarea class="form-control" rows="3" id="payment_reference_check_notes" name="payment_reference_check_notes"><?= htmlspecialchars($selectedBillingRequest['payment_reference_check_notes'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
-                                        </div>
-                                        <div class="alert alert-info mb-2" role="alert">
-                                            <div class="d-flex">
-                                                <div><i class="ti ti-info-circle icon alert-icon"></i></div>
-                                                <div>Review the NG reference format, confirm it is unique, and save the result into the billing record for audit tracking.</div>
-                                            </div>
-                                        </div>
-                                        <button type="submit" class="btn btn-secondary btn-sm">Save Reference Review</button>
-                                    </form>
-                                <?php endif; ?>
+                                    <button type="submit" class="btn btn-primary btn-sm">Convert Paid Registration to Tenant (Manual Fallback)</button>
+                                </form>
+                            <?php elseif ($registrationStatus === 'converted'): ?>
+                                <div class="alert alert-success mb-3" role="alert">
+                                    <div class="d-flex">
+                                        <div><i class="ti ti-circle-check icon alert-icon"></i></div>
+                                        <div><strong>Tenant Conversion Complete</strong><br>This registration has been converted into a live tenant account.</div>
+                                    </div>
+                                </div>
                             <?php endif; ?>
 
-                            <form action="actions/review_registration.php" method="POST">
-                                <input type="hidden" name="superadmin_context" value="<?= htmlspecialchars($mechanixSuperadminContext, ENT_QUOTES, 'UTF-8') ?>">
-                                <input type="hidden" name="registration_id" value="<?= (int) $selectedRegistration['registration_id'] ?>">
-                                <input type="hidden" name="registration_search" value="<?= htmlspecialchars($registrationSearch, ENT_QUOTES, 'UTF-8') ?>">
-                                <input type="hidden" name="registration_status_filter" value="<?= htmlspecialchars($registrationStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-                                <input type="hidden" name="registration_billing_status_filter" value="<?= htmlspecialchars($registrationBillingStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-                                <div class="mb-2">
-                                    <label class="form-label" for="notes">Review Notes</label>
-                                    <textarea class="form-control" rows="3" id="notes" name="notes"><?= htmlspecialchars($selectedRegistration['notes'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
-                                </div>
-                                <div class="d-flex gap-2 flex-wrap">
-                                    <?php if ($canApproveRegistration): ?>
-                                        <button type="submit" class="btn btn-primary btn-sm" name="decision" value="approve">Approve Registration</button>
-                                    <?php endif; ?>
-                                    <?php if ($canMarkBillingSent): ?>
-                                        <button type="submit" class="btn btn-secondary btn-sm" name="decision" value="billing_sent">Mark Billing Sent</button>
-                                    <?php endif; ?>
-                                    <?php if ($canRejectRegistration): ?>
-                                        <button type="submit" class="btn btn-secondary btn-sm" name="decision" value="reject">Reject Registration</button>
-                                    <?php endif; ?>
-                                </div>
-                            </form>
+                        <?php endif; ?>
+
+                        <form action="actions/review_registration.php" method="POST">
+                            <input type="hidden" name="superadmin_context" value="<?= htmlspecialchars($mechanixSuperadminContext, ENT_QUOTES, 'UTF-8') ?>">
+                            <input type="hidden" name="registration_id" value="<?= (int) $selectedRegistration['registration_id'] ?>">
+                            <input type="hidden" name="registration_search" value="<?= htmlspecialchars($registrationSearch, ENT_QUOTES, 'UTF-8') ?>">
+                            <input type="hidden" name="registration_status_filter" value="<?= htmlspecialchars($registrationStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
+                            <input type="hidden" name="registration_billing_status_filter" value="<?= htmlspecialchars($registrationBillingStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
+                            <div class="mb-2">
+                                <label class="form-label" for="notes">Review Notes (optional)</label>
+                                <textarea class="form-control" rows="3" id="notes" name="notes"><?= htmlspecialchars($selectedRegistration['notes'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
+                            </div>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <?php if ($canApproveRegistration): ?>
+                                    <button type="submit" class="btn btn-primary btn-sm" name="decision" value="approve">
+                                        Approve &amp; Send PayMongo Link
+                                    </button>
+                                <?php endif; ?>
+                                <?php if ($canRejectRegistration): ?>
+                                    <button type="submit" class="btn btn-secondary btn-sm" name="decision" value="reject">Reject Registration</button>
+                                <?php endif; ?>
+                            </div>
+                        </form>
                         </div>
 
                         <div class="card-header">

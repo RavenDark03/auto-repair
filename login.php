@@ -56,6 +56,15 @@ if (isset($_SESSION['user_id'])) {
             <h2>Welcome back</h2>
             <p>Sign in with tenant staff credentials or your platform super admin account.</p>
 
+            <?php if (isset($_SESSION['registration_success'])): ?>
+                <div class="alert alert-success" style="margin-bottom:1rem;padding:12px 16px;border-radius:8px;background:#d1fae5;border:1px solid #6ee7b7;color:#065f46;font-size:14px;">
+                    <?php
+                    echo htmlspecialchars($_SESSION['registration_success']);
+                    unset($_SESSION['registration_success']);
+                    ?>
+                </div>
+            <?php endif; ?>
+
             <?php if (isset($_SESSION['error_message'])): ?>
                 <div class="alert alert-error">
                     <?php

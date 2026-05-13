@@ -8,10 +8,40 @@ require_once __DIR__ . '/../includes/platform_rules.php';
 
 requireAdmin();
 
-$tenantId = (int) ($_SESSION['tenant_id'] ?? 0);
-$fullName = $_SESSION['full_name'] ?? 'Admin User';
+$tenantId    = (int) ($_SESSION['tenant_id'] ?? 0);
+$fullName    = $_SESSION['full_name'] ?? 'Admin User';
 $businessName = $_SESSION['business_name'] ?? 'Tenant Workspace';
 $currentRole = 'admin';
+
+// ---- Pending Payment Gate ----
+// Check live tenant status — if still pending_payment, show blur overlay
+$tenantStatus = 'active'; // default
+$paymentCheckoutUrl = null;
+try {
+    $pdoCheck = Database::getInstance();
+    $tsStmt   = $pdoCheck->prepare("
+        SELECT t.status,
+               br.paymongo_checkout_url
+        FROM tenants t
+        LEFT JOIN tenant_registrations tr
+            ON tr.provisioned_tenant_id = t.tenant_id
+            OR tr.converted_tenant_id   = t.tenant_id
+        LEFT JOIN billing_requests br
+            ON br.registration_id = tr.registration_id
+           AND br.billing_status != 'paid'
+        WHERE t.tenant_id = :tenant_id
+        ORDER BY br.billing_request_id DESC
+        LIMIT 1
+    ");
+    $tsStmt->execute(['tenant_id' => $tenantId]);
+    $tsRow = $tsStmt->fetch(PDO::FETCH_ASSOC);
+    if ($tsRow) {
+        $tenantStatus       = $tsRow['status'] ?? 'active';
+        $paymentCheckoutUrl = $tsRow['paymongo_checkout_url'] ?? null;
+    }
+} catch (Throwable $ignored) {}
+
+$isPendingPayment = ($tenantStatus === 'pending_payment');
 $authErrorMessage = $_SESSION['auth_error'] ?? null;
 if ($authErrorMessage === null) {
     $authErrorMessage = $_SESSION['error_message'] ?? null;
@@ -235,14 +265,118 @@ function dashboardDate($date) {
     <link rel="stylesheet" href="../assets/css/superadmin-landing-theme.css">
 </head>
 <body class="page-shell antialiased tenant-app">
-<div class="page">
+
+<?php if ($isPendingPayment): ?>
+<style>
+.sub-gate-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(10, 11, 18, 0.72);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+.sub-gate-card {
+    background: linear-gradient(145deg, #1a1d2e, #12141f);
+    border: 1px solid #2d3148;
+    border-radius: 20px;
+    padding: 48px 44px;
+    max-width: 460px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 32px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(108,99,255,.15);
+    animation: gate-in .35s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes gate-in {
+    from { opacity:0; transform:translateY(24px) scale(.96); }
+    to   { opacity:1; transform:none; }
+}
+.sub-gate-card .sg-brand-mark {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #6c63ff, #4f46e5);
+    border-radius: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    font-weight: 800;
+    color: #fff;
+    margin: 0 auto 20px;
+    box-shadow: 0 8px 24px rgba(108,99,255,.4);
+}
+.sub-gate-card h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin: 0 0 10px;
+    letter-spacing: -.4px;
+}
+.sub-gate-card p {
+    font-size: 14px;
+    color: #94a3b8;
+    line-height: 1.7;
+    margin: 0 0 28px;
+}
+.sub-gate-btn {
+    display: inline-block;
+    padding: 14px 36px;
+    background: linear-gradient(135deg, #6c63ff, #4f46e5);
+    color: #fff !important;
+    text-decoration: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: .3px;
+    box-shadow: 0 8px 24px rgba(108,99,255,.35);
+    transition: transform .15s, box-shadow .15s;
+    border: none;
+    cursor: pointer;
+}
+.sub-gate-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(108,99,255,.5);
+    color: #fff !important;
+    text-decoration: none;
+}
+.sub-gate-logout {
+    display: block;
+    margin-top: 20px;
+    font-size: 13px;
+    color: #475569;
+    text-decoration: none;
+}
+.sub-gate-logout:hover { color: #94a3b8; }
+</style>
+<div class="sub-gate-overlay" id="subscription-gate" role="dialog" aria-modal="true" aria-label="Subscription payment required">
+    <div class="sub-gate-card">
+        <div class="sg-brand-mark">M</div>
+        <h2>Your Workspace Is Almost Ready!</h2>
+        <p>To unlock the full MECHANIX dashboard, please complete your subscription payment. Your business has been verified and your account is ready to activate.</p>
+        <?php if (!empty($paymentCheckoutUrl)): ?>
+            <a id="pay-subscription-btn"
+               href="<?= htmlspecialchars($paymentCheckoutUrl, ENT_QUOTES, 'UTF-8') ?>"
+               class="sub-gate-btn"
+               rel="noopener noreferrer">
+                &#128179; Pay Subscription
+            </a>
+        <?php else: ?>
+            <p style="color:#f87171;font-size:13px;margin-bottom:16px;">Your checkout link is being prepared. Please refresh this page in a few moments, or contact support.</p>
+            <button onclick="location.reload()" class="sub-gate-btn">&#128260; Refresh Page</button>
+        <?php endif; ?>
+        <a href="<?= htmlspecialchars(BASE_URL . '/logout.php', ENT_QUOTES, 'UTF-8') ?>" class="sub-gate-logout">Log out</a>
+    </div>
+</div>
+<?php endif; ?>
+
+<div class="dashboard">
     <?= renderTenantAdminSidebar($businessName, $visibleModuleLinks, 'dashboard.php', $showAnalytics) ?>
 
-    <div class="page-wrapper">
+    <main class="dashboard-main" id="main-content" tabindex="-1">
         <?= renderTenantAdminTopbar('Dashboard', "Welcome back, {$fullName}. Here's a live overview of {$businessName}.") ?>
-
-        <div class="page-body">
-            <div class="container-xl">
 
                 <?php if ($systemMessage !== null): ?>
                     <div class="alert alert-danger" role="alert">
@@ -505,9 +639,7 @@ function dashboardDate($date) {
                     </div>
                 </div>
 
-            </div>
-        </div>
-    </div>
+    </main>
 </div>
 
 <?= renderTenantAdminFooterScripts() ?>

@@ -116,7 +116,7 @@ try {
     }
 
     if (($user['tenant_status'] ?? '') === 'pending_payment' && ($user['role'] ?? '') === 'admin') {
-        header('Location: ' . mechanix_url_path('/pending_payment.php'));
+        header('Location: ' . mechanix_url_path('/admin/dashboard.php'));
         exit;
     }
 

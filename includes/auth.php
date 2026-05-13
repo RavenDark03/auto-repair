@@ -43,7 +43,10 @@ function requireTenantRoles(array $allowedRoles, $redirectPath = null) {
     }
 
     $scriptName = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
-    if (strpos($scriptName, 'pending_payment.php') === false) {
+    $isDashboard = strpos($scriptName, 'dashboard.php') !== false;
+    $isPendingPaymentPage = strpos($scriptName, 'pending_payment.php') !== false;
+
+    if (!$isDashboard && !$isPendingPaymentPage) {
         try {
             $pdo = Database::getInstance();
             $tenantStmt = $pdo->prepare("
@@ -54,8 +57,9 @@ function requireTenantRoles(array $allowedRoles, $redirectPath = null) {
             ");
             $tenantStmt->execute(['tenant_id' => (int) ($_SESSION['tenant_id'] ?? 0)]);
             $tenantStatus = (string) $tenantStmt->fetchColumn();
+            
             if ($tenantStatus === 'pending_payment') {
-                header('Location: ' . BASE_URL . '/pending_payment.php');
+                header('Location: ' . BASE_URL . '/admin/dashboard.php');
                 exit;
             }
         } catch (PDOException $e) {

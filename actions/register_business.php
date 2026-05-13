@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/../includes/session.php';
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../includes/email_helper.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: ../register.php');
@@ -78,6 +80,7 @@ if (strlen($password) < 10) {
 } elseif (!preg_match('/[A-Za-z]/', $password) || !preg_match('/[0-9]/', $password)) {
     $fieldErrors['password'] = 'Password must include at least one letter and one number.';
 } elseif ($password !== $passwordConfirm) {
+    $fieldErrors['password'] = 'Passwords do not match.';
     $fieldErrors['password_confirm'] = 'Passwords do not match.';
 }
 
@@ -328,35 +331,34 @@ try {
         }
     }
 
-    $emailLogStmt = $pdo->prepare(" 
-        INSERT INTO email_logs (
-            registration_id,
-            recipient_email,
-            subject,
-            body,
-            email_type,
-            send_status
-        ) VALUES (
-            :registration_id,
-            :recipient_email,
-            :subject,
-            :body,
-            'registration_received',
-            'pending'
-        )
-    ");
-    $emailLogStmt->execute([
-        'registration_id' => $registrationId,
-        'recipient_email' => $email,
-        'subject' => 'MECHANIX registration received',
-        'body' => 'Your registration has been received and is pending super admin review.',
-    ]);
+    // Send "registration received – please wait 3-5 days" email
+    $waitEmailHtml = mechanix_email_html('
+        <h2>Registration Received!</h2>
+        <p>Hi <strong>' . htmlspecialchars($ownerFullName, ENT_QUOTES, 'UTF-8') . '</strong>, thank you for registering <strong>' . htmlspecialchars($businessName, ENT_QUOTES, 'UTF-8') . '</strong> on MECHANIX.</p>
+        <p>Your application is now under review. Our team will verify your business details within <strong>3–5 business days</strong>.</p>
+        <div class="info-box">
+            <p>What happens next?</p>
+            <div class="val">✔ Business verification review (3–5 days)</div>
+            <div class="val">✔ You will receive an email when approved</div>
+            <div class="val">✔ Use the link in that email to log in &amp; pay your subscription</div>
+        </div>
+        <hr class="divider">
+        <p style="font-size:13px;color:#64748b">If you have questions, please contact MECHANIX support. Do not reply to this email.</p>
+    ');
+    mechanix_send_email(
+        $email,
+        'MECHANIX – Registration Received',
+        $waitEmailHtml,
+        $registrationId,
+        'registration_received',
+        $pdo
+    );
 
     $pdo->commit();
 
     unset($_SESSION['registration_old_input'], $_SESSION['error_message'], $_SESSION['registration_field_errors']);
-    $_SESSION['registration_success'] = 'Your registration was submitted. After super admin approval, log in with your username and password to complete subscription payment.';
-    header('Location: ../register.php');
+    $_SESSION['registration_success'] = 'Your registration was submitted successfully! Please check your email — we will notify you within 3–5 business days once your business is verified.';
+    header('Location: ../login.php');
     exit;
 } catch (Throwable $e) {
     if (isset($pdo) && $pdo->inTransaction()) {

@@ -328,12 +328,8 @@
                 ok = false;
             }
 
-            var pw = $('password');
-            var pwc = $('password_confirm');
-            if (pw && pwc && pw.value !== pwc.value) {
-                ok = false;
-                alert('Passwords do not match.');
-            }
+            // Password validation is handled server-side to properly display
+            // inline error messages and red borders.
 
             if (!ok) {
                 e.preventDefault();
