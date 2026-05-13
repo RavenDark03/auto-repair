@@ -227,7 +227,3 @@ img {
     flex-shrink: 0;
 }
 
-/* eye-off hidden by default; shown when field is revealed */
-.pw-eye-off {
-    display: none;
-}
