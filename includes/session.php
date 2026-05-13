@@ -6,4 +6,6 @@ if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.gc_maxlifetime', 3600);
     session_start();
 }
+
+require_once __DIR__ . '/mechanix_urls.php';
 ?>
