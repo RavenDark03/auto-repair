@@ -240,8 +240,9 @@ function cashierDashboardMetricUrl($type) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cashier Dashboard - MECHANIX</title>
     <link rel="stylesheet" href="../assets/css/styles.css">
+    <link rel="stylesheet" href="../assets/css/superadmin-landing-theme.css">
 </head>
-<body class="page-shell">
+<body class="page-shell antialiased tenant-app">
     <div class="dashboard">
         <?= renderTenantAdminSidebar($businessName, $visibleModuleLinks, 'cashier_dashboard.php', $showAnalytics) ?>
 

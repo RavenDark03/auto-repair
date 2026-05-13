@@ -12,8 +12,9 @@
                             <form action="<?= htmlspecialchars($mechanixSuperadminTenantPage, ENT_QUOTES, 'UTF-8') ?>" method="GET">
                                 <div class="row g-2 mb-2">
                                     <div class="col-12">
-                                        <label class="form-label" for="tenant_search">Search Tenant</label>
-                                        <input class="form-control" type="text" id="tenant_search" name="tenant_search" value="<?= htmlspecialchars($tenantSearch, ENT_QUOTES, 'UTF-8') ?>" placeholder="Business name">
+                                        <label class="form-label" for="tenant_search">Search tenant</label>
+                                        <input class="form-control" type="search" id="tenant_search" name="tenant_search" value="<?= htmlspecialchars($tenantSearch, ENT_QUOTES, 'UTF-8') ?>" placeholder="Business name" autocomplete="off">
+                                        <span id="sa-tenant-filter-live" class="sr-only" aria-live="polite"></span>
                                     </div>
                                     <div class="col-sm-6">
                                         <label class="form-label" for="tenant_status">Tenant Status</label>
@@ -41,7 +42,12 @@
                             </form>
                         </div>
                         <?php if (!empty($tenants)): ?>
-                            <div class="list-group list-group-flush">
+                            <div class="list-group list-group-flush"
+                                 id="sa-livefilter-tenants"
+                                 data-live-filter-scope
+                                 data-live-filter-input="#tenant_search"
+                                 data-live-filter-items=".list-group-item"
+                                 data-live-filter-announcer="sa-tenant-filter-live">
                                 <?php foreach ($tenants as $tenant): ?>
                                     <?php
                                     $isSelected = (int) $tenant['tenant_id'] === $selectedTenantId;
@@ -54,7 +60,7 @@
                                         default => 'bg-secondary-lt',
                                     };
                                     ?>
-                                    <a class="list-group-item list-group-item-action<?= $isSelected ? ' active' : '' ?>" href="<?= htmlspecialchars($mechanixSuperadminTenantPage, ENT_QUOTES, 'UTF-8') ?>?tenant_id=<?= (int) $tenant['tenant_id'] ?><?= $tenantSearch !== '' ? '&tenant_search=' . urlencode($tenantSearch) : '' ?><?= $tenantStatusFilter !== '' ? '&tenant_status=' . urlencode($tenantStatusFilter) : '' ?><?= $subscriptionStatusFilter !== '' ? '&subscription_status=' . urlencode($subscriptionStatusFilter) : '' ?><?= $mechanixSuperadminTenantListFragment ?>">
+                                    <a class="list-group-item list-group-item-action<?= $isSelected ? ' active' : '' ?>" data-live-filter-row href="<?= htmlspecialchars($mechanixSuperadminTenantPage, ENT_QUOTES, 'UTF-8') ?>?tenant_id=<?= (int) $tenant['tenant_id'] ?><?= $tenantSearch !== '' ? '&tenant_search=' . urlencode($tenantSearch) : '' ?><?= $tenantStatusFilter !== '' ? '&tenant_status=' . urlencode($tenantStatusFilter) : '' ?><?= $subscriptionStatusFilter !== '' ? '&subscription_status=' . urlencode($subscriptionStatusFilter) : '' ?><?= $mechanixSuperadminTenantListFragment ?>">
                                         <div class="row align-items-center">
                                             <div class="col">
                                                 <div class="font-weight-medium"><?= htmlspecialchars($tenant['business_name'], ENT_QUOTES, 'UTF-8') ?></div>

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/mechanix_ui.php';
 
 function redirect($path) {
@@ -187,7 +187,8 @@ function getVisibleTenantAdminModuleLinks($tenantId, $role = null) {
 
 function renderTenantAdminFooterScripts() {
     return '<script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0/dist/js/tabler.min.js"></script>'
-        . '<script src="../assets/js/theme.js?v=3"></script>';
+        . '<script src="../assets/js/theme.js?v=3"></script>'
+        . '<script src="../assets/js/mechanix-logout-dialog.js"></script>';
 }
 
 function renderTenantAdminSidebar($businessName, array $visibleModuleLinks, $activeHref, $showAnalytics, $logoutHref = '../logout.php') {
@@ -241,16 +242,16 @@ function renderTenantAdminSidebar($businessName, array $visibleModuleLinks, $act
                     <?php endforeach; ?>
                 </ul>
                 <div class="mt-auto p-3">
-                    <a href="<?= htmlspecialchars($logoutHref, ENT_QUOTES, 'UTF-8') ?>" class="btn btn-outline-light w-100">
+                    <button type="button" class="btn btn-outline-light w-100" data-mechanix-logout-open>
                         <i class="ti ti-logout me-2"></i>Log Out
-                    </a>
+                    </button>
                 </div>
             </div>
         </div>
     </aside>
     <?php
 
-    return ob_get_clean();
+    return ob_get_clean() . mechanix_logout_dialog_markup('tenant', '../logout.php');
 }
 
 function renderTenantAdminTopbar($title, $description, $contextHtml = '') {

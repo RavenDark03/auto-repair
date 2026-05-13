@@ -24,8 +24,9 @@
                                 <?php endif; ?>
                                 <div class="row g-2 mb-2">
                                     <div class="col-12">
-                                        <label class="form-label" for="registration_search">Search Registration</label>
-                                        <input class="form-control" type="text" id="registration_search" name="registration_search" value="<?= htmlspecialchars($registrationSearch, ENT_QUOTES, 'UTF-8') ?>" placeholder="Business, owner, or email">
+                                        <label class="form-label" for="registration_search">Search registration</label>
+                                        <input class="form-control" type="search" id="registration_search" name="registration_search" value="<?= htmlspecialchars($registrationSearch, ENT_QUOTES, 'UTF-8') ?>" placeholder="Business, owner, or email" autocomplete="off">
+                                        <span id="sa-reg-filter-live" class="sr-only" aria-live="polite"></span>
                                     </div>
                                     <div class="col-sm-6">
                                         <label class="form-label" for="registration_status_filter">Registration Status</label>
@@ -58,7 +59,12 @@
                             </form>
                         </div>
                         <?php if (!empty($registrations)): ?>
-                            <div class="list-group list-group-flush">
+                            <div class="list-group list-group-flush"
+                                 id="sa-livefilter-registrations"
+                                 data-live-filter-scope
+                                 data-live-filter-input="#registration_search"
+                                 data-live-filter-items=".list-group-item"
+                                 data-live-filter-announcer="sa-reg-filter-live">
                                 <?php
                                 $regStatusBadge = [
                                     'pending'      => 'bg-orange-lt text-orange',
@@ -72,7 +78,7 @@
                                     $isSelectedRegistration = (int) $registration['registration_id'] === $selectedRegistrationId;
                                     $regBadge = $regStatusBadge[$registration['registration_status']] ?? 'bg-secondary-lt';
                                 ?>
-                                    <a class="list-group-item list-group-item-action<?= $isSelectedRegistration ? ' active' : '' ?>" href="<?= htmlspecialchars($mechanixSuperadminRegistrationPage, ENT_QUOTES, 'UTF-8') ?>?registration_id=<?= (int) $registration['registration_id'] ?><?= $registrationSearch !== '' ? '&registration_search=' . urlencode($registrationSearch) : '' ?><?= $registrationStatusFilter !== '' ? '&registration_status=' . urlencode($registrationStatusFilter) : '' ?><?= $registrationBillingStatusFilter !== '' ? '&registration_billing_status=' . urlencode($registrationBillingStatusFilter) : '' ?><?= $selectedTenantId > 0 ? '&tenant_id=' . (int) $selectedTenantId : '' ?><?= $tenantSearch !== '' ? '&tenant_search=' . urlencode($tenantSearch) : '' ?><?= $tenantStatusFilter !== '' ? '&tenant_status=' . urlencode($tenantStatusFilter) : '' ?><?= $subscriptionStatusFilter !== '' ? '&subscription_status=' . urlencode($subscriptionStatusFilter) : '' ?><?= $mechanixSuperadminRegListFragment ?>">
+                                    <a class="list-group-item list-group-item-action<?= $isSelectedRegistration ? ' active' : '' ?>" data-live-filter-row href="<?= htmlspecialchars($mechanixSuperadminRegistrationPage, ENT_QUOTES, 'UTF-8') ?>?registration_id=<?= (int) $registration['registration_id'] ?><?= $registrationSearch !== '' ? '&registration_search=' . urlencode($registrationSearch) : '' ?><?= $registrationStatusFilter !== '' ? '&registration_status=' . urlencode($registrationStatusFilter) : '' ?><?= $registrationBillingStatusFilter !== '' ? '&registration_billing_status=' . urlencode($registrationBillingStatusFilter) : '' ?><?= $selectedTenantId > 0 ? '&tenant_id=' . (int) $selectedTenantId : '' ?><?= $tenantSearch !== '' ? '&tenant_search=' . urlencode($tenantSearch) : '' ?><?= $tenantStatusFilter !== '' ? '&tenant_status=' . urlencode($tenantStatusFilter) : '' ?><?= $subscriptionStatusFilter !== '' ? '&subscription_status=' . urlencode($subscriptionStatusFilter) : '' ?><?= $mechanixSuperadminRegListFragment ?>">
                                         <div class="row align-items-center">
                                             <div class="col">
                                                 <div class="font-weight-medium"><?= htmlspecialchars($registration['business_name'], ENT_QUOTES, 'UTF-8') ?></div>

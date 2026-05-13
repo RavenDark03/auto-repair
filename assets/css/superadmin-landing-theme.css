@@ -622,3 +622,187 @@ html[data-theme="dark"] .superadmin-app .list-group-item.list-group-item-action:
         border-bottom: 1px solid var(--border);
     }
 }
+
+/* ----------------------------------------------------------------
+   Command Center — uniform KPI grids (earnings-style metric cards)
+---------------------------------------------------------------- */
+.superadmin-platform .sa-cmd-kpi-grid {
+    grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
+    margin-bottom: 1.1rem;
+}
+
+.superadmin-platform .sa-metric-fixed {
+    min-height: 112px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.superadmin-platform .sa-metric-fixed h3 {
+    font-size: clamp(1.25rem, 2.8vw, 1.65rem);
+}
+
+.sa-kpi-section-title {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-soft);
+    margin: 1.15rem 0 0.45rem;
+    font-weight: 700;
+}
+
+.sa-kpi-section-title:first-of-type {
+    margin-top: 0;
+}
+
+.superadmin-platform .sa-status-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 1rem;
+}
+
+.superadmin-platform .sa-status-bar-note {
+    color: var(--text-soft);
+    font-size: 0.9rem;
+    max-width: 56ch;
+    line-height: 1.45;
+}
+
+.sa-cmd-alert-row {
+    border-left: 3px solid var(--border-strong);
+}
+
+.sa-cmd-alert-row--danger {
+    border-left-color: var(--tblr-danger, #d63939);
+}
+
+.sa-cmd-alert-row--ok {
+    border-left-color: var(--tblr-success, #2fb344);
+}
+
+.sa-onboarding-subhead {
+    margin-top: 1rem;
+}
+
+/* ----------------------------------------------------------------
+   Logout confirmation dialog (native <dialog>)
+---------------------------------------------------------------- */
+.mechanix-logout-dialog {
+    border: none;
+    border-radius: 22px;
+    padding: 0;
+    max-width: 400px;
+    width: calc(100vw - 32px);
+    background: var(--bg-soft);
+    color: var(--text);
+    box-shadow: var(--shadow-soft);
+}
+
+.mechanix-logout-dialog::backdrop {
+    background: color-mix(in srgb, #000000 48%, transparent);
+}
+
+.mechanix-logout-dialog-form {
+    padding: 1.35rem 1.35rem 1.2rem;
+}
+
+.mechanix-logout-dialog-title {
+    font-size: 1.2rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin-bottom: 0.35rem;
+}
+
+.mechanix-logout-dialog-text {
+    color: var(--text-soft);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 1.15rem;
+}
+
+.mechanix-logout-dialog-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ----------------------------------------------------------------
+   Tenant admin workspace — landing-aligned canvas (with Tabler)
+---------------------------------------------------------------- */
+.tenant-app .page {
+    background:
+        radial-gradient(ellipse 78% 42% at 50% -10%, color-mix(in srgb, var(--border) 50%, transparent), transparent),
+        var(--bg);
+}
+
+.tenant-app .card {
+    border-radius: 22px !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: var(--shadow-soft) !important;
+    background: var(--bg-soft) !important;
+}
+
+.tenant-app .card-header {
+    background: transparent !important;
+    border-bottom: 1px solid var(--border) !important;
+}
+
+.tenant-app .list-group-item {
+    border-color: var(--border) !important;
+}
+
+.tenant-app .page-header {
+    background: color-mix(in srgb, var(--bg-soft) 88%, transparent) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border) !important;
+}
+
+.tenant-app .page-body {
+    background: transparent !important;
+}
+
+.sa-guide-list {
+    margin: 0.5rem 0 0 1.1rem;
+    padding: 0;
+    display: grid;
+    gap: 12px;
+    color: var(--text-soft);
+    line-height: 1.55;
+}
+
+.sa-guide-list li {
+    padding-left: 4px;
+}
+
+.sa-guide-list a {
+    color: var(--text);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.sa-guide-list a:hover {
+    color: var(--text-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dashboard-link-card {
+        transition: none;
+    }
+}

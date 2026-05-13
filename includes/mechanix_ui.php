@@ -22,3 +22,27 @@ function mechanix_back_icon_link(string $href, string $ariaLabel = 'Back'): stri
         . '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>'
         . '</a>';
 }
+
+/**
+ * Accessible logout confirmation using native dialog + POST to logout handler.
+ *
+ * @param 'superadmin'|'tenant' $context
+ */
+function mechanix_logout_dialog_markup(string $context, string $formAction = '../logout.php'): string
+{
+    $ctx = $context === 'superadmin' ? 'superadmin' : 'tenant';
+    $safeAction = htmlspecialchars($formAction, ENT_QUOTES, 'UTF-8');
+    $safeCtx = htmlspecialchars($ctx, ENT_QUOTES, 'UTF-8');
+
+    return '<dialog class="mechanix-logout-dialog" id="mechanix-logout-dialog" aria-labelledby="mechanix-logout-title">'
+        . '<form class="mechanix-logout-dialog-form" method="post" action="' . $safeAction . '">'
+        . '<input type="hidden" name="logout_context" value="' . $safeCtx . '">'
+        . '<h2 id="mechanix-logout-title" class="mechanix-logout-dialog-title">Log out?</h2>'
+        . '<p class="mechanix-logout-dialog-text">You will need to sign in again to continue.</p>'
+        . '<div class="mechanix-logout-dialog-actions">'
+        . '<button type="button" class="btn btn-secondary mechanix-logout-cancel">Cancel</button>'
+        . '<button type="submit" class="btn btn-primary">Log out</button>'
+        . '</div>'
+        . '</form>'
+        . '</dialog>';
+}

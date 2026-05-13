@@ -1,10 +1,12 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/mechanix_ui.php';
+
 /**
  * Earnings-style platform sidebar (shared across superadmin pages).
  *
- * @param string $active One of: overview, registrations, tenant_ops, plan_catalog, tenant_status, subscriptions, earnings
+ * @param string $active One of: overview, registrations, tenant_ops, plan_catalog, tenant_status, subscriptions, earnings, guide_onboarding, guide_billing
  * @param array{pending_registrations?: int} $options
  */
 function mechanix_superadmin_render_sidebar(string $active, array $options = []): void
@@ -69,9 +71,16 @@ function mechanix_superadmin_render_sidebar(string $active, array $options = [])
             ?>
         </nav>
 
+        <div class="sidebar-section-title">Guides</div>
+        <nav class="sidebar-menu" aria-label="Guides">
+            <?php $item('guide_onboarding', 'guides_tenant_onboarding.php', 'Tenant onboarding', 'Playbook'); ?>
+            <?php $item('guide_billing', 'guides_billing_references.php', 'Billing references', 'Playbook'); ?>
+        </nav>
+
         <div class="sidebar-footer">
-            <a href="../logout.php" class="btn btn-secondary btn-full">Log Out</a>
+            <button type="button" class="btn btn-secondary btn-full" data-mechanix-logout-open>Log Out</button>
         </div>
     </aside>
     <?php
+    echo mechanix_logout_dialog_markup('superadmin', '../logout.php');
 }

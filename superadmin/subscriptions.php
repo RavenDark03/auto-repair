@@ -80,6 +80,8 @@ $pendingCount = (int) ($summary['pending_registrations'] ?? 0);
     </main>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0/dist/js/tabler.min.js"></script>
-<script src="../assets/js/theme.js?v=2"></script>
+<script src="../assets/js/theme.js?v=3"></script>
+<script src="../assets/js/mechanix-logout-dialog.js"></script>
+<script src="../assets/js/superadmin-list-filter.js"></script>
 </body>
 </html>

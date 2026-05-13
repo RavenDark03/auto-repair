@@ -1,4 +1,4 @@
-﻿document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function () {
     const root = document.documentElement;
     const toggleButtons = document.querySelectorAll('[data-theme-toggle]');
     const savedTheme = localStorage.getItem('theme');

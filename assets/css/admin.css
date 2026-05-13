@@ -476,6 +476,7 @@ html[data-theme="dark"] .field-error {
 .dashboard-link-card {
     text-decoration: none;
     color: inherit;
+    cursor: pointer;
 }
 
 .dashboard-link-card.is-selected {

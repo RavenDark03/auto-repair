@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/../includes/session.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/db.php';
@@ -187,8 +187,10 @@ function dashboardDate($date) {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0/dist/css/tabler.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
     <link rel="stylesheet" href="../assets/css/tabler-mechanix-bridge.css">
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <link rel="stylesheet" href="../assets/css/superadmin-landing-theme.css">
 </head>
-<body class="antialiased">
+<body class="page-shell antialiased tenant-app">
 <div class="page">
     <?= renderTenantAdminSidebar($businessName, $visibleModuleLinks, 'dashboard.php', $showAnalytics) ?>
 
@@ -218,147 +220,37 @@ function dashboardDate($date) {
 
                 <?= renderTenantAccessModeNotice() ?>
 
-                <!-- Primary metrics -->
-                <div class="row row-deck row-cards mb-4">
+                <!-- Operations snapshot — unified KPI grid -->
+                <h3 class="sa-kpi-section-title">Operations snapshot</h3>
+                <section class="dashboard-grid sa-cmd-kpi-grid" aria-label="Operations KPIs">
                     <?php if ($showCustomerModule): ?>
-                        <div class="col-sm-6 col-lg-3">
-                            <div class="card card-sm">
-                                <div class="card-body">
-                                    <div class="row align-items-center">
-                                        <div class="col-auto">
-                                            <span class="bg-blue text-white avatar"><i class="ti ti-users icon"></i></span>
-                                        </div>
-                                        <div class="col">
-                                            <div class="font-weight-medium">Total Customers</div>
-                                            <div class="text-muted"><?= number_format((int) $metrics['customers']) ?></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-sm-6 col-lg-3">
-                            <div class="card card-sm">
-                                <div class="card-body">
-                                    <div class="row align-items-center">
-                                        <div class="col-auto">
-                                            <span class="bg-azure text-white avatar"><i class="ti ti-car icon"></i></span>
-                                        </div>
-                                        <div class="col">
-                                            <div class="font-weight-medium">Vehicles Tracked</div>
-                                            <div class="text-muted"><?= number_format((int) $metrics['vehicles']) ?></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <article class="metric-card sa-metric-fixed"><span>Total customers</span><h3><?= number_format((int) $metrics['customers']) ?></h3></article>
+                        <article class="metric-card sa-metric-fixed"><span>Vehicles tracked</span><h3><?= number_format((int) $metrics['vehicles']) ?></h3></article>
                     <?php endif; ?>
                     <?php if ($showAppointments): ?>
-                        <div class="col-sm-6 col-lg-3">
-                            <div class="card card-sm">
-                                <div class="card-body">
-                                    <div class="row align-items-center">
-                                        <div class="col-auto">
-                                            <span class="bg-orange text-white avatar"><i class="ti ti-calendar icon"></i></span>
-                                        </div>
-                                        <div class="col">
-                                            <div class="font-weight-medium">Pending Appointments</div>
-                                            <div class="text-muted"><?= number_format((int) $metrics['pending_appointments']) ?></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <article class="metric-card sa-metric-fixed"><span>Pending appointments</span><h3><?= number_format((int) $metrics['pending_appointments']) ?></h3></article>
                     <?php endif; ?>
                     <?php if ($showJobs): ?>
-                        <div class="col-sm-6 col-lg-3">
-                            <div class="card card-sm">
-                                <div class="card-body">
-                                    <div class="row align-items-center">
-                                        <div class="col-auto">
-                                            <span class="bg-red text-white avatar"><i class="ti ti-tool icon"></i></span>
-                                        </div>
-                                        <div class="col">
-                                            <div class="font-weight-medium">Ongoing Jobs</div>
-                                            <div class="text-muted"><?= number_format((int) $metrics['ongoing_jobs']) ?></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <article class="metric-card sa-metric-fixed"><span>Ongoing jobs</span><h3><?= number_format((int) $metrics['ongoing_jobs']) ?></h3></article>
+                        <article class="metric-card sa-metric-fixed"><span>Completed jobs</span><h3><?= number_format((int) $metrics['completed_jobs']) ?></h3></article>
                     <?php endif; ?>
-                </div>
+                </section>
 
-                <!-- Secondary metrics -->
-                <div class="row row-deck row-cards mb-4">
-                    <?php if ($showJobs): ?>
-                        <div class="col-sm-6 col-lg-3">
-                            <div class="card card-sm">
-                                <div class="card-body">
-                                    <div class="row align-items-center">
-                                        <div class="col-auto">
-                                            <span class="bg-green text-white avatar"><i class="ti ti-circle-check icon"></i></span>
-                                        </div>
-                                        <div class="col">
-                                            <div class="font-weight-medium">Completed Jobs</div>
-                                            <div class="text-muted"><?= number_format((int) $metrics['completed_jobs']) ?></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    <?php endif; ?>
+                <!-- Billing snapshot — unified KPI grid -->
+                <?php if ($showInvoicing || $showPayments || $showInventory): ?>
+                <h3 class="sa-kpi-section-title">Billing &amp; inventory</h3>
+                <section class="dashboard-grid sa-cmd-kpi-grid" aria-label="Billing KPIs">
                     <?php if ($showInvoicing): ?>
-                        <div class="col-sm-6 col-lg-3">
-                            <div class="card card-sm">
-                                <div class="card-body">
-                                    <div class="row align-items-center">
-                                        <div class="col-auto">
-                                            <span class="bg-purple text-white avatar"><i class="ti ti-cash icon"></i></span>
-                                        </div>
-                                        <div class="col">
-                                            <div class="font-weight-medium">Monthly Revenue</div>
-                                            <div class="text-muted"><?= htmlspecialchars(dashboardCurrency($metrics['monthly_revenue']), ENT_QUOTES, 'UTF-8') ?></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <article class="metric-card sa-metric-fixed"><span>Monthly revenue</span><h3><?= htmlspecialchars(dashboardCurrency($metrics['monthly_revenue']), ENT_QUOTES, 'UTF-8') ?></h3></article>
                     <?php endif; ?>
                     <?php if ($showPayments): ?>
-                        <div class="col-sm-6 col-lg-3">
-                            <div class="card card-sm">
-                                <div class="card-body">
-                                    <div class="row align-items-center">
-                                        <div class="col-auto">
-                                            <span class="bg-teal text-white avatar"><i class="ti ti-credit-card icon"></i></span>
-                                        </div>
-                                        <div class="col">
-                                            <div class="font-weight-medium">Payments Received</div>
-                                            <div class="text-muted"><?= htmlspecialchars(dashboardCurrency($metrics['payments_received']), ENT_QUOTES, 'UTF-8') ?></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <article class="metric-card sa-metric-fixed"><span>Payments received</span><h3><?= htmlspecialchars(dashboardCurrency($metrics['payments_received']), ENT_QUOTES, 'UTF-8') ?></h3></article>
                     <?php endif; ?>
                     <?php if ($showInventory): ?>
-                        <div class="col-sm-6 col-lg-3">
-                            <div class="card card-sm">
-                                <div class="card-body">
-                                    <div class="row align-items-center">
-                                        <div class="col-auto">
-                                            <span class="bg-yellow text-white avatar"><i class="ti ti-alert-triangle icon"></i></span>
-                                        </div>
-                                        <div class="col">
-                                            <div class="font-weight-medium">Low Stock Items</div>
-                                            <div class="text-muted"><?= number_format((int) $metrics['low_stock_items']) ?></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <article class="metric-card sa-metric-fixed"><span>Low stock items</span><h3><?= number_format((int) $metrics['low_stock_items']) ?></h3></article>
                     <?php endif; ?>
-                </div>
+                </section>
+                <?php endif; ?>
 
                 <?php if ($subscriptionNotice): ?>
                     <?php include __DIR__ . '/../includes/partials/subscription_notice_card.php'; ?>

@@ -3,6 +3,18 @@ require_once __DIR__ . '/includes/session.php';
 
 $redirect = 'login.php';
 
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+    $ctx = (string) ($_POST['logout_context'] ?? '');
+    if ($ctx === 'superadmin') {
+        $redirect = 'superadmin/login.php';
+    }
+} else {
+    $ctx = (string) ($_GET['logout_context'] ?? '');
+    if ($ctx === 'superadmin') {
+        $redirect = 'superadmin/login.php';
+    }
+}
+
 unset($_SESSION['super_admin_id'], $_SESSION['super_admin_username']);
 $_SESSION = [];
 

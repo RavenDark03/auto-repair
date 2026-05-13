@@ -178,6 +178,7 @@ function earningsCurrency($amount): string
         </main>
     </div>
 
-    <script src="../assets/js/theme.js"></script>
+    <script src="../assets/js/theme.js?v=3"></script>
+    <script src="../assets/js/mechanix-logout-dialog.js"></script>
 </body>
 </html>

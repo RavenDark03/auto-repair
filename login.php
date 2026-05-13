@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/includes/session.php';
 require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/includes/mechanix_urls.php';
