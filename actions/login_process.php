@@ -4,7 +4,7 @@ require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../config/config.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: ' . mechanix_url_path('/login.php'));
+    header('Location: ' . BASE_URL . '/login.php');
     exit;
 }
 
@@ -13,7 +13,7 @@ $password = $_POST['password'] ?? '';
 
 if ($username === '' || $password === '') {
     $_SESSION['error_message'] = 'Please enter both username and password.';
-    header('Location: ' . mechanix_url_path('/login.php'));
+    header('Location: ' . BASE_URL . '/login.php');
     exit;
 }
 
@@ -55,7 +55,7 @@ try {
 
         if (!$superAdmin || !password_verify($password, $superAdmin['password_hash'])) {
             $_SESSION['error_message'] = 'Invalid username or password.';
-            header('Location: ' . mechanix_url_path('/login.php'));
+            header('Location: ' . BASE_URL . '/login.php');
             exit;
         }
 
@@ -75,25 +75,25 @@ try {
         $_SESSION['super_admin_id'] = $superAdmin['super_admin_id'];
         $_SESSION['super_admin_username'] = $superAdmin['username'];
 
-        header('Location: ' . mechanix_url_path('/superadmin/dashboard.php'));
+        header('Location: ' . BASE_URL . '/superadmin/dashboard.php');
         exit;
     }
 
     if ($user['user_status'] !== 'active') {
         $_SESSION['error_message'] = 'Your account is inactive.';
-        header('Location: ' . mechanix_url_path('/login.php'));
+        header('Location: ' . BASE_URL . '/login.php');
         exit;
     }
 
     if ($user['tenant_status'] !== 'active' && $user['tenant_status'] !== 'pending_payment') {
         $_SESSION['error_message'] = 'This tenant is currently inactive.';
-        header('Location: ' . mechanix_url_path('/login.php'));
+        header('Location: ' . BASE_URL . '/login.php');
         exit;
     }
 
     if (!password_verify($password, $user['password_hash'])) {
         $_SESSION['error_message'] = 'Invalid username or password.';
-        header('Location: ' . mechanix_url_path('/login.php'));
+        header('Location: ' . BASE_URL . '/login.php');
         exit;
     }
 
@@ -111,30 +111,30 @@ try {
     $_SESSION['access_mode'] = $user['access_mode'] ?? 'full_access';
 
     if ((int) $user['must_change_password'] === 1) {
-        header('Location: ' . mechanix_url_path('/change_password.php'));
+        header('Location: ' . BASE_URL . '/change_password.php');
         exit;
     }
 
     if (($user['tenant_status'] ?? '') === 'pending_payment' && ($user['role'] ?? '') === 'admin') {
-        header('Location: ' . mechanix_url_path('/admin/dashboard.php'));
+        header('Location: ' . BASE_URL . '/admin/dashboard.php');
         exit;
     }
 
     if ($user['role'] === 'admin') {
-        header('Location: ' . mechanix_url_path('/admin/dashboard.php'));
+        header('Location: ' . BASE_URL . '/admin/dashboard.php');
         exit;
     }
 
     if ($user['role'] === 'cashier') {
-        header('Location: ' . mechanix_url_path('/admin/cashier_dashboard.php'));
+        header('Location: ' . BASE_URL . '/admin/cashier_dashboard.php');
         exit;
     }
 
     $_SESSION['error_message'] = 'Your role is not yet connected to a dashboard.';
-    header('Location: ' . mechanix_url_path('/login.php'));
+    header('Location: ' . BASE_URL . '/login.php');
     exit;
 } catch (PDOException $e) {
     $_SESSION['error_message'] = 'System error: ' . $e->getMessage();
-    header('Location: ' . mechanix_url_path('/login.php'));
+    header('Location: ' . BASE_URL . '/login.php');
     exit;
 }
