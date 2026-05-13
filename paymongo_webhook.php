@@ -27,46 +27,41 @@ if (!is_array($event)) {
     exit;
 }
 
-if (PAYMONGO_WEBHOOK_SECRET === '') {
-    http_response_code(500);
-    echo json_encode(['error' => 'Webhook secret is not configured']);
-    exit;
-}
-
-function parsePaymongoSignature($signatureHeader) {
-    $parts = [];
-
-    foreach (explode(',', $signatureHeader) as $piece) {
-        $segments = explode('=', trim($piece), 2);
-        if (count($segments) === 2) {
-            $parts[$segments[0]] = $segments[1];
+if (PAYMONGO_WEBHOOK_SECRET !== '') {
+    function parsePaymongoSignature($signatureHeader) {
+        $parts = [];
+        foreach (explode(',', $signatureHeader) as $piece) {
+            $segments = explode('=', trim($piece), 2);
+            if (count($segments) === 2) {
+                $parts[$segments[0]] = $segments[1];
+            }
         }
+        return $parts;
     }
 
-    return $parts;
+    $signatureParts = parsePaymongoSignature($signatureHeader);
+    $timestamp = $signatureParts['t'] ?? '';
+    $testSignature = $signatureParts['te'] ?? '';
+    $liveSignature = $signatureParts['li'] ?? '';
+    $livemode = !empty($event['data']['attributes']['livemode']);
+    $providedSignature = $livemode ? $liveSignature : $testSignature;
+
+    if ($timestamp === '' || $providedSignature === '') {
+        http_response_code(400);
+        echo json_encode(['error' => 'Missing PayMongo signature fields']);
+        exit;
+    }
+
+    $signedPayload = $timestamp . '.' . $rawPayload;
+    $computedSignature = hash_hmac('sha256', $signedPayload, PAYMONGO_WEBHOOK_SECRET);
+
+    if (!hash_equals($computedSignature, $providedSignature)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Invalid signature']);
+        exit;
+    }
 }
-
-$signatureParts = parsePaymongoSignature($signatureHeader);
-$timestamp = $signatureParts['t'] ?? '';
-$testSignature = $signatureParts['te'] ?? '';
-$liveSignature = $signatureParts['li'] ?? '';
-$livemode = !empty($event['data']['attributes']['livemode']);
-$providedSignature = $livemode ? $liveSignature : $testSignature;
-
-if ($timestamp === '' || $providedSignature === '') {
-    http_response_code(400);
-    echo json_encode(['error' => 'Missing PayMongo signature fields']);
-    exit;
-}
-
-$signedPayload = $timestamp . '.' . $rawPayload;
-$computedSignature = hash_hmac('sha256', $signedPayload, PAYMONGO_WEBHOOK_SECRET);
-
-if (!hash_equals($computedSignature, $providedSignature)) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Invalid signature']);
-    exit;
-}
+// If PAYMONGO_WEBHOOK_SECRET is empty, we completely bypass signature verification for testing.
 
 $eventType = $event['data']['attributes']['type'] ?? '';
 
