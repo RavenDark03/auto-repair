@@ -60,6 +60,13 @@ Optional add-ons (PHP 249–399/mo): inventory, payments, reports, mechanic modu
 
 ## Latest Implementation Update
 
+### Automated Tenant Onboarding & UI/UX Refinement
+- Manual billing is fully replaced with automated PayMongo integration.
+- Newly registered tenants enter a `pending_payment` state and are shown a PayMongo checkout link.
+- Dashboards for pending tenants are overlaid with a blurred payment gate until activation.
+- `PHPMailer` is manually integrated (via custom autoloader) and configured for "Magic Login" emails and verification flows.
+- UI/UX overhauled across all admin pages: bloated forms compacted, dashboard black-screen anomalies resolved, and spacing unified with the premium landing page design tokens.
+
 ### Tenant admin web
 - Dashboard now includes revenue, total appointments, active/completed jobs, pending payments, low-stock alerts, mechanic workload, and recent activity events.
 - Staff management now supports cashier/mechanic/admin account creation, staff detail edits, activate/deactivate, username reset, password reset, and role-aware access.

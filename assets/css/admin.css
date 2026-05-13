@@ -67,7 +67,7 @@
 }
 
 .dashboard-main {
-    padding: 26px;
+    padding: 20px;
 }
 
 .dashboard-topbar {
@@ -129,13 +129,13 @@
 
 .dashboard-grid {
     display: grid;
-    gap: 18px;
+    gap: 14px;
     grid-template-columns: repeat(4, 1fr);
-    margin-bottom: 22px;
+    margin-bottom: 16px;
 }
 
 .metric-card {
-    padding: 20px;
+    padding: 16px;
     border-radius: 22px;
     border: 1px solid var(--border);
     background: color-mix(in srgb, var(--bg-soft) 94%, transparent);
@@ -145,18 +145,18 @@
 .metric-card span {
     display: block;
     color: var(--text-soft);
-    font-size: 0.9rem;
-    margin-bottom: 10px;
+    font-size: 0.82rem;
+    margin-bottom: 4px;
 }
 
 .metric-card h3 {
-    font-size: 2rem;
+    font-size: 1.6rem;
     letter-spacing: -0.04em;
 }
 
 .content-card {
-    padding: 22px;
-    border-radius: 24px;
+    padding: 18px;
+    border-radius: 20px;
     border: 1px solid var(--border);
     background: color-mix(in srgb, var(--bg-soft) 94%, transparent);
     box-shadow: var(--shadow-soft);
@@ -174,7 +174,7 @@
 .content-grid {
     display: grid;
     grid-template-columns: 1.1fr 0.9fr;
-    gap: 18px;
+    gap: 14px;
 }
 
 .dashboard-grid-secondary,
@@ -184,8 +184,8 @@
 
 .dashboard-list {
     display: grid;
-    gap: 12px;
-    margin-top: 18px;
+    gap: 10px;
+    margin-top: 14px;
 }
 
 .dashboard-list-item {
@@ -193,7 +193,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    padding: 16px 18px;
+    padding: 14px 16px;
     border: 1px solid var(--border);
     border-radius: 18px;
     background: var(--bg-elevated);
@@ -358,7 +358,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
-    margin-top: 18px;
+    margin-top: 12px;
 }
 
 .field-error {
@@ -448,7 +448,19 @@ html[data-theme="dark"] .field-error {
 .form-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
+    gap: 12px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.form-group label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-soft);
 }
 
 .table-placeholder {
@@ -594,13 +606,13 @@ html[data-theme="dark"] .field-error {
 .entity-stat-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    margin-top: 18px;
-    margin-bottom: 18px;
+    gap: 10px;
+    margin-top: 12px;
+    margin-bottom: 12px;
 }
 
 .entity-stat-card {
-    padding: 16px;
+    padding: 14px;
     border-radius: 18px;
     border: 1px solid var(--border);
     background: var(--bg-elevated);
@@ -637,12 +649,29 @@ html[data-theme="dark"] .field-error {
 
 .staff-list-item {
     align-items: flex-start;
+    flex-wrap: wrap;
 }
 
 .staff-actions {
     display: grid;
     gap: 10px;
     justify-items: end;
+}
+
+.staff-inline-editor {
+    width: 100%;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.staff-editor-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
 }
 
 .staff-note {
@@ -659,7 +688,7 @@ html[data-theme="dark"] .field-error {
 }
 
 .feature-toggle-form {
-    margin-top: 18px;
+    margin-top: 12px;
 }
 
 .metric-card-link {

@@ -193,7 +193,7 @@ function staffDate($date) {
                                     <div class="staff-inline-editor">
                                         <form action="actions/update_staff.php" method="POST" class="feature-toggle-form">
                                             <input type="hidden" name="user_id" value="<?= (int) $staff['user_id'] ?>">
-                                            <div class="form-grid">
+                                            <div class="staff-editor-grid">
                                                 <div class="form-group">
                                                     <label for="staff_full_name_<?= (int) $staff['user_id'] ?>">Name</label>
                                                     <input class="form-control" type="text" id="staff_full_name_<?= (int) $staff['user_id'] ?>" name="full_name" value="<?= htmlspecialchars($staff['full_name'], ENT_QUOTES, 'UTF-8') ?>" required>
@@ -223,7 +223,7 @@ function staffDate($date) {
 
                                         <form action="actions/reset_staff_credentials.php" method="POST" class="feature-toggle-form">
                                             <input type="hidden" name="user_id" value="<?= (int) $staff['user_id'] ?>">
-                                            <div class="form-grid">
+                                            <div class="staff-editor-grid">
                                                 <div class="form-group">
                                                     <label for="staff_reset_username_<?= (int) $staff['user_id'] ?>">Reset Username</label>
                                                     <input class="form-control" type="text" id="staff_reset_username_<?= (int) $staff['user_id'] ?>" name="username" value="<?= htmlspecialchars($staff['username'], ENT_QUOTES, 'UTF-8') ?>" required>
