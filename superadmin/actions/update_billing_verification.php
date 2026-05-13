@@ -4,28 +4,12 @@ require_once __DIR__ . '/../../includes/super_admin_auth.php';
 require_once __DIR__ . '/../../includes/db.php';
 require_once __DIR__ . '/../../includes/platform_rules.php';
 
+require_once __DIR__ . '/../../includes/superadmin_redirects.php';
+
 requireSuperAdmin();
 
-function buildVerificationRedirect(int $registrationId): string
-{
-    $query = ['registration_id' => $registrationId];
-
-    foreach ([
-        'registration_search' => 'registration_search',
-        'registration_status' => 'registration_status_filter',
-        'registration_billing_status' => 'registration_billing_status_filter',
-    ] as $queryKey => $postKey) {
-        $value = trim($_POST[$postKey] ?? '');
-        if ($value !== '') {
-            $query[$queryKey] = $value;
-        }
-    }
-
-    return '../dashboard.php?' . http_build_query($query) . '#registrations';
-}
-
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: ../dashboard.php');
+    header('Location: ' . mechanix_superadmin_non_post_redirect_url());
     exit;
 }
 
@@ -35,7 +19,7 @@ $notes = trim($_POST['payment_reference_check_notes'] ?? '');
 
 if ($registrationId <= 0 || $billingRequestId <= 0) {
     $_SESSION['super_admin_error'] = 'A valid billing request is required for verification.';
-    header('Location: ' . buildVerificationRedirect($registrationId));
+    header('Location: ' . mechanix_superadmin_registration_redirect_url($registrationId));
     exit;
 }
 
@@ -95,5 +79,5 @@ try {
     $_SESSION['super_admin_error'] = 'Payment verification failed: ' . $e->getMessage();
 }
 
-header('Location: ' . buildVerificationRedirect($registrationId));
+header('Location: ' . mechanix_superadmin_registration_redirect_url($registrationId));
 exit;

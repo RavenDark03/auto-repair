@@ -80,6 +80,39 @@ function ensurePlatformSchema(PDO $pdo): void
     }
 
     if (tableExists($pdo, 'tenant_registrations')) {
+        if (!columnExists($pdo, 'tenant_registrations', 'password_hash')) {
+            if (columnExists($pdo, 'tenant_registrations', 'preferred_username')) {
+                $pdo->exec("
+                    ALTER TABLE tenant_registrations
+                    ADD COLUMN password_hash VARCHAR(255) NULL DEFAULT NULL AFTER preferred_username
+                ");
+            } else {
+                $pdo->exec("
+                    ALTER TABLE tenant_registrations
+                    ADD COLUMN password_hash VARCHAR(255) NULL DEFAULT NULL
+                ");
+            }
+        }
+
+        if (!columnExists($pdo, 'tenant_registrations', 'bir_tin')) {
+            if (columnExists($pdo, 'tenant_registrations', 'password_hash')) {
+                $pdo->exec("
+                    ALTER TABLE tenant_registrations
+                    ADD COLUMN bir_tin VARCHAR(20) NULL DEFAULT NULL AFTER password_hash
+                ");
+            } elseif (columnExists($pdo, 'tenant_registrations', 'preferred_username')) {
+                $pdo->exec("
+                    ALTER TABLE tenant_registrations
+                    ADD COLUMN bir_tin VARCHAR(20) NULL DEFAULT NULL AFTER preferred_username
+                ");
+            } else {
+                $pdo->exec("
+                    ALTER TABLE tenant_registrations
+                    ADD COLUMN bir_tin VARCHAR(20) NULL DEFAULT NULL
+                ");
+            }
+        }
+
         if (!columnExists($pdo, 'tenant_registrations', 'owner_id_number')) {
             if (columnExists($pdo, 'tenant_registrations', 'bir_tin')) {
                 $pdo->exec("
@@ -90,6 +123,39 @@ function ensurePlatformSchema(PDO $pdo): void
                 $pdo->exec("
                     ALTER TABLE tenant_registrations
                     ADD COLUMN owner_id_number VARCHAR(64) NULL DEFAULT NULL
+                ");
+            }
+        }
+
+        if (!columnExists($pdo, 'tenant_registrations', 'owner_id_document_path')) {
+            if (columnExists($pdo, 'tenant_registrations', 'owner_id_number')) {
+                $pdo->exec("
+                    ALTER TABLE tenant_registrations
+                    ADD COLUMN owner_id_document_path VARCHAR(500) NULL DEFAULT NULL AFTER owner_id_number
+                ");
+            } elseif (columnExists($pdo, 'tenant_registrations', 'bir_tin')) {
+                $pdo->exec("
+                    ALTER TABLE tenant_registrations
+                    ADD COLUMN owner_id_document_path VARCHAR(500) NULL DEFAULT NULL AFTER bir_tin
+                ");
+            } else {
+                $pdo->exec("
+                    ALTER TABLE tenant_registrations
+                    ADD COLUMN owner_id_document_path VARCHAR(500) NULL DEFAULT NULL
+                ");
+            }
+        }
+
+        if (!columnExists($pdo, 'tenant_registrations', 'provisioned_tenant_id')) {
+            if (columnExists($pdo, 'tenant_registrations', 'converted_tenant_id')) {
+                $pdo->exec("
+                    ALTER TABLE tenant_registrations
+                    ADD COLUMN provisioned_tenant_id INT(11) NULL DEFAULT NULL AFTER converted_tenant_id
+                ");
+            } else {
+                $pdo->exec("
+                    ALTER TABLE tenant_registrations
+                    ADD COLUMN provisioned_tenant_id INT(11) NULL DEFAULT NULL
                 ");
             }
         }
@@ -155,6 +221,30 @@ function ensurePlatformSchema(PDO $pdo): void
                 )
             ");
             $insert->execute();
+        }
+    }
+
+    if (tableExists($pdo, 'features')) {
+        $fidStmt = $pdo->query("SELECT feature_id FROM features WHERE feature_name = 'subscription_center' LIMIT 1");
+        $featureId = $fidStmt ? (int) $fidStmt->fetchColumn() : 0;
+
+        if ($featureId <= 0) {
+            $pdo->exec("
+                INSERT INTO features (feature_name, description)
+                VALUES (
+                    'subscription_center',
+                    'View plan, term window, and subscription history in tenant admin'
+                )
+            ");
+            $featureId = (int) $pdo->lastInsertId();
+        }
+
+        if ($featureId > 0 && tableExists($pdo, 'plan_features') && tableExists($pdo, 'subscription_plans')) {
+            $planLink = $pdo->prepare('
+                INSERT IGNORE INTO plan_features (plan_id, feature_id, is_included)
+                SELECT plan_id, :feature_id, 1 FROM subscription_plans
+            ');
+            $planLink->execute(['feature_id' => $featureId]);
         }
     }
 }

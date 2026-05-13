@@ -3,10 +3,12 @@ require_once __DIR__ . '/../../includes/session.php';
 require_once __DIR__ . '/../../includes/super_admin_auth.php';
 require_once __DIR__ . '/../../includes/db.php';
 
+require_once __DIR__ . '/../../includes/superadmin_redirects.php';
+
 requireSuperAdmin();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: ../dashboard.php');
+    header('Location: ' . mechanix_superadmin_non_post_redirect_url());
     exit;
 }
 
@@ -19,7 +21,7 @@ $isActive = isset($_POST['is_active']) ? 1 : 0;
 
 if ($planId <= 0 || $planName === '' || $monthlyPrice === '' || $yearlyPrice === '') {
     $_SESSION['super_admin_error'] = 'Plan name and pricing fields are required.';
-    header('Location: ../dashboard.php#catalog');
+    header('Location: ' . mechanix_superadmin_plan_catalog_redirect_url());
     exit;
 }
 
@@ -49,5 +51,5 @@ try {
     $_SESSION['super_admin_error'] = 'Plan catalog update failed: ' . $e->getMessage();
 }
 
-header('Location: ../dashboard.php#catalog');
+header('Location: ' . mechanix_superadmin_plan_catalog_redirect_url());
 exit;

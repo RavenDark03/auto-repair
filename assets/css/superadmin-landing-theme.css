@@ -576,3 +576,49 @@ html[data-theme="dark"] .superadmin-app .list-group-item.list-group-item-action:
 .superadmin-app .card-header .card-title i.ti {
     opacity: 0.38;
 }
+
+/* ----------------------------------------------------------------
+   Platform shell — earnings-aligned sidebar + Tabler main (dashboard + tools)
+---------------------------------------------------------------- */
+.superadmin-platform .dashboard {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    align-items: stretch;
+}
+
+.superadmin-platform .sa-dashboard-main {
+    min-width: 0;
+}
+
+.superadmin-platform .sidebar .badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--bg-elevated);
+    color: var(--text);
+}
+
+.superadmin-platform .dashboard-title .sa-eyebrow {
+    display: inline-flex;
+    margin-bottom: 0.5rem;
+}
+
+.superadmin-platform .sa-superadmin-page-body {
+    padding-top: 0;
+}
+
+@media (max-width: 992px) {
+    .superadmin-platform .dashboard {
+        grid-template-columns: 1fr;
+    }
+
+    .superadmin-platform .sidebar {
+        position: relative;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+    }
+}

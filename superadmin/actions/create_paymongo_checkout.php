@@ -5,32 +5,10 @@ require_once __DIR__ . '/../../includes/db.php';
 require_once __DIR__ . '/../../config/config.php';
 
 requireSuperAdmin();
-
-function buildRegistrationRedirect(int $registrationId): string
-{
-    $query = ['registration_id' => $registrationId];
-
-    $registrationSearch = trim($_POST['registration_search'] ?? '');
-    $registrationStatusFilter = trim($_POST['registration_status_filter'] ?? '');
-    $registrationBillingStatusFilter = trim($_POST['registration_billing_status_filter'] ?? '');
-
-    if ($registrationSearch !== '') {
-        $query['registration_search'] = $registrationSearch;
-    }
-
-    if ($registrationStatusFilter !== '') {
-        $query['registration_status'] = $registrationStatusFilter;
-    }
-
-    if ($registrationBillingStatusFilter !== '') {
-        $query['registration_billing_status'] = $registrationBillingStatusFilter;
-    }
-
-    return '../dashboard.php?' . http_build_query($query) . '#registrations';
-}
+require_once __DIR__ . '/../../includes/superadmin_redirects.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: ../dashboard.php');
+    header('Location: ' . mechanix_superadmin_non_post_redirect_url());
     exit;
 }
 
@@ -39,13 +17,13 @@ $registrationId = (int) ($_POST['registration_id'] ?? 0);
 
 if ($billingRequestId <= 0 || $registrationId <= 0) {
     $_SESSION['super_admin_error'] = 'A valid billing request is required before creating a PayMongo checkout.';
-    header('Location: ' . buildRegistrationRedirect($registrationId));
+    header('Location: ' . mechanix_superadmin_registration_redirect_url($registrationId));
     exit;
 }
 
 if (PAYMONGO_SECRET_KEY === '') {
     $_SESSION['super_admin_error'] = 'Set your PayMongo secret key in config/config.php before creating a checkout session.';
-    header('Location: ' . buildRegistrationRedirect($registrationId));
+    header('Location: ' . mechanix_superadmin_registration_redirect_url($registrationId));
     exit;
 }
 
@@ -226,11 +204,11 @@ try {
     ]);
 
     $_SESSION['super_admin_success'] = 'PayMongo checkout created successfully.';
-    header('Location: ' . buildRegistrationRedirect($registrationId));
+    header('Location: ' . mechanix_superadmin_registration_redirect_url($registrationId));
     exit;
 } catch (Throwable $e) {
     $_SESSION['super_admin_error'] = 'PayMongo checkout creation failed: ' . $e->getMessage();
-    header('Location: ' . buildRegistrationRedirect($registrationId));
+    header('Location: ' . mechanix_superadmin_registration_redirect_url($registrationId));
     exit;
 }
 ?>

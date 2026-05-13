@@ -3,37 +3,12 @@ require_once __DIR__ . '/../../includes/session.php';
 require_once __DIR__ . '/../../includes/super_admin_auth.php';
 require_once __DIR__ . '/../../includes/db.php';
 
+require_once __DIR__ . '/../../includes/superadmin_redirects.php';
+
 requireSuperAdmin();
 
-function buildRegistrationRedirect(int $registrationId, int $tenantId = 0): string
-{
-    $query = ['registration_id' => $registrationId];
-
-    if ($tenantId > 0) {
-        $query['tenant_id'] = $tenantId;
-    }
-
-    $registrationSearch = trim($_POST['registration_search'] ?? '');
-    $registrationStatusFilter = trim($_POST['registration_status_filter'] ?? '');
-    $registrationBillingStatusFilter = trim($_POST['registration_billing_status_filter'] ?? '');
-
-    if ($registrationSearch !== '') {
-        $query['registration_search'] = $registrationSearch;
-    }
-
-    if ($registrationStatusFilter !== '') {
-        $query['registration_status'] = $registrationStatusFilter;
-    }
-
-    if ($registrationBillingStatusFilter !== '') {
-        $query['registration_billing_status'] = $registrationBillingStatusFilter;
-    }
-
-    return '../dashboard.php?' . http_build_query($query) . '#registrations';
-}
-
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: ../dashboard.php');
+    header('Location: ' . mechanix_superadmin_non_post_redirect_url());
     exit;
 }
 
@@ -41,7 +16,7 @@ $registrationId = (int) ($_POST['registration_id'] ?? 0);
 
 if ($registrationId <= 0) {
     $_SESSION['super_admin_error'] = 'A valid paid registration is required before tenant conversion.';
-    header('Location: ' . buildRegistrationRedirect($registrationId));
+    header('Location: ' . mechanix_superadmin_registration_redirect_url($registrationId));
     exit;
 }
 
@@ -397,7 +372,7 @@ try {
     $_SESSION['tenant_onboarding'] = $onboarding;
 
     $_SESSION['super_admin_success'] = 'Tenant created for ' . $registration['business_name'] . '.';
-    header('Location: ' . buildRegistrationRedirect($registrationId, $tenantId));
+    header('Location: ' . mechanix_superadmin_registration_redirect_url($registrationId, $tenantId));
     exit;
 } catch (Throwable $e) {
     if (isset($pdo) && $pdo->inTransaction()) {
@@ -405,7 +380,7 @@ try {
     }
 
     $_SESSION['super_admin_error'] = 'Tenant conversion failed: ' . $e->getMessage();
-    header('Location: ' . buildRegistrationRedirect($registrationId));
+    header('Location: ' . mechanix_superadmin_registration_redirect_url($registrationId));
     exit;
 }
 ?>

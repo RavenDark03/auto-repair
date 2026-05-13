@@ -142,7 +142,8 @@ INSERT INTO `features` (`feature_id`, `feature_name`, `description`) VALUES
 (8, 'customer_module', 'Customer interface'),
 (9, 'staff_management', 'Tenant staff and user administration'),
 (10, 'analytics', 'Advanced analytics and date-range insights'),
-(11, 'multi_branch', 'Multi-branch support for repair businesses');
+(11, 'multi_branch', 'Multi-branch support for repair businesses'),
+(12, 'subscription_center', 'View plan, term window, and subscription history in tenant admin');
 
 -- --------------------------------------------------------
 
@@ -395,7 +396,11 @@ INSERT INTO `plan_features` (`plan_feature_id`, `plan_id`, `feature_id`, `is_inc
 (15, 3, 2, 1),
 (16, 3, 7, 1),
 (17, 3, 5, 1),
-(18, 3, 6, 1);
+(18, 3, 6, 1),
+(19, 1, 12, 1),
+(20, 2, 12, 1),
+(21, 3, 12, 1),
+(22, 4, 12, 1);
 
 -- --------------------------------------------------------
 
@@ -884,7 +889,7 @@ ALTER TABLE `email_logs`
 -- AUTO_INCREMENT for table `features`
 --
 ALTER TABLE `features`
-  MODIFY `feature_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `feature_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `feature_pricing`
@@ -956,7 +961,7 @@ ALTER TABLE `payments`
 -- AUTO_INCREMENT for table `plan_features`
 --
 ALTER TABLE `plan_features`
-  MODIFY `plan_feature_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `plan_feature_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
 -- AUTO_INCREMENT for table `registration_requested_features`

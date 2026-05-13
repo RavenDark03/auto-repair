@@ -4,32 +4,10 @@ require_once __DIR__ . '/../../includes/super_admin_auth.php';
 require_once __DIR__ . '/../../includes/db.php';
 
 requireSuperAdmin();
-
-function buildDashboardRedirect(int $tenantId): string
-{
-    $query = ['tenant_id' => $tenantId];
-
-    $tenantSearch = trim($_POST['tenant_search'] ?? '');
-    $tenantStatusFilter = trim($_POST['tenant_status_filter'] ?? '');
-    $subscriptionStatusFilter = trim($_POST['subscription_status_filter'] ?? '');
-
-    if ($tenantSearch !== '') {
-        $query['tenant_search'] = $tenantSearch;
-    }
-
-    if ($tenantStatusFilter !== '') {
-        $query['tenant_status'] = $tenantStatusFilter;
-    }
-
-    if ($subscriptionStatusFilter !== '') {
-        $query['subscription_status'] = $subscriptionStatusFilter;
-    }
-
-    return '../dashboard.php?' . http_build_query($query) . '#features';
-}
+require_once __DIR__ . '/../../includes/superadmin_redirects.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: ../dashboard.php');
+    header('Location: ' . mechanix_superadmin_non_post_redirect_url());
     exit;
 }
 
@@ -39,7 +17,7 @@ $allowedActions = ['save_dates', 'extend_month', 'extend_year'];
 
 if ($tenantId <= 0 || !in_array($actionType, $allowedActions, true)) {
     $_SESSION['super_admin_error'] = 'A valid subscription window action is required.';
-    header('Location: ' . buildDashboardRedirect($tenantId));
+    header('Location: ' . mechanix_superadmin_tenant_redirect_url($tenantId));
     exit;
 }
 
@@ -105,7 +83,7 @@ try {
         ]);
 
         $_SESSION['super_admin_success'] = 'Subscription window for ' . $businessName . ' updated successfully.';
-        header('Location: ' . buildDashboardRedirect($tenantId));
+        header('Location: ' . mechanix_superadmin_tenant_redirect_url($tenantId));
         exit;
     }
 
@@ -130,11 +108,11 @@ try {
 
     $actionLabel = $actionType === 'extend_year' ? '1 year' : '1 month';
     $_SESSION['super_admin_success'] = 'Subscription for ' . $businessName . ' extended by ' . $actionLabel . '.';
-    header('Location: ' . buildDashboardRedirect($tenantId));
+    header('Location: ' . mechanix_superadmin_tenant_redirect_url($tenantId));
     exit;
 } catch (Throwable $e) {
     $_SESSION['super_admin_error'] = 'Subscription window update failed: ' . $e->getMessage();
-    header('Location: ' . buildDashboardRedirect($tenantId));
+    header('Location: ' . mechanix_superadmin_tenant_redirect_url($tenantId));
     exit;
 }
 ?>

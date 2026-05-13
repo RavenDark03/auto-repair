@@ -4,32 +4,10 @@ require_once __DIR__ . '/../../includes/super_admin_auth.php';
 require_once __DIR__ . '/../../includes/db.php';
 
 requireSuperAdmin();
-
-function buildRegistrationRedirect(int $registrationId): string
-{
-    $query = ['registration_id' => $registrationId];
-
-    $registrationSearch = trim($_POST['registration_search'] ?? '');
-    $registrationStatusFilter = trim($_POST['registration_status_filter'] ?? '');
-    $registrationBillingStatusFilter = trim($_POST['registration_billing_status_filter'] ?? '');
-
-    if ($registrationSearch !== '') {
-        $query['registration_search'] = $registrationSearch;
-    }
-
-    if ($registrationStatusFilter !== '') {
-        $query['registration_status'] = $registrationStatusFilter;
-    }
-
-    if ($registrationBillingStatusFilter !== '') {
-        $query['registration_billing_status'] = $registrationBillingStatusFilter;
-    }
-
-    return '../dashboard.php?' . http_build_query($query) . '#registrations';
-}
+require_once __DIR__ . '/../../includes/superadmin_redirects.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: ../dashboard.php');
+    header('Location: ' . mechanix_superadmin_non_post_redirect_url());
     exit;
 }
 
@@ -38,7 +16,7 @@ $dueDate = trim($_POST['due_date'] ?? '');
 
 if ($registrationId <= 0) {
     $_SESSION['super_admin_error'] = 'A valid registration is required before generating billing.';
-    header('Location: ' . buildRegistrationRedirect($registrationId));
+    header('Location: ' . mechanix_superadmin_registration_redirect_url($registrationId));
     exit;
 }
 
@@ -47,7 +25,7 @@ if ($dueDate !== '') {
 
     if (!$dueDateObject || $dueDateObject->format('Y-m-d') !== $dueDate) {
         $_SESSION['super_admin_error'] = 'Please provide a valid billing due date.';
-        header('Location: ' . buildRegistrationRedirect($registrationId));
+        header('Location: ' . mechanix_superadmin_registration_redirect_url($registrationId));
         exit;
     }
 }
@@ -196,7 +174,7 @@ try {
     $pdo->commit();
 
     $_SESSION['super_admin_success'] = 'Billing draft generated for ' . $registration['business_name'] . '.';
-    header('Location: ' . buildRegistrationRedirect($registrationId));
+    header('Location: ' . mechanix_superadmin_registration_redirect_url($registrationId));
     exit;
 } catch (Throwable $e) {
     if (isset($pdo) && $pdo->inTransaction()) {
@@ -204,7 +182,7 @@ try {
     }
 
     $_SESSION['super_admin_error'] = 'Billing generation failed: ' . $e->getMessage();
-    header('Location: ' . buildRegistrationRedirect($registrationId));
+    header('Location: ' . mechanix_superadmin_registration_redirect_url($registrationId));
     exit;
 }
 ?>

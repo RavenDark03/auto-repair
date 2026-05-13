@@ -3,28 +3,12 @@ require_once __DIR__ . '/../../includes/session.php';
 require_once __DIR__ . '/../../includes/super_admin_auth.php';
 require_once __DIR__ . '/../../includes/db.php';
 
+require_once __DIR__ . '/../../includes/superadmin_redirects.php';
+
 requireSuperAdmin();
 
-function buildAccessRedirect(int $tenantId): string
-{
-    $query = ['tenant_id' => $tenantId];
-
-    foreach ([
-        'tenant_search' => 'tenant_search',
-        'tenant_status' => 'tenant_status_filter',
-        'subscription_status' => 'subscription_status_filter',
-    ] as $queryKey => $postKey) {
-        $value = trim($_POST[$postKey] ?? '');
-        if ($value !== '') {
-            $query[$queryKey] = $value;
-        }
-    }
-
-    return '../dashboard.php?' . http_build_query($query) . '#features';
-}
-
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: ../dashboard.php');
+    header('Location: ' . mechanix_superadmin_non_post_redirect_url());
     exit;
 }
 
@@ -34,7 +18,7 @@ $allowedModes = ['full_access', 'read_only'];
 
 if ($tenantId <= 0 || !in_array($accessMode, $allowedModes, true)) {
     $_SESSION['super_admin_error'] = 'A valid tenant access mode is required.';
-    header('Location: ' . buildAccessRedirect($tenantId));
+    header('Location: ' . mechanix_superadmin_tenant_redirect_url($tenantId));
     exit;
 }
 
@@ -126,5 +110,5 @@ try {
     $_SESSION['super_admin_error'] = 'Tenant access mode update failed: ' . $e->getMessage();
 }
 
-header('Location: ' . buildAccessRedirect($tenantId));
+header('Location: ' . mechanix_superadmin_tenant_redirect_url($tenantId));
 exit;
