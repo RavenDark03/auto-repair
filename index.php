@@ -94,7 +94,9 @@ function landingFeatureLabel($featureName) {
     <header class="topbar">
         <div class="topbar-inner">
             <div class="brand">
-                <div class="brand-mark">M</div>
+                <div class="brand-mark brand-mark--photo" role="img" aria-label="MECHANIX">
+                    <img src="images/logo-mech.jpg" alt="" width="42" height="42" decoding="async">
+                </div>
                 <div class="brand-text">
                     <h1>MECHANIX</h1>
                     <p>Subscription-based auto repair SaaS</p>
