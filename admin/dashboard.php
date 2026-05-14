@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../includes/session.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/mechanix_paymongo_activation.php';
 require_once __DIR__ . '/../includes/feature_access.php';
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/platform_rules.php';
@@ -9,6 +10,12 @@ require_once __DIR__ . '/../includes/platform_rules.php';
 requireAdmin();
 
 $tenantId    = (int) ($_SESSION['tenant_id'] ?? 0);
+
+try {
+    $pdoReco = Database::getInstance();
+    mechanix_reconcile_paymongo_for_pending_tenant($pdoReco, $tenantId, false);
+} catch (Throwable $ignoredReco) {}
+
 $fullName    = $_SESSION['full_name'] ?? 'Admin User';
 $businessName = $_SESSION['business_name'] ?? 'Tenant Workspace';
 $currentRole = 'admin';
@@ -258,119 +265,9 @@ function dashboardDate($date) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - MECHANIX</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0/dist/css/tabler.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
-    <link rel="stylesheet" href="../assets/css/tabler-mechanix-bridge.css">
-    <link rel="stylesheet" href="../assets/css/styles.css">
-    <link rel="stylesheet" href="../assets/css/superadmin-landing-theme.css">
+    <?= mechanix_link_styles_tabler_workspace('../assets/css/') ?>
 </head>
-<body class="page-shell antialiased tenant-app">
-
-<?php if ($isPendingPayment): ?>
-<style>
-.sub-gate-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(10, 11, 18, 0.72);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-}
-.sub-gate-card {
-    background: linear-gradient(145deg, #1a1d2e, #12141f);
-    border: 1px solid #2d3148;
-    border-radius: 20px;
-    padding: 48px 44px;
-    max-width: 460px;
-    width: 90%;
-    text-align: center;
-    box-shadow: 0 32px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(108,99,255,.15);
-    animation: gate-in .35s cubic-bezier(.34,1.56,.64,1) both;
-}
-@keyframes gate-in {
-    from { opacity:0; transform:translateY(24px) scale(.96); }
-    to   { opacity:1; transform:none; }
-}
-.sub-gate-card .sg-brand-mark {
-    width: 60px;
-    height: 60px;
-    background: linear-gradient(135deg, #6c63ff, #4f46e5);
-    border-radius: 16px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 26px;
-    font-weight: 800;
-    color: #fff;
-    margin: 0 auto 20px;
-    box-shadow: 0 8px 24px rgba(108,99,255,.4);
-}
-.sub-gate-card h2 {
-    font-size: 22px;
-    font-weight: 700;
-    color: #f1f5f9;
-    margin: 0 0 10px;
-    letter-spacing: -.4px;
-}
-.sub-gate-card p {
-    font-size: 14px;
-    color: #94a3b8;
-    line-height: 1.7;
-    margin: 0 0 28px;
-}
-.sub-gate-btn {
-    display: inline-block;
-    padding: 14px 36px;
-    background: linear-gradient(135deg, #6c63ff, #4f46e5);
-    color: #fff !important;
-    text-decoration: none;
-    border-radius: 12px;
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: .3px;
-    box-shadow: 0 8px 24px rgba(108,99,255,.35);
-    transition: transform .15s, box-shadow .15s;
-    border: none;
-    cursor: pointer;
-}
-.sub-gate-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 32px rgba(108,99,255,.5);
-    color: #fff !important;
-    text-decoration: none;
-}
-.sub-gate-logout {
-    display: block;
-    margin-top: 20px;
-    font-size: 13px;
-    color: #475569;
-    text-decoration: none;
-}
-.sub-gate-logout:hover { color: #94a3b8; }
-</style>
-<div class="sub-gate-overlay" id="subscription-gate" role="dialog" aria-modal="true" aria-label="Subscription payment required">
-    <div class="sub-gate-card">
-        <div class="sg-brand-mark">M</div>
-        <h2>Your Workspace Is Almost Ready!</h2>
-        <p>To unlock the full MECHANIX dashboard, please complete your subscription payment. Your business has been verified and your account is ready to activate.</p>
-        <?php if (!empty($paymentCheckoutUrl)): ?>
-            <a id="pay-subscription-btn"
-               href="<?= htmlspecialchars($paymentCheckoutUrl, ENT_QUOTES, 'UTF-8') ?>"
-               class="sub-gate-btn"
-               rel="noopener noreferrer">
-                &#128179; Pay Subscription
-            </a>
-        <?php else: ?>
-            <p style="color:#f87171;font-size:13px;margin-bottom:16px;">Your checkout link is being prepared. Please refresh this page in a few moments, or contact support.</p>
-            <button onclick="location.reload()" class="sub-gate-btn">&#128260; Refresh Page</button>
-        <?php endif; ?>
-        <a href="<?= htmlspecialchars(BASE_URL . '/logout.php', ENT_QUOTES, 'UTF-8') ?>" class="sub-gate-logout">Log out</a>
-    </div>
-</div>
-<?php endif; ?>
+<body class="page-shell antialiased tenant-app"<?php if ($isPendingPayment): ?> data-mechanix-show-payment-gate="1"<?php endif; ?>>
 
 <div class="dashboard">
     <?= renderTenantAdminSidebar($businessName, $visibleModuleLinks, 'dashboard.php', $showAnalytics) ?>
@@ -641,6 +538,38 @@ function dashboardDate($date) {
 
     </main>
 </div>
+
+<?php if ($isPendingPayment): ?>
+<div class="modal fade" id="mechanixPaymentGateModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true" aria-labelledby="mechanixPaymentGateTitle">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center px-5 py-5">
+                <div class="mechanix-payment-gate-mark mx-auto mb-3" aria-hidden="true"><i class="ti ti-lock"></i></div>
+                <h2 id="mechanixPaymentGateTitle" class="h5 mb-2">Your workspace is almost ready</h2>
+                <p class="text-muted mb-4">
+                    Complete your subscription payment to unlock the full MECHANIX dashboard. Your business has been verified and your account is ready to activate.
+                </p>
+                <?php if (!empty($paymentCheckoutUrl)): ?>
+                    <a id="pay-subscription-btn"
+                       href="<?= htmlspecialchars($paymentCheckoutUrl, ENT_QUOTES, 'UTF-8') ?>"
+                       class="btn btn-primary btn-lg px-5"
+                       rel="noopener noreferrer">
+                        <i class="ti ti-credit-card me-1"></i> Pay subscription
+                    </a>
+                <?php else: ?>
+                    <p class="text-danger small mb-3">Your checkout link is being prepared. Refresh this page in a few moments, or contact support.</p>
+                    <button type="button" class="btn btn-primary btn-lg" onclick="location.reload()">
+                        <i class="ti ti-refresh me-1"></i> Refresh page
+                    </button>
+                <?php endif; ?>
+                <div class="mt-4">
+                    <a href="<?= htmlspecialchars(BASE_URL . '/logout.php', ENT_QUOTES, 'UTF-8') ?>" class="text-muted small">Log out</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <?= renderTenantAdminFooterScripts() ?>
 </body>

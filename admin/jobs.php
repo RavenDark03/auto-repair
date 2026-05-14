@@ -326,9 +326,11 @@ try {
             'job_id' => $selectedJobId,
             'tenant_id' => $tenantId,
         ]);
-        $selectedJob = $selectedJobStmt->fetch();
+        $selectedJob = $selectedJobStmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($selectedJob) {
+        if (!$selectedJob) {
+            $selectedJob = null;
+        } else {
             if ($selectedCustomerContextId === 0) {
                 $selectedCustomerContextId = (int) $selectedJob['customer_id'];
                 $selectedCustomerContext = [
@@ -551,12 +553,13 @@ if ($editPartUsageId > 0) {
     }
 }
 
-$selectedMechanicId = (int) ($oldInput['mechanic_id'] ?? ($selectedJob['mechanic_id'] ?? 0));
-$selectedStatus = normalizeJobStatus($oldInput['status'] ?? ($selectedJob['status'] ?? 'pending_inspection'));
-$selectedPriority = $oldInput['priority'] ?? ($selectedJob['priority'] ?? 'normal');
-$selectedDescription = $oldInput['description'] ?? ($selectedJob['description'] ?? '');
-$selectedIssueConcern = $oldInput['issue_concern'] ?? ($selectedJob['issue_concern'] ?? '');
-$selectedCustomerVisibleNotes = $oldInput['customer_visible_notes'] ?? ($selectedJob['customer_visible_notes'] ?? '');
+$selJob = $selectedJob ?? [];
+$selectedMechanicId = (int) ($oldInput['mechanic_id'] ?? ($selJob['mechanic_id'] ?? 0));
+$selectedStatus = normalizeJobStatus($oldInput['status'] ?? ($selJob['status'] ?? 'pending_inspection'));
+$selectedPriority = $oldInput['priority'] ?? ($selJob['priority'] ?? 'normal');
+$selectedDescription = $oldInput['description'] ?? ($selJob['description'] ?? '');
+$selectedIssueConcern = $oldInput['issue_concern'] ?? ($selJob['issue_concern'] ?? '');
+$selectedCustomerVisibleNotes = $oldInput['customer_visible_notes'] ?? ($selJob['customer_visible_notes'] ?? '');
 $selectedInventoryUsageId = (int) ($oldInput['inventory_id'] ?? 0);
 $selectedUsageQuantity = (int) ($oldInput['quantity_used'] ?? 1);
 $selectedServiceName = $oldInput['service_name'] ?? '';
@@ -569,6 +572,11 @@ $editServiceQuantity = $serviceEditOldInput['service_quantity'] ?? ($editingServ
 $editServiceUnitPrice = $serviceEditOldInput['service_unit_price'] ?? ($editingService['unit_price'] ?? '0.00');
 $editPartInventoryId = (int) ($partEditOldInput['inventory_id'] ?? ($editingPartUsage['inventory_id'] ?? 0));
 $editPartQuantity = (int) ($partEditOldInput['quantity_used'] ?? ($editingPartUsage['quantity_used'] ?? 1));
+
+$mechanixJobModalOpen = '';
+if ($errorMessage !== null && is_array($selectedJob) && !$jobSourceAppointmentLocked) {
+    $mechanixJobModalOpen = 'edit';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en" data-theme="light" data-bs-theme="light">
@@ -576,13 +584,9 @@ $editPartQuantity = (int) ($partEditOldInput['quantity_used'] ?? ($editingPartUs
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jobs - MECHANIX</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0/dist/css/tabler.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
-    <link rel="stylesheet" href="../assets/css/tabler-mechanix-bridge.css">
-    <link rel="stylesheet" href="../assets/css/styles.css">
-    <link rel="stylesheet" href="../assets/css/superadmin-landing-theme.css">
+    <?= mechanix_link_styles_tabler_workspace('../assets/css/') ?>
 </head>
-<body class="page-shell antialiased tenant-app">
+<body class="page-shell antialiased tenant-app"<?php if ($mechanixJobModalOpen !== ''): ?> data-mechanix-open-job-modal="<?= htmlspecialchars($mechanixJobModalOpen, ENT_QUOTES, 'UTF-8') ?>"<?php endif; ?>>
     <div class="dashboard">
         <?= renderTenantAdminSidebar($businessName, $visibleModuleLinks, 'jobs.php', $showAnalytics) ?>
 
@@ -734,69 +738,11 @@ $editPartQuantity = (int) ($partEditOldInput['quantity_used'] ?? ($editingPartUs
                         <?php endif; ?>
 
                         <?php if (!$jobSourceAppointmentLocked): ?>
-                            <form action="actions/update_job.php" method="POST" class="feature-toggle-form">
-                                <input type="hidden" name="job_id" value="<?= (int) $selectedJob['job_id'] ?>">
-
-                                <div class="form-grid">
-                                    <div class="form-group">
-                                        <label for="mechanic_id">Assigned Mechanic</label>
-                                        <select class="form-control" id="mechanic_id" name="mechanic_id">
-                                            <option value="0">Unassigned</option>
-                                            <?php foreach ($mechanicOptions as $mechanic): ?>
-                                                <option value="<?= (int) $mechanic['user_id'] ?>"<?= $selectedMechanicId === (int) $mechanic['user_id'] ? ' selected' : '' ?>>
-                                                    <?= htmlspecialchars($mechanic['full_name'], ENT_QUOTES, 'UTF-8') ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label for="job_status">Job Status</label>
-                                        <select class="form-control" id="job_status" name="status" required>
-                                            <?php foreach (getJobStatusOptions() as $statusValue => $statusLabel): ?>
-                                                <option value="<?= htmlspecialchars($statusValue, ENT_QUOTES, 'UTF-8') ?>"<?= $selectedStatus === $statusValue ? ' selected' : '' ?>>
-                                                    <?= htmlspecialchars($statusLabel, ENT_QUOTES, 'UTF-8') ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label for="priority">Priority</label>
-                                        <select class="form-control" id="priority" name="priority" required>
-                                            <?php foreach (['low' => 'Low', 'normal' => 'Normal', 'high' => 'High', 'urgent' => 'Urgent'] as $priorityValue => $priorityLabel): ?>
-                                                <option value="<?= htmlspecialchars($priorityValue, ENT_QUOTES, 'UTF-8') ?>"<?= $selectedPriority === $priorityValue ? ' selected' : '' ?>>
-                                                    <?= htmlspecialchars($priorityLabel, ENT_QUOTES, 'UTF-8') ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="issue_concern">Vehicle Issue / Concern</label>
-                                    <textarea class="form-control form-textarea" id="issue_concern" name="issue_concern"><?= htmlspecialchars($selectedIssueConcern, ENT_QUOTES, 'UTF-8') ?></textarea>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="description">Job Description</label>
-                                    <textarea class="form-control form-textarea" id="description" name="description"><?= htmlspecialchars($selectedDescription, ENT_QUOTES, 'UTF-8') ?></textarea>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="customer_visible_notes">Customer-visible Notes</label>
-                                    <textarea class="form-control form-textarea" id="customer_visible_notes" name="customer_visible_notes"><?= htmlspecialchars($selectedCustomerVisibleNotes, ENT_QUOTES, 'UTF-8') ?></textarea>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="progress_note">Internal Progress Note</label>
-                                    <textarea class="form-control form-textarea" id="progress_note" name="progress_note" placeholder="Optional note for this update"></textarea>
-                                </div>
-
-                                <div class="approval-actions">
-                                    <button type="submit" class="btn btn-primary">Save Job Changes</button>
-                                </div>
-                            </form>
+                            <div class="approval-actions mb-3">
+                                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#mechanixJobEditModal">
+                                    Edit job details
+                                </button>
+                            </div>
                         <?php endif; ?>
 
                         <div class="dashboard-list compact-list">
@@ -1191,6 +1137,8 @@ $editPartQuantity = (int) ($partEditOldInput['quantity_used'] ?? ($editingPartUs
             </section>
         </main>
     </div>
+
+    <?php include __DIR__ . '/../includes/partials/admin_jobs_modals.php'; ?>
 
     <?= renderTenantAdminFooterScripts() ?>
     <script src="../assets/js/job-tabs.js"></script>

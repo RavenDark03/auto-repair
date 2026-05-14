@@ -29,12 +29,7 @@ $pendingCount = (int) ($summary['pending_registrations'] ?? 0);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tenant Status - MECHANIX</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0/dist/css/tabler.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap">
-    <link rel="stylesheet" href="../assets/css/tabler-mechanix-bridge.css">
-    <link rel="stylesheet" href="../assets/css/superadmin-landing-theme.css">
-    <link rel="stylesheet" href="../assets/css/styles.css">
+    <?= mechanix_link_styles_tabler_workspace('../assets/css/') ?>
 </head>
 <body class="page-shell antialiased superadmin-app superadmin-platform">
 <div class="dashboard">
@@ -75,7 +70,8 @@ $pendingCount = (int) ($summary['pending_registrations'] ?? 0);
         </div>
     </main>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0/dist/js/tabler.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0/dist/js/tabler.min.js"></script>
+    <script src="../assets/js/mechanix-modals.js?v=1"></script>
 <script src="../assets/js/theme.js?v=3"></script>
 <script src="../assets/js/mechanix-logout-dialog.js"></script>
 <script src="../assets/js/superadmin-list-filter.js"></script>

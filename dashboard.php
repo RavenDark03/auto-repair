@@ -779,7 +779,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Super Admin Dashboard - MECHANIX</title>
-    <link rel="stylesheet" href="assets/css/styles.css">
+    <?= mechanix_link_styles_plain_workspace('assets/css') ?>
 </head>
 <body class="page-shell">
     <div class="dashboard">

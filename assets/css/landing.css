@@ -430,18 +430,19 @@ html[data-theme="dark"] .stage-photo-frame {
     margin-bottom: 14px;
 }
 
-.landing-feature-card {
+.content-card.mechanix-feature-card {
+    isolation: isolate;
     padding: 24px;
 }
 
-.landing-feature-card h3 {
+.content-card.mechanix-feature-card h3 {
     font-size: 1.05rem;
     font-weight: 600;
     margin-bottom: 8px;
     letter-spacing: -0.02em;
 }
 
-.landing-feature-card p {
+.content-card.mechanix-feature-card p {
     color: var(--text-soft);
     font-size: 0.9rem;
     line-height: 1.6;
@@ -699,7 +700,7 @@ html[data-theme="dark"] .stage-photo-frame {
     padding: 34px;
     background: color-mix(in srgb, var(--bg-soft) 92%, transparent);
     border: 1px solid var(--border);
-    border-radius: 28px;
+    border-radius: var(--card-radius);
     box-shadow: var(--shadow);
     font-family: 'DM Sans', system-ui, sans-serif;
 }

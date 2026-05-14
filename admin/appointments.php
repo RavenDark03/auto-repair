@@ -294,9 +294,12 @@ try {
             'appointment_id' => $selectedAppointmentId,
             'tenant_id' => $tenantId,
         ]);
-        $selectedAppointment = $selectedAppointmentStmt->fetch();
+        $selectedAppointment = $selectedAppointmentStmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($selectedAppointment) {
+        if (!$selectedAppointment) {
+            $selectedAppointment = null;
+        } else {
+
             $selectedAppointmentHasInactiveLinks =
                 ($selectedAppointment['customer_status'] ?? 'active') !== 'active'
                 || ($selectedAppointment['vehicle_status'] ?? 'active') !== 'active';
@@ -371,11 +374,17 @@ function appointmentContextUrl($appointmentId = 0, $customerId = 0, $vehicleId =
     return buildPageUrl('appointments.php', $params);
 }
 
-$selectedAppointmentStatus = $oldInput['status'] ?? ($selectedAppointment['status'] ?? 'pending');
-$selectedCustomerValue = (int) ($oldInput['customer_id'] ?? ($selectedAppointment['customer_id'] ?? 0));
-$selectedVehicleValue = (int) ($oldInput['vehicle_id'] ?? ($selectedAppointment['vehicle_id'] ?? 0));
-$selectedMechanicValue = (int) ($oldInput['mechanic_id'] ?? ($selectedAppointment['mechanic_id'] ?? 0));
-$approvedAppointmentLocked = $selectedAppointment && $selectedAppointment['status'] === 'approved';
+$selAppt = $selectedAppointment ?? [];
+$selectedAppointmentStatus = $oldInput['status'] ?? ($selAppt['status'] ?? 'pending');
+$selectedCustomerValue = (int) ($oldInput['customer_id'] ?? ($selAppt['customer_id'] ?? 0));
+$selectedVehicleValue = (int) ($oldInput['vehicle_id'] ?? ($selAppt['vehicle_id'] ?? 0));
+$selectedMechanicValue = (int) ($oldInput['mechanic_id'] ?? ($selAppt['mechanic_id'] ?? 0));
+$approvedAppointmentLocked = is_array($selectedAppointment) && ($selectedAppointment['status'] ?? '') === 'approved';
+
+$mechanixAppointmentModalOpen = '';
+if ($errorMessage !== null) {
+    $mechanixAppointmentModalOpen = is_array($selectedAppointment) ? 'edit' : 'add';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en" data-theme="light" data-bs-theme="light">
@@ -383,13 +392,9 @@ $approvedAppointmentLocked = $selectedAppointment && $selectedAppointment['statu
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Appointments - MECHANIX</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0/dist/css/tabler.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
-    <link rel="stylesheet" href="../assets/css/tabler-mechanix-bridge.css">
-    <link rel="stylesheet" href="../assets/css/styles.css">
-    <link rel="stylesheet" href="../assets/css/superadmin-landing-theme.css">
+    <?= mechanix_link_styles_tabler_workspace('../assets/css/') ?>
 </head>
-<body class="page-shell antialiased tenant-app">
+<body class="page-shell antialiased tenant-app"<?php if ($mechanixAppointmentModalOpen !== ''): ?> data-mechanix-open-appointment-modal="<?= htmlspecialchars($mechanixAppointmentModalOpen, ENT_QUOTES, 'UTF-8') ?>"<?php endif; ?>>
     <div class="dashboard">
         <?= renderTenantAdminSidebar($businessName, $visibleModuleLinks, 'appointments.php', $showAnalytics) ?>
 
@@ -514,135 +519,70 @@ $approvedAppointmentLocked = $selectedAppointment && $selectedAppointment['statu
                 </article>
 
                 <article class="content-card">
-                    <h3><?= $selectedAppointment ? 'Edit Appointment' : 'Add Appointment' ?></h3>
-                    <p><?= $selectedAppointment ? 'Update this booking while keeping the linked customer and vehicle safely inside the same tenant.' : 'Create a new appointment linked to one customer and one of that customer’s vehicles.' ?></p>
+                    <h3>Appointment details</h3>
+                    <p><?= is_array($selectedAppointment) ? 'Review this booking, open edit to change fields, or use quick actions below for status shortcuts.' : 'Create a new appointment linked to one customer and one vehicle, or browse the queue to edit an existing booking.' ?></p>
 
-                    <?php if ($selectedAppointmentHasInactiveLinks): ?>
+                    <?php if (is_array($selectedAppointment) && $selectedAppointmentHasInactiveLinks): ?>
                         <div class="alert alert-error">
                             This appointment is linked to an inactive customer or inactive vehicle. Keep it for history if needed, but switch it back to active records before reusing this booking.
                         </div>
                     <?php endif; ?>
 
-                    <?php if (empty($customerOptions) || empty($vehicleOptions)): ?>
+                    <?php $canSchedule = !empty($customerOptions) && !empty($vehicleOptions); ?>
+
+                    <div class="approval-actions flex-wrap mb-3">
+                        <button
+                            type="button"
+                            class="btn btn-primary"
+                            data-bs-toggle="modal"
+                            data-bs-target="#mechanixAppointmentModalAdd"
+                            <?= $canSchedule ? '' : ' disabled title="Add at least one customer and vehicle first"' ?>
+                        >
+                            Add appointment
+                        </button>
+                        <?php if (is_array($selectedAppointment)): ?>
+                            <?php $canScheduleEdit = $canSchedule || $selectedAppointmentHasInactiveLinks || !empty($oldInput); ?>
+                            <button
+                                type="button"
+                                class="btn btn-secondary"
+                                data-bs-toggle="modal"
+                                data-bs-target="#mechanixAppointmentModalEdit"
+                                <?= $canScheduleEdit ? '' : ' disabled title="Missing customer or vehicle records"' ?>
+                            >
+                                Edit booking
+                            </button>
+                            <a href="appointments.php" class="btn btn-secondary">New appointment</a>
+                        <?php endif; ?>
+                    </div>
+
+                    <?php if (!$canSchedule): ?>
                         <div class="table-placeholder">
                             Add at least one customer and one vehicle first before creating appointments.
                         </div>
-                    <?php else: ?>
-                        <form action="<?= $selectedAppointment ? 'actions/update_appointment.php' : 'actions/create_appointment.php' ?>" method="POST" class="feature-toggle-form">
-                            <?php if ($selectedAppointment): ?>
-                                <input type="hidden" name="appointment_id" value="<?= (int) $selectedAppointment['appointment_id'] ?>">
-                            <?php endif; ?>
-
-                            <div class="form-group">
-                                <label for="customer_id">Customer</label>
-                                <select class="form-control" id="customer_id" name="customer_id" required>
-                                    <option value="">Select customer</option>
-                                    <?php foreach ($customerOptions as $customer): ?>
-                                        <option
-                                            value="<?= (int) $customer['customer_id'] ?>"
-                                            <?= $selectedCustomerValue === (int) $customer['customer_id'] ? ' selected' : '' ?>
-                                            <?= ($customer['status'] !== 'active' && $selectedCustomerValue !== (int) $customer['customer_id']) ? ' disabled' : '' ?>
-                                        >
-                                            <?= htmlspecialchars($customer['name'], ENT_QUOTES, 'UTF-8') ?><?= $customer['status'] !== 'active' ? ' (Inactive)' : '' ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="vehicle_id">Vehicle</label>
-                                <select class="form-control" id="vehicle_id" name="vehicle_id" data-selected-vehicle-id="<?= $selectedVehicleValue ?>" required>
-                                    <option value="">Select vehicle</option>
-                                    <?php foreach ($vehicleOptions as $vehicle): ?>
-                                        <option
-                                            value="<?= (int) $vehicle['vehicle_id'] ?>"
-                                            data-customer-id="<?= (int) $vehicle['customer_id'] ?>"
-                                            <?= $selectedVehicleValue === (int) $vehicle['vehicle_id'] ? ' selected' : '' ?>
-                                            <?= ($vehicle['status'] !== 'active' && $selectedVehicleValue !== (int) $vehicle['vehicle_id']) ? ' disabled' : '' ?>
-                                        >
-                                            <?= htmlspecialchars(appointmentVehicleLabel($vehicle), ENT_QUOTES, 'UTF-8') ?>
-                                            <?= $vehicle['status'] !== 'active' ? ' (Inactive)' : '' ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="appointment_date">Appointment Date</label>
-                                <input class="form-control" type="date" id="appointment_date" name="appointment_date" value="<?= htmlspecialchars($oldInput['appointment_date'] ?? ($selectedAppointment['appointment_date'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" required>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="mechanic_id">Assigned Mechanic</label>
-                                <select class="form-control" id="mechanic_id" name="mechanic_id">
-                                    <option value="0">Unassigned</option>
-                                    <?php foreach ($mechanicOptions as $mechanic): ?>
-                                        <option value="<?= (int) $mechanic['user_id'] ?>"<?= $selectedMechanicValue === (int) $mechanic['user_id'] ? ' selected' : '' ?>>
-                                            <?= htmlspecialchars($mechanic['full_name'], ENT_QUOTES, 'UTF-8') ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="concern">Vehicle Issue / Concern</label>
-                                <textarea class="form-control form-textarea" id="concern" name="concern"><?= htmlspecialchars($oldInput['concern'] ?? ($selectedAppointment['concern'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
-                            </div>
-
-                            <?php if ($selectedAppointment): ?>
-                                <div class="form-group">
-                                    <label for="appointment_status">Status</label>
-                                    <?php if ($approvedAppointmentLocked): ?>
-                                        <input type="hidden" name="status" value="approved">
-                                        <select class="form-control" id="appointment_status" disabled>
-                                            <option selected>Approved</option>
-                                        </select>
-                                    <?php else: ?>
-                                        <select class="form-control" id="appointment_status" name="status" required>
-                                            <option value="pending"<?= $selectedAppointmentStatus === 'pending' ? ' selected' : '' ?>>Pending</option>
-                                            <option value="approved"<?= $selectedAppointmentStatus === 'approved' ? ' selected' : '' ?>>Approved</option>
-                                            <option value="cancelled"<?= $selectedAppointmentStatus === 'cancelled' ? ' selected' : '' ?>>Cancelled</option>
-                                        </select>
-                                    <?php endif; ?>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="cancellation_reason">Cancellation Reason</label>
-                                    <textarea class="form-control form-textarea" id="cancellation_reason" name="cancellation_reason"><?= htmlspecialchars($oldInput['cancellation_reason'] ?? ($selectedAppointment['cancellation_reason'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
-                                </div>
-                            <?php endif; ?>
-
-                            <div class="approval-actions">
-                                <button type="submit" class="btn btn-primary"><?= $selectedAppointment ? 'Save Appointment Changes' : 'Create Appointment' ?></button>
-                                <?php if ($selectedAppointment): ?>
-                                    <a href="appointments.php" class="btn btn-secondary">New Appointment</a>
-                                <?php endif; ?>
-                            </div>
-                        </form>
                     <?php endif; ?>
 
-                    <?php if ($selectedAppointment): ?>
+                    <?php if (is_array($selectedAppointment)): ?>
                         <div class="dashboard-list compact-list">
                             <div class="dashboard-list-item">
                                 <div>
-                                    <strong>Appointment Status</strong>
+                                    <strong>Appointment status</strong>
                                     <p>
-                                        <?= htmlspecialchars($selectedAppointment['customer_name'], ENT_QUOTES, 'UTF-8') ?>
+                                        <?= htmlspecialchars((string) $selectedAppointment['customer_name'], ENT_QUOTES, 'UTF-8') ?>
                                         <?php if (!empty($selectedAppointment['customer_contact'])): ?>
-                                            | <?= htmlspecialchars($selectedAppointment['customer_contact'], ENT_QUOTES, 'UTF-8') ?>
+                                            | <?= htmlspecialchars((string) $selectedAppointment['customer_contact'], ENT_QUOTES, 'UTF-8') ?>
                                         <?php endif; ?>
                                         | <?= htmlspecialchars(appointmentVehicleLabel($selectedAppointment), ENT_QUOTES, 'UTF-8') ?>
-                                        | <?= htmlspecialchars($selectedAppointment['mechanic_name'] ?? 'Unassigned', ENT_QUOTES, 'UTF-8') ?>
+                                        | <?= htmlspecialchars((string) ($selectedAppointment['mechanic_name'] ?? 'Unassigned'), ENT_QUOTES, 'UTF-8') ?>
                                     </p>
                                     <?php if (!empty($selectedAppointment['concern'])): ?>
-                                        <p>Concern: <?= htmlspecialchars($selectedAppointment['concern'], ENT_QUOTES, 'UTF-8') ?></p>
+                                        <p>Concern: <?= htmlspecialchars((string) $selectedAppointment['concern'], ENT_QUOTES, 'UTF-8') ?></p>
                                     <?php endif; ?>
                                     <?php if (!empty($selectedAppointment['cancellation_reason'])): ?>
-                                        <p>Cancellation reason: <?= htmlspecialchars($selectedAppointment['cancellation_reason'], ENT_QUOTES, 'UTF-8') ?></p>
+                                        <p>Cancellation reason: <?= htmlspecialchars((string) $selectedAppointment['cancellation_reason'], ENT_QUOTES, 'UTF-8') ?></p>
                                     <?php endif; ?>
                                 </div>
-                                <span class="status-chip status-<?= htmlspecialchars($selectedAppointment['status'], ENT_QUOTES, 'UTF-8') ?>">
-                                    <?= htmlspecialchars(ucfirst($selectedAppointment['status']), ENT_QUOTES, 'UTF-8') ?>
+                                <span class="status-chip status-<?= htmlspecialchars((string) $selectedAppointment['status'], ENT_QUOTES, 'UTF-8') ?>">
+                                    <?= htmlspecialchars(ucfirst((string) $selectedAppointment['status']), ENT_QUOTES, 'UTF-8') ?>
                                 </span>
                             </div>
                         </div>
@@ -656,19 +596,19 @@ $approvedAppointmentLocked = $selectedAppointment && $selectedAppointment['statu
                                 <input type="hidden" name="appointment_id" value="<?= (int) $selectedAppointment['appointment_id'] ?>">
 
                                 <div class="form-group">
-                                    <label for="quick_cancellation_reason">Cancellation Reason</label>
-                                    <textarea class="form-control form-textarea" id="quick_cancellation_reason" name="cancellation_reason" placeholder="Required when cancelling"><?= htmlspecialchars($selectedAppointment['cancellation_reason'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
+                                    <label for="quick_cancellation_reason">Cancellation reason</label>
+                                    <textarea class="form-control form-textarea" id="quick_cancellation_reason" name="cancellation_reason" placeholder="Required when cancelling"><?= htmlspecialchars((string) ($selectedAppointment['cancellation_reason'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
                                 </div>
 
                                 <div class="approval-actions">
                                     <?php if ($selectedAppointment['status'] !== 'pending'): ?>
-                                        <button type="submit" name="status" value="pending" class="btn btn-secondary">Set Pending</button>
+                                        <button type="submit" name="status" value="pending" class="btn btn-secondary">Set pending</button>
                                     <?php endif; ?>
                                     <?php if ($selectedAppointment['status'] !== 'approved'): ?>
-                                        <button type="submit" name="status" value="approved" class="btn btn-primary">Approve Appointment</button>
+                                        <button type="submit" name="status" value="approved" class="btn btn-primary">Approve appointment</button>
                                     <?php endif; ?>
                                     <?php if ($selectedAppointment['status'] !== 'cancelled'): ?>
-                                        <button type="submit" name="status" value="cancelled" class="btn btn-secondary">Cancel Appointment</button>
+                                        <button type="submit" name="status" value="cancelled" class="btn btn-secondary">Cancel appointment</button>
                                     <?php endif; ?>
                                 </div>
                             </form>
@@ -684,42 +624,63 @@ $approvedAppointmentLocked = $selectedAppointment && $selectedAppointment['statu
         </main>
     </div>
 
+    <?php include __DIR__ . '/../includes/partials/admin_appointments_modals.php'; ?>
+
     <?= renderTenantAdminFooterScripts() ?>
     <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const customerSelect = document.getElementById('customer_id');
-        const vehicleSelect = document.getElementById('vehicle_id');
-
-        if (!customerSelect || !vehicleSelect) {
-            return;
-        }
-
-        function syncVehicleOptions() {
-            const selectedCustomerId = customerSelect.value;
-            let hasSelectedVehicle = false;
-
-            Array.from(vehicleSelect.options).forEach(function (option, index) {
-                if (index === 0) {
-                    return;
-                }
-
-                const optionCustomerId = option.getAttribute('data-customer-id');
-                const shouldShow = selectedCustomerId !== '' && optionCustomerId === selectedCustomerId;
-                option.hidden = !shouldShow;
-                option.disabled = !shouldShow;
-
-                if (shouldShow && option.selected) {
-                    hasSelectedVehicle = true;
-                }
-            });
-
-            if (!hasSelectedVehicle) {
-                vehicleSelect.value = '';
+        function syncApptModal(modalRoot) {
+            var sync = modalRoot.querySelector('[data-mechanix-appt-sync]');
+            if (!sync) {
+                return;
             }
+
+            var customerSelect = sync.querySelector('.mechanix-appt-customer');
+            var vehicleSelect = sync.querySelector('.mechanix-appt-vehicle');
+            if (!customerSelect || !vehicleSelect) {
+                return;
+            }
+
+            function syncVehicleOptions() {
+                var selectedCustomerId = customerSelect.value;
+                var hasSelectedVehicle = false;
+
+                Array.prototype.forEach.call(vehicleSelect.options, function (option, index) {
+                    if (index === 0) {
+                        return;
+                    }
+
+                    var optionCustomerId = option.getAttribute('data-customer-id');
+                    var shouldShow = selectedCustomerId !== '' && optionCustomerId === selectedCustomerId;
+
+                    option.hidden = !shouldShow;
+                    option.disabled = !shouldShow;
+
+                    if (shouldShow && option.selected) {
+                        hasSelectedVehicle = true;
+                    }
+                });
+
+                if (!hasSelectedVehicle) {
+                    vehicleSelect.value = '';
+                }
+            }
+
+            customerSelect.addEventListener('change', syncVehicleOptions);
+            syncVehicleOptions();
         }
 
-        customerSelect.addEventListener('change', syncVehicleOptions);
-        syncVehicleOptions();
+        ['mechanixAppointmentModalAdd', 'mechanixAppointmentModalEdit'].forEach(function (modalId) {
+            var modal = document.getElementById(modalId);
+            if (!modal) {
+                return;
+            }
+
+            modal.addEventListener('shown.bs.modal', function () {
+                syncApptModal(modal);
+            });
+            syncApptModal(modal);
+        });
     });
     </script>
 </body>

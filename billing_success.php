@@ -1,6 +1,16 @@
 <?php
 require_once __DIR__ . '/includes/session.php';
+require_once __DIR__ . '/includes/db.php';
+require_once __DIR__ . '/config/config.php';
+require_once __DIR__ . '/includes/mechanix_paymongo_activation.php';
 require_once __DIR__ . '/includes/mechanix_ui.php';
+
+if (isset($_SESSION['tenant_id']) && PAYMONGO_SECRET_KEY !== '') {
+    try {
+        $pdoReco = Database::getInstance();
+        mechanix_reconcile_paymongo_for_pending_tenant($pdoReco, (int) $_SESSION['tenant_id'], true);
+    } catch (Throwable $ignoredReco) {}
+}
 
 $redirectUrl = mechanix_url_path('/login.php');
 $btnText = 'Return to Login';
@@ -24,25 +34,16 @@ if (isset($_SESSION['user_id'])) {
     <link rel="stylesheet" href="<?= htmlspecialchars(mechanix_url_path('/assets/css/styles.css')) ?>">
 </head>
 <body class="page-shell">
-    <header class="topbar">
-        <div class="topbar-inner">
-            <div class="brand">
-                <div class="brand-mark">M</div>
-                <div class="brand-text">
-                    <h1>MECHANIX</h1>
-                    <p>Subscription-based auto repair SaaS</p>
-                </div>
-            </div>
-            <div class="nav-actions">
-                <?= mechanix_theme_toggle_button() ?>
-                <?= mechanix_back_icon_link($redirectUrl, 'Back') ?>
-            </div>
-        </div>
-    </header>
+    <?php
+    $mechanixPublicTopbarVariant = 'back_link';
+    $mechanixPublicTopbarBackHref = $redirectUrl;
+    $mechanixPublicTopbarBackLabel = 'Back';
+    require __DIR__ . '/includes/partials/mechanix_public_topbar.php';
+    ?>
     <main class="auth-page auth-page--brand">
         <div class="auth-card">
             <h2>Payment submitted</h2>
-            <p>Your payment was submitted through PayMongo. Final confirmation will appear once the payment status is verified by the platform.</p>
+            <p>Your payment was submitted through PayMongo. If you are signed in, we are finalizing your subscription now. Open your dashboard; if you still see a payment prompt, wait a few seconds and refresh once.</p>
             <a href="<?= htmlspecialchars($redirectUrl) ?>" class="btn btn-primary btn-full"><?= htmlspecialchars($btnText) ?></a>
         </div>
     </main>

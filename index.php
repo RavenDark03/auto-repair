@@ -2,6 +2,7 @@
 require_once __DIR__ . '/includes/session.php';
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/mechanix_ui.php';
+require_once __DIR__ . '/includes/mechanix_landing_modules.php';
 
 if (isset($_SESSION['user_id'], $_SESSION['role'])) {
     if ($_SESSION['role'] === 'admin') {
@@ -80,6 +81,8 @@ function landingMoney($amount) {
 function landingFeatureLabel($featureName) {
     return ucwords(str_replace('_', ' ', $featureName));
 }
+
+$mechanixLandingModules = mechanix_landing_modules_definitions();
 ?>
 <!DOCTYPE html>
 <html lang="en" data-theme="light" data-bs-theme="light">
@@ -90,25 +93,11 @@ function landingFeatureLabel($featureName) {
     <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body class="page-shell">
-
-    <header class="topbar">
-        <div class="topbar-inner">
-            <div class="brand">
-                <div class="brand-mark brand-mark--photo" role="img" aria-label="MECHANIX">
-                    <img src="images/logo-mech.jpg" alt="" width="42" height="42" decoding="async">
-                </div>
-                <div class="brand-text">
-                    <h1>MECHANIX</h1>
-                    <p>Subscription-based auto repair SaaS</p>
-                </div>
-            </div>
-            <div class="nav-actions">
-                <?= mechanix_theme_toggle_button() ?>
-                <a href="login.php" class="btn btn-secondary">Log In</a>
-                <a href="register.php" class="btn btn-primary">Register Business</a>
-            </div>
-        </div>
-    </header>
+    <?php
+    $mechanixPublicTopbarVariant = 'cta';
+    $mechanixPublicTopbarLogoPhoto = true;
+    require __DIR__ . '/includes/partials/mechanix_public_topbar.php';
+    ?>
 
     <main class="landing-main">
 
@@ -259,36 +248,9 @@ function landingFeatureLabel($featureName) {
                 </div>
 
                 <div class="landing-feature-grid">
-                    <article class="content-card landing-feature-card">
-                        <span class="feature-kicker">01</span>
-                        <h3>Registration to Approval</h3>
-                        <p>Capture applications with selected plans and optional add-ons, then route them through super admin review before activation.</p>
-                    </article>
-                    <article class="content-card landing-feature-card">
-                        <span class="feature-kicker">02</span>
-                        <h3>Tier-Based Feature Control</h3>
-                        <p>Use subscription packaging and feature toggles to give each tenant the right module set without rebuilding the product.</p>
-                    </article>
-                    <article class="content-card landing-feature-card">
-                        <span class="feature-kicker">03</span>
-                        <h3>Operational Workspace</h3>
-                        <p>Manage customers, vehicles, appointments, jobs, inventory, invoices, and payments inside one tenant-aware dashboard.</p>
-                    </article>
-                    <article class="content-card landing-feature-card">
-                        <span class="feature-kicker">04</span>
-                        <h3>Billing-Ready Direction</h3>
-                        <p>Prepared to evolve into a live PayMongo workflow once production billing, keys, webhooks, and payment testing are connected.</p>
-                    </article>
-                    <article class="content-card landing-feature-card">
-                        <span class="feature-kicker">05</span>
-                        <h3>Inventory With AP Direction</h3>
-                        <p>Track suppliers, purchases, payables, and stock movement while keeping the product modular for smaller shops.</p>
-                    </article>
-                    <article class="content-card landing-feature-card">
-                        <span class="feature-kicker">06</span>
-                        <h3>Reports That Scale</h3>
-                        <p>Monitor collections, receivables, supplier spending, payables, and low-stock visibility from the same tenant-safe dataset.</p>
-                    </article>
+                    <?php foreach ($mechanixLandingModules as $landingFeature): ?>
+                        <?php include __DIR__ . '/includes/partials/landing_feature_card.php'; ?>
+                    <?php endforeach; ?>
                 </div>
             </div>
         </section>

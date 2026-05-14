@@ -5,6 +5,7 @@ require_once __DIR__ . '/includes/session.php';
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/mechanix_paymongo_activation.php';
 require_once __DIR__ . '/includes/mechanix_ui.php';
 
 requireLogin();
@@ -24,6 +25,8 @@ $businessName = $_SESSION['business_name'] ?? '';
 
 try {
     $pdo = Database::getInstance();
+
+    mechanix_reconcile_paymongo_for_pending_tenant($pdo, $tenantId, false);
 
     $tenantStmt = $pdo->prepare("
         SELECT tenant_id, status, business_name
@@ -87,9 +90,9 @@ try {
     <title>Complete Payment - MECHANIX</title>
     <link rel="stylesheet" href="<?= htmlspecialchars(BASE_URL . '/assets/css/styles.css', ENT_QUOTES, 'UTF-8') ?>">
     <style>
-        .payment-gate-page {
-            min-height: 100vh;
-            background: #0f1117;
+        .pending-payment-shell .payment-gate-page {
+            min-height: calc(100vh - 76px);
+            background: color-mix(in srgb, var(--bg) 96%, transparent);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -97,14 +100,14 @@ try {
             padding: 2rem 1rem;
         }
         .payment-gate-card {
-            background: linear-gradient(145deg, #1a1d2e, #12141f);
-            border: 1px solid #2d3148;
-            border-radius: 20px;
+            background: color-mix(in srgb, var(--bg-soft) 96%, transparent);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--card-radius);
             padding: 48px 44px;
             max-width: 500px;
             width: 100%;
             text-align: center;
-            box-shadow: 0 32px 80px rgba(0,0,0,.6);
+            box-shadow: var(--shadow);
             animation: pg-in .35s cubic-bezier(.34,1.56,.64,1) both;
         }
         @keyframes pg-in {
@@ -113,34 +116,34 @@ try {
         }
         .pg-brand-mark {
             width: 64px; height: 64px;
-            background: linear-gradient(135deg, #6c63ff, #4f46e5);
-            border-radius: 16px;
+            background: linear-gradient(135deg, var(--border-strong), var(--text-soft));
+            border-radius: var(--radius-md);
             display: inline-flex;
             align-items: center;
             justify-content: center;
             font-size: 28px;
             font-weight: 800;
-            color: #fff;
+            color: var(--bg-soft);
             margin: 0 auto 20px;
-            box-shadow: 0 8px 24px rgba(108,99,255,.4);
+            box-shadow: var(--shadow-soft);
         }
         .pg-brand-name {
             font-size: 13px;
             font-weight: 700;
             letter-spacing: 3px;
-            color: #6c63ff;
+            color: var(--text-soft);
             text-transform: uppercase;
             margin-bottom: 24px;
         }
         .pg-card-title {
             font-size: 24px;
             font-weight: 700;
-            color: #f1f5f9;
+            color: var(--text);
             margin: 0 0 10px;
         }
         .pg-card-body {
             font-size: 14px;
-            color: #94a3b8;
+            color: var(--text-soft);
             line-height: 1.7;
             margin: 0 0 28px;
         }
@@ -149,47 +152,51 @@ try {
             justify-content: space-between;
             align-items: center;
             padding: 10px 0;
-            border-bottom: 1px solid #1e2235;
+            border-bottom: 1px solid var(--border);
             font-size: 13px;
-            color: #64748b;
+            color: var(--text-soft);
         }
         .pg-info-row:last-of-type { border-bottom: none; }
-        .pg-info-row span { color: #c7d2fe; font-weight: 600; }
+        .pg-info-row span { color: var(--text); font-weight: 600; }
         .pg-info-box {
-            background: #12141e;
-            border: 1px solid #2d3148;
-            border-radius: 10px;
+            background: color-mix(in srgb, var(--bg-soft) 90%, transparent);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
             padding: 12px 16px;
             margin: 20px 0 28px;
         }
         .pg-pay-btn {
             display: inline-block;
             padding: 15px 40px;
-            background: linear-gradient(135deg, #6c63ff, #4f46e5);
-            color: #fff !important;
+            background: var(--button-bg);
+            color: var(--button-text) !important;
             text-decoration: none !important;
-            border-radius: 12px;
+            border-radius: var(--radius-md);
             font-size: 16px;
             font-weight: 700;
-            box-shadow: 0 8px 24px rgba(108,99,255,.35);
-            transition: transform .15s, box-shadow .15s;
+            box-shadow: var(--shadow-soft);
+            transition: transform .15s, box-shadow .15s, background var(--transition);
             border: none; cursor: pointer;
         }
         .pg-pay-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 12px 32px rgba(108,99,255,.5);
+            background: var(--button-hover);
         }
         .pg-logout {
             display: block;
             margin-top: 20px;
             font-size: 13px;
-            color: #475569;
+            color: var(--text-soft);
             text-decoration: none;
         }
-        .pg-logout:hover { color: #94a3b8; }
+        .pg-logout:hover { color: var(--text); }
     </style>
 </head>
-<body style="margin:0;background:#0f1117;">
+<body class="page-shell pending-payment-shell">
+    <?php
+    $mechanixPublicTopbarVariant = 'billing_pending';
+    require __DIR__ . '/includes/partials/mechanix_public_topbar.php';
+    ?>
     <div class="payment-gate-page">
         <div class="payment-gate-card">
             <div class="pg-brand-mark">M</div>
@@ -224,13 +231,13 @@ try {
                    class="pg-pay-btn"
                    id="pay-subscription-btn"
                    rel="noopener noreferrer">
-                    &#128179; Pay Subscription
+                    Pay subscription
                 </a>
             <?php else: ?>
                 <p style="color:#f87171;font-size:13px;margin-bottom:16px;">
                     Your payment link is being prepared. Please check your email or refresh this page shortly.
                 </p>
-                <button onclick="location.reload()" class="pg-pay-btn">&#128260; Refresh Page</button>
+                <button onclick="location.reload()" class="pg-pay-btn">Refresh page</button>
             <?php endif; ?>
 
             <a href="<?= htmlspecialchars(BASE_URL . '/logout.php', ENT_QUOTES, 'UTF-8') ?>" class="pg-logout">

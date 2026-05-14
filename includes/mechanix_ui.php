@@ -46,3 +46,71 @@ function mechanix_logout_dialog_markup(string $context, string $formAction = '..
         . '</form>'
         . '</dialog>';
 }
+
+/**
+ * CSS stack for Tabler-based tenant/admin and heavy superadmin workspaces.
+ * Pass web path ending in assets/css/, e.g. '../assets/css/' from admin/*.php or superadmin/*.php
+ */
+function mechanix_link_styles_tabler_workspace(string $assetsCssHrefPrefix): string
+{
+    $p = htmlspecialchars(rtrim($assetsCssHrefPrefix, '/') . '/', ENT_QUOTES, 'UTF-8');
+
+    return '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0/dist/css/tabler.min.css">' . "\n"
+        . '    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">' . "\n"
+        . '    <link rel="stylesheet" href="' . $p . 'tabler-mechanix-bridge.css">' . "\n"
+        . '    <link rel="stylesheet" href="' . $p . 'mechanix-app-shell.css">' . "\n"
+        . '    <link rel="stylesheet" href="' . $p . 'styles.css">' . "\n"
+        . '    <link rel="stylesheet" href="' . $p . 'superadmin-landing-theme.css">';
+}
+
+/**
+ * Superadmin pages without Tabler: align shell + tokens-derived surfaces only.
+ *
+ * @param string $assetsCssHrefPrefix e.g. '../assets/css/'
+ */
+function mechanix_link_styles_plain_workspace(string $assetsCssHrefPrefix): string
+{
+    $p = htmlspecialchars(rtrim($assetsCssHrefPrefix, '/') . '/', ENT_QUOTES, 'UTF-8');
+
+    return '<link rel="stylesheet" href="' . $p . 'styles.css">' . "\n"
+        . '    <link rel="stylesheet" href="' . $p . 'mechanix-app-shell.css">' . "\n"
+        . '    <link rel="stylesheet" href="' . $p . 'superadmin-landing-theme.css">';
+}
+
+/**
+ * Bootstrap 5 modal fragment (shown via bootstrap.Modal or data-bs-toggle).
+ *
+ * @param array{footer?: string, scrollable?: bool, size?: ''|'modal-sm'|'modal-lg'|'modal-xl'} $opts
+ */
+function mechanix_modal(
+    string $id,
+    string $titleHtml,
+    string $bodyHtml,
+    string $dialogClassExtras = '',
+    array $opts = []
+): string {
+    $scrollableClass = !empty($opts['scrollable']) ? ' modal-dialog-scrollable' : '';
+    $sizeClass = isset($opts['size']) ? trim((string) $opts['size']) : '';
+    $sizeClass = $sizeClass !== '' ? ' ' . htmlspecialchars($sizeClass, ENT_QUOTES, 'UTF-8') : '';
+    $extras = trim($dialogClassExtras) !== ''
+        ? ' ' . htmlspecialchars(trim($dialogClassExtras), ENT_QUOTES, 'UTF-8')
+        : '';
+
+    $safeId = htmlspecialchars($id, ENT_QUOTES, 'UTF-8');
+    $headingId = $safeId . '-title';
+
+    $footerHtml = $opts['footer'] ?? '';
+
+    return '<div class="modal fade" id="' . $safeId . '" tabindex="-1" aria-labelledby="' . $headingId . '" aria-hidden="true">' . "\n"
+        . '  <div class="modal-dialog' . $sizeClass . $scrollableClass . $extras . '">' . "\n"
+        . '    <div class="modal-content">' . "\n"
+        . '      <div class="modal-header">' . "\n"
+        . '        <h5 class="modal-title" id="' . $headingId . '">' . $titleHtml . '</h5>' . "\n"
+        . '        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>' . "\n"
+        . '      </div>' . "\n"
+        . '      <div class="modal-body">' . $bodyHtml . '</div>' . "\n"
+        . ($footerHtml !== '' ? '      <div class="modal-footer">' . $footerHtml . '</div>' . "\n" : '')
+        . '    </div>' . "\n"
+        . '  </div>' . "\n"
+        . '</div>';
+}

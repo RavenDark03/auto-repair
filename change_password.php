@@ -43,22 +43,10 @@ unset($_SESSION['change_password_error'], $_SESSION['change_password_success']);
     <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body class="page-shell">
-    <header class="topbar">
-        <div class="topbar-inner">
-            <div class="brand">
-                <div class="brand-mark">M</div>
-                <div class="brand-text">
-                    <h1>MECHANIX</h1>
-                    <p>Subscription-based auto repair SaaS</p>
-                </div>
-            </div>
-
-            <div class="nav-actions">
-                <?= mechanix_theme_toggle_button() ?>
-                <a href="logout.php" class="btn btn-secondary">Log Out</a>
-            </div>
-        </div>
-    </header>
+    <?php
+    $mechanixPublicTopbarVariant = 'logout_only';
+    require __DIR__ . '/includes/partials/mechanix_public_topbar.php';
+    ?>
 
     <main class="auth-page auth-page--brand">
         <div class="auth-card">

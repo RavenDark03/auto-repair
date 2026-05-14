@@ -463,6 +463,10 @@ function customerInvoicesContextUrl($customerId, $invoiceId = 0, $jobId = 0) {
 function customerContextLabel(array $customer) {
     return !empty($customer['name']) ? $customer['name'] : 'Selected customer';
 }
+$mechanixCustomerModalOpen = '';
+if ($errorMessage !== null) {
+    $mechanixCustomerModalOpen = $selectedCustomer ? 'edit' : 'add';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en" data-theme="light" data-bs-theme="light">
@@ -470,13 +474,9 @@ function customerContextLabel(array $customer) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Customers - MECHANIX</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0/dist/css/tabler.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
-    <link rel="stylesheet" href="../assets/css/tabler-mechanix-bridge.css">
-    <link rel="stylesheet" href="../assets/css/styles.css">
-    <link rel="stylesheet" href="../assets/css/superadmin-landing-theme.css">
+    <?= mechanix_link_styles_tabler_workspace('../assets/css/') ?>
 </head>
-<body class="page-shell antialiased tenant-app">
+<body class="page-shell antialiased tenant-app"<?php if ($mechanixCustomerModalOpen !== ''): ?> data-mechanix-open-customer-modal="<?= htmlspecialchars($mechanixCustomerModalOpen, ENT_QUOTES, 'UTF-8') ?>"<?php endif; ?>>
     <div class="dashboard">
         <?= renderTenantAdminSidebar($businessName, $visibleModuleLinks, 'customers.php', $showAnalytics) ?>
 
@@ -555,6 +555,9 @@ function customerContextLabel(array $customer) {
                                 <input class="form-control" type="text" id="search" name="search" value="<?= htmlspecialchars($search, ENT_QUOTES, 'UTF-8') ?>" placeholder="Search by name, contact, email, or address">
                             </div>
                             <div class="feature-toggle-actions">
+                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#mechanixCustomerModalAdd">
+                                    <i class="ti ti-user-plus me-1"></i>Add
+                                </button>
                                 <button type="submit" class="btn btn-primary">Search</button>
                                 <a href="customers.php" class="btn btn-secondary">Reset</a>
                             </div>
@@ -590,74 +593,31 @@ function customerContextLabel(array $customer) {
                 </article>
 
                 <article class="content-card">
-                    <h3><?= $selectedCustomer ? 'Edit Customer' : 'Add Customer' ?></h3>
-                    <p><?= $selectedCustomer ? 'Update this customer profile without leaving the tenant workspace.' : 'Create a new customer record for service intake and future vehicle tracking.' ?></p>
-
-                    <form action="<?= $selectedCustomer ? 'actions/update_customer.php' : 'actions/create_customer.php' ?>" method="POST" class="feature-toggle-form">
-                        <?php if ($selectedCustomer): ?>
-                            <input type="hidden" name="customer_id" value="<?= (int) $selectedCustomer['customer_id'] ?>">
-                        <?php endif; ?>
-
-                        <div class="form-group">
-                            <label for="name">Customer Name</label>
-                            <input
-                                class="form-control"
-                                type="text"
-                                id="name"
-                                name="name"
-                                value="<?= htmlspecialchars($oldInput['name'] ?? ($selectedCustomer['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
-                                required
-                            >
+                    <?php if (!$selectedCustomer): ?>
+                        <h3>Customer profile</h3>
+                        <p>Add a customer from the modal or choose someone from the directory to manage fleet, appointments, and mobile login.</p>
+                        <div class="approval-actions flex-wrap gap-2">
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#mechanixCustomerModalAdd">
+                                <i class="ti ti-user-plus me-1"></i>Add customer
+                            </button>
                         </div>
-
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label for="contact">Contact Number</label>
-                                <input
-                                    class="form-control"
-                                    type="text"
-                                    id="contact"
-                                    name="contact"
-                                    value="<?= htmlspecialchars($oldInput['contact'] ?? ($selectedCustomer['contact'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
-                                >
+                        <div class="table-placeholder mt-4 mb-0">
+                            <strong>Current tenant admin</strong><br>
+                            Signed in as <?= htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8') ?>. Every customer record on this page is filtered by <code>tenant_id = <?= $tenantId ?></code>.
+                        </div>
+                    <?php else: ?>
+                        <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+                            <div>
+                                <h3 class="mb-1"><?= htmlspecialchars($selectedCustomer['name'], ENT_QUOTES, 'UTF-8') ?></h3>
+                                <p class="text-muted small mb-0">Review status, portal access, and lifecycle actions.</p>
                             </div>
-
-                            <div class="form-group">
-                                <label for="email">Email</label>
-                                <input
-                                    class="form-control"
-                                    type="email"
-                                    id="email"
-                                    name="email"
-                                    value="<?= htmlspecialchars($oldInput['email'] ?? ($selectedCustomer['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
-                                >
+                            <div class="btn-list flex-wrap gap-2">
+                                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#mechanixCustomerModalEdit">
+                                    <i class="ti ti-edit me-1"></i>Edit profile
+                                </button>
+                                <a href="customers.php<?= $search !== '' ? '?search=' . urlencode($search) : '' ?>" class="btn btn-secondary">Clear selection</a>
                             </div>
                         </div>
-
-                        <div class="form-group">
-                            <label for="address">Address</label>
-                            <textarea class="form-control form-textarea" id="address" name="address"><?= htmlspecialchars($oldInput['address'] ?? ($selectedCustomer['address'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
-                        </div>
-
-                        <?php if ($selectedCustomer): ?>
-                            <div class="form-group">
-                                <label for="status">Status</label>
-                                <select class="form-control" id="status" name="status" required>
-                                    <option value="active"<?= (($oldInput['status'] ?? $selectedCustomer['status']) === 'active') ? ' selected' : '' ?>>Active</option>
-                                    <option value="inactive"<?= (($oldInput['status'] ?? $selectedCustomer['status']) === 'inactive') ? ' selected' : '' ?>>Inactive</option>
-                                </select>
-                            </div>
-                        <?php endif; ?>
-
-                        <div class="approval-actions">
-                            <button type="submit" class="btn btn-primary"><?= $selectedCustomer ? 'Save Customer Changes' : 'Create Customer' ?></button>
-                            <?php if ($selectedCustomer): ?>
-                                <a href="customers.php" class="btn btn-secondary">New Customer</a>
-                            <?php endif; ?>
-                        </div>
-                    </form>
-
-                    <?php if ($selectedCustomer): ?>
                         <div class="dashboard-list compact-list">
                             <div class="dashboard-list-item">
                                 <div>
@@ -763,11 +723,6 @@ function customerContextLabel(array $customer) {
                                 </button>
                             </div>
                         </form>
-                    <?php else: ?>
-                        <div class="table-placeholder">
-                            <strong>Current tenant admin</strong><br>
-                            Signed in as <?= htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8') ?>. Every customer record on this page is filtered by <code>tenant_id = <?= $tenantId ?></code>.
-                        </div>
                     <?php endif; ?>
                 </article>
             </section>
@@ -900,6 +855,7 @@ function customerContextLabel(array $customer) {
         </main>
     </div>
 
+    <?php include __DIR__ . '/../includes/partials/admin_customers_modals.php'; ?>
     <?= renderTenantAdminFooterScripts() ?>
 </body>
 </html>

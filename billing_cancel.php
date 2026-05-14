@@ -11,21 +11,10 @@ require_once __DIR__ . '/includes/mechanix_ui.php';
     <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body class="page-shell">
-    <header class="topbar">
-        <div class="topbar-inner">
-            <div class="brand">
-                <div class="brand-mark">M</div>
-                <div class="brand-text">
-                    <h1>MECHANIX</h1>
-                    <p>Subscription-based auto repair SaaS</p>
-                </div>
-            </div>
-            <div class="nav-actions">
-                <?= mechanix_theme_toggle_button() ?>
-                <?= mechanix_back_icon_link('index.php', 'Back to home') ?>
-            </div>
-        </div>
-    </header>
+    <?php
+    $mechanixPublicTopbarVariant = 'back_home';
+    require __DIR__ . '/includes/partials/mechanix_public_topbar.php';
+    ?>
     <main class="auth-page auth-page--brand">
         <div class="auth-card">
             <h2>Payment cancelled</h2>

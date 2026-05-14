@@ -81,8 +81,7 @@ function earningsCurrency($amount): string
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Earnings Reports - MECHANIX</title>
-    <link rel="stylesheet" href="../assets/css/styles.css">
-    <link rel="stylesheet" href="../assets/css/superadmin-landing-theme.css">
+    <?= mechanix_link_styles_plain_workspace('../assets/css/') ?>
 </head>
 <body class="page-shell antialiased superadmin-app superadmin-platform">
     <div class="dashboard">
