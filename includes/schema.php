@@ -141,6 +141,53 @@ function ensurePlatformSchema(PDO $pdo): void
                 ADD COLUMN operating_hours TEXT NULL DEFAULT NULL AFTER address
             ");
         }
+
+        if (!columnExists($pdo, 'tenants', 'mobile_app_ios_url')) {
+            $pdo->exec("
+                ALTER TABLE tenants
+                ADD COLUMN mobile_app_ios_url VARCHAR(500) NULL DEFAULT NULL AFTER operating_hours
+            ");
+        }
+
+        if (!columnExists($pdo, 'tenants', 'mobile_app_android_url')) {
+            $pdo->exec("
+                ALTER TABLE tenants
+                ADD COLUMN mobile_app_android_url VARCHAR(500) NULL DEFAULT NULL AFTER mobile_app_ios_url
+            ");
+        }
+    }
+
+    if (tableExists($pdo, 'tenants') && !tableExists($pdo, 'tenant_branding_services')) {
+        $pdo->exec("
+            CREATE TABLE tenant_branding_services (
+                tenant_branding_service_id INT(11) NOT NULL AUTO_INCREMENT,
+                tenant_id INT(11) NOT NULL,
+                service_name VARCHAR(150) NOT NULL,
+                service_description VARCHAR(500) NULL DEFAULT NULL,
+                sort_order INT(11) NOT NULL DEFAULT 0,
+                PRIMARY KEY (tenant_branding_service_id),
+                KEY idx_tenant_branding_services_tenant (tenant_id),
+                CONSTRAINT fk_tenant_branding_services_tenant FOREIGN KEY (tenant_id) REFERENCES tenants (tenant_id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
+    }
+
+    if (tableExists($pdo, 'tenants') && !tableExists($pdo, 'tenant_branding')) {
+        $pdo->exec("
+            CREATE TABLE tenant_branding (
+                tenant_id INT(11) NOT NULL,
+                public_slug VARCHAR(63) NOT NULL,
+                logo_path VARCHAR(500) NULL DEFAULT NULL,
+                primary_color VARCHAR(7) NOT NULL DEFAULT '#f5a524',
+                accent_color VARCHAR(7) NOT NULL DEFAULT '#ffc04a',
+                background_color VARCHAR(7) NOT NULL DEFAULT '#f8f9fa',
+                text_color VARCHAR(7) NOT NULL DEFAULT '#1a1a1a',
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (tenant_id),
+                UNIQUE KEY uq_tenant_branding_public_slug (public_slug),
+                CONSTRAINT fk_tenant_branding_tenant FOREIGN KEY (tenant_id) REFERENCES tenants (tenant_id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
     }
 
     if (tableExists($pdo, 'users')) {

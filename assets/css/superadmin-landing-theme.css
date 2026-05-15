@@ -1,4 +1,4 @@
-/**
+    /**
  * Super admin (Tabler) shell — visual alignment with MECHANIX landing / page-shell.
  * Scoped with body.superadmin-app. Depends on tokens.css (via tabler-mechanix-bridge).
  */
@@ -689,12 +689,18 @@ html[data-theme="dark"] .superadmin-app .list-group-item.list-group-item-action:
 /* ----------------------------------------------------------------
    Logout confirmation dialog (native <dialog>)
 ---------------------------------------------------------------- */
-.mechanix-logout-dialog {
+/* Native modal <dialog> sits in the top layer; inset + margin:auto survives better than transform vs UA/Tabler. */
+dialog.mechanix-logout-dialog {
     border: none;
     border-radius: 22px;
     padding: 0;
-    max-width: 400px;
-    width: calc(100vw - 32px);
+    position: fixed !important;
+    inset: 0 !important;
+    width: min(400px, calc(100vw - 32px));
+    height: fit-content;
+    max-height: min(90vh, 420px);
+    margin: auto !important;
+    overflow: hidden;
     background: var(--bg-soft);
     color: var(--text);
     box-shadow: var(--shadow-soft);
@@ -824,13 +830,13 @@ body.page-shell.tenant-app {
 
 /* B2 — Sticky glassmorphic topbar inside .dashboard-main
    renderTenantAdminTopbar() emits .page-header as first child of .dashboard-main.
-   Negative margin breaks it out of the parent 26px padding for full-width coverage. */
+   Negative margin matches .dashboard-main padding (20px) for full-width bar; extra top padding for breathing room. */
 .tenant-app .dashboard-main > .page-header {
     position: sticky;
     top: 0;
     z-index: var(--z-sticky, 50);
-    margin: -26px -26px 26px;
-    padding: 16px 26px;
+    margin: -20px -20px 24px;
+    padding: max(22px, calc(env(safe-area-inset-top, 0px) + 14px)) 24px 18px;
 }
 
 /* B3 — Page header typography aligned to landing page hierarchy */
@@ -938,4 +944,162 @@ body.page-shell.tenant-app {
     .tenant-app .onboarding-card {
         transition: none !important;
     }
+}
+
+
+/* ================================================================
+   SUPERADMIN CHROME — dashboard lead (landing-aligned)
+================================================================ */
+
+.superadmin-platform .dashboard-title p {
+    max-width: 62ch;
+    line-height: 1.62;
+    color: var(--text-soft) !important;
+    margin-top: 0.35rem;
+    font-size: 0.98rem;
+}
+
+.superadmin-platform .dashboard-title h2 {
+    letter-spacing: -0.035em;
+}
+
+
+/* ================================================================
+   TENANT WORKSPACE — Phase 5
+   section_tenant_workspace: filter list, detail panels, lifecycle
+================================================================ */
+
+.superadmin-platform .sa-tenant-workspace {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1.5rem;
+}
+
+.superadmin-platform .sa-tenant-workspace .sa-tenant-deck {
+    margin-bottom: 0 !important;
+}
+
+.superadmin-platform .sa-tenant-workspace .sa-tenant-deck > [class*="col"] {
+    display: flex;
+    flex-direction: column;
+}
+
+.superadmin-platform .sa-tenant-workspace .sa-tenant-deck > [class*="col"] > .card {
+    flex: 1 1 auto;
+}
+
+.superadmin-platform .sa-tenant-filter-panel .form-label {
+    margin-bottom: 0.35rem;
+}
+
+.superadmin-platform .sa-tenant-filter-panel .card-body.border-top {
+    padding-top: 1.2rem;
+}
+
+.superadmin-platform .sa-tenant-filter-panel .d-flex.gap-2 .btn {
+    min-height: 44px;
+    padding-left: 1.1rem;
+    padding-right: 1.1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.superadmin-platform .sa-tenant-workspace .list-group-item {
+    padding-top: 0.95rem !important;
+    padding-bottom: 0.95rem !important;
+}
+
+.superadmin-platform .sa-tenant-detail-panel .card-body.pb-0 > p.small {
+    line-height: 1.58;
+    max-width: 65ch;
+}
+
+.superadmin-platform .sa-tenant-nested-stack > [class*="col"] > .card {
+    margin-bottom: 0 !important;
+}
+
+.superadmin-platform .sa-tenant-lifecycle-card .card-header:not(:first-child) {
+    padding-top: 0.8rem;
+    padding-bottom: 0.8rem;
+    border-top: 1px solid var(--border) !important;
+    background: color-mix(in srgb, var(--bg-elevated) 50%, transparent) !important;
+}
+
+.superadmin-platform .sa-tenant-lifecycle-card .card-header:not(:first-child) .card-title {
+    font-size: 0.9rem !important;
+    letter-spacing: -0.015em !important;
+}
+
+.superadmin-platform .sa-tenant-feature-grid .form-check {
+    margin: 0;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm, 12px);
+    background: var(--bg-elevated);
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    cursor: pointer;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.superadmin-platform .sa-tenant-feature-grid .form-check-input {
+    margin-top: 0.2rem;
+    flex-shrink: 0;
+}
+
+.superadmin-platform .sa-tenant-feature-grid .form-check-label {
+    line-height: 1.45;
+    cursor: pointer;
+}
+
+.superadmin-platform .sa-tenant-feature-grid .form-check:focus-within {
+    border-color: var(--border-strong);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.superadmin-platform .sa-tenant-filter-panel .form-control:focus {
+    border-color: var(--border-strong) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--text) 8%, transparent) !important;
+    outline: none !important;
+}
+
+@media (max-width: 575.98px) {
+    .superadmin-platform .sa-tenant-feature-grid > [class*="col"] {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .superadmin-platform .sa-tenant-feature-grid .form-check {
+        transition: none;
+    }
+}
+
+
+/* ================================================================
+   ONBOARDING GUIDE — align with platform width + rhythm
+================================================================ */
+
+.superadmin-platform .sa-onboarding-guide-wrap {
+    width: min(100% - 32px, var(--max-width, 1200px));
+    margin-inline: auto;
+    padding-bottom: 1.5rem;
+}
+
+.superadmin-platform .sa-onboarding-guide-grid {
+    gap: 1.25rem !important;
+}
+
+.superadmin-platform .sa-onboarding-guide-grid .content-card {
+    padding: 1.35rem 1.45rem;
+}
+
+.superadmin-platform .sa-onboarding-guide-grid .content-card h3 {
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    font-size: 1.05rem;
+    margin-bottom: 0.65rem;
 }

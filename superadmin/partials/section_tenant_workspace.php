@@ -1,7 +1,8 @@
+            <div class="sa-tenant-workspace">
             <!-- Tenants + Tenant Controls -->
-            <div id="features" class="row row-deck row-cards mb-4">
+            <div id="features" class="row row-deck row-cards g-4 sa-tenant-deck">
                 <div class="col-lg-6">
-                    <div class="card">
+                    <div class="card sa-tenant-filter-panel">
                         <div class="card-header">
                             <h3 class="card-title"><i class="ti ti-building-store me-2 text-muted"></i>Tenants</h3>
                         </div>
@@ -91,7 +92,7 @@
                 </div>
 
                 <div class="col-lg-6">
-                    <div class="card">
+                    <div class="card sa-tenant-detail-panel">
                         <div class="card-header">
                             <h3 class="card-title"><i class="ti ti-settings me-2 text-muted"></i>Tenant Controls</h3>
                         </div>
@@ -165,9 +166,9 @@
                         </div>
 
                         <div class="card-body">
-                        <div class="row row-deck row-cards">
+                        <div class="row row-deck row-cards g-3 sa-tenant-nested-stack">
                             <div class="col-12">
-                              <div class="card">
+                              <div class="card sa-tenant-lifecycle-card">
                                 <div class="card-header"><h3 class="card-title">Tenant Lifecycle</h3></div>
                                 <div class="card-body pb-0">
                                     <p class="text-muted small">View how this live tenant moved from registration through billing and conversion.</p>
@@ -460,9 +461,9 @@
                             <input type="hidden" name="tenant_search" value="<?= htmlspecialchars($tenantSearch, ENT_QUOTES, 'UTF-8') ?>">
                             <input type="hidden" name="tenant_status_filter" value="<?= htmlspecialchars($tenantStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
                             <input type="hidden" name="subscription_status_filter" value="<?= htmlspecialchars($subscriptionStatusFilter, ENT_QUOTES, 'UTF-8') ?>">
-                            <div class="row g-2 mb-3">
+                            <div class="row g-3 mb-3 sa-tenant-feature-grid">
                                 <?php foreach ($features as $feature): ?>
-                                    <div class="col-sm-6">
+                                    <div class="col-12 col-sm-6">
                                         <label class="form-check">
                                             <input
                                                 type="checkbox"
@@ -489,5 +490,6 @@
                     <?php endif; ?>
                     </div>
                 </div>
+            </div>
             </div>
 

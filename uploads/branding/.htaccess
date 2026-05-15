@@ -1,0 +1,4 @@
+# Tenant branding uploads — serve images only; block PHP execution.
+<FilesMatch "\.(php|phtml|php5|inc)$">
+    Require all denied
+</FilesMatch>

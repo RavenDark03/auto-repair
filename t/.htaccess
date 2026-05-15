@@ -1,0 +1,8 @@
+RewriteEngine On
+
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+RewriteRule ^([a-z0-9][a-z0-9-]{1,62})/login/?$ login.php?slug=$1 [L,QSA]
+RewriteRule ^([a-z0-9][a-z0-9-]{1,62})/?$ index.php?slug=$1 [L,QSA]

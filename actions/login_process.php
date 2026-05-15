@@ -2,10 +2,17 @@
 require_once __DIR__ . '/../includes/session.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../includes/tenant_branding.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: ' . mechanix_url_path('/login.php'));
     exit;
+}
+
+$brandingSlugRaw = trim((string) ($_POST['branding_slug'] ?? ''));
+$redirectLoginUrl = mechanix_url_path('/login.php');
+if ($brandingSlugRaw !== '') {
+    $redirectLoginUrl = mechanix_url_path('/t/login.php') . '?slug=' . urlencode($brandingSlugRaw);
 }
 
 $username = trim($_POST['username'] ?? '');
@@ -13,8 +20,24 @@ $password = $_POST['password'] ?? '';
 
 if ($username === '' || $password === '') {
     $_SESSION['error_message'] = 'Please enter both username and password.';
-    header('Location: ' . mechanix_url_path('/login.php'));
+    header('Location: ' . $redirectLoginUrl);
     exit;
+}
+
+$scopeTenantId = null;
+if ($brandingSlugRaw !== '') {
+    try {
+        $pdoScope = Database::getInstance();
+        $scopeTenantId = tenant_branding_tenant_id_for_slug($pdoScope, $brandingSlugRaw);
+    } catch (PDOException $e) {
+        $scopeTenantId = null;
+    }
+
+    if ($scopeTenantId === null) {
+        $_SESSION['error_message'] = 'That workspace link is invalid or inactive.';
+        header('Location: ' . mechanix_url_path('/login.php'));
+        exit;
+    }
 }
 
 try {
@@ -36,14 +59,30 @@ try {
         FROM users u
         INNER JOIN tenants t ON u.tenant_id = t.tenant_id
         WHERE u.username = :username
-        LIMIT 1
     ";
 
+    $execParams = ['username' => $username];
+
+    if ($scopeTenantId !== null) {
+        $sql .= ' AND u.tenant_id = :scope_tenant_id';
+        $execParams['scope_tenant_id'] = $scopeTenantId;
+    }
+
+    $sql .= '
+        LIMIT 1
+    ';
+
     $stmt = $pdo->prepare($sql);
-    $stmt->execute(['username' => $username]);
+    $stmt->execute($execParams);
     $user = $stmt->fetch();
 
     if (!$user) {
+        if ($scopeTenantId !== null) {
+            $_SESSION['error_message'] = 'Invalid username or password.';
+            header('Location: ' . $redirectLoginUrl);
+            exit;
+        }
+
         $saStmt = $pdo->prepare("
             SELECT super_admin_id, username, password_hash
             FROM super_admins
@@ -81,19 +120,19 @@ try {
 
     if ($user['user_status'] !== 'active') {
         $_SESSION['error_message'] = 'Your account is inactive.';
-        header('Location: ' . mechanix_url_path('/login.php'));
+        header('Location: ' . $redirectLoginUrl);
         exit;
     }
 
     if ($user['tenant_status'] !== 'active' && $user['tenant_status'] !== 'pending_payment') {
         $_SESSION['error_message'] = 'This tenant is currently inactive.';
-        header('Location: ' . mechanix_url_path('/login.php'));
+        header('Location: ' . $redirectLoginUrl);
         exit;
     }
 
     if (!password_verify($password, $user['password_hash'])) {
         $_SESSION['error_message'] = 'Invalid username or password.';
-        header('Location: ' . mechanix_url_path('/login.php'));
+        header('Location: ' . $redirectLoginUrl);
         exit;
     }
 
@@ -131,10 +170,10 @@ try {
     }
 
     $_SESSION['error_message'] = 'Your role is not yet connected to a dashboard.';
-    header('Location: ' . mechanix_url_path('/login.php'));
+    header('Location: ' . $redirectLoginUrl);
     exit;
 } catch (PDOException $e) {
     $_SESSION['error_message'] = 'System error: ' . $e->getMessage();
-    header('Location: ' . mechanix_url_path('/login.php'));
+    header('Location: ' . $redirectLoginUrl);
     exit;
 }

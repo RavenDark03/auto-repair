@@ -191,6 +191,7 @@ function renderContextStrip(array $links, $currentLabel = null, array $actions =
 function getTenantAdminModuleLinks() {
     return [
         ['label' => 'Staff Management', 'feature' => null,              'hint' => 'Live', 'href' => 'staff.php',        'roles' => ['admin'],            'icon' => 'ti-users'],
+        ['label' => 'Branding',        'feature' => null,              'hint' => 'Shop', 'href' => 'branding.php',     'roles' => ['admin'],            'icon' => 'ti-palette'],
         ['label' => 'Settings',         'feature' => null,              'hint' => 'Shop', 'href' => 'settings.php',     'roles' => ['admin'],            'icon' => 'ti-settings'],
         ['label' => 'Subscription',     'feature' => 'subscription_center', 'hint' => 'Plan', 'href' => 'subscriptions.php', 'roles' => ['admin'],        'icon' => 'ti-calendar-due'],
         ['label' => 'Customers',        'feature' => 'customer_module', 'hint' => 'Live', 'href' => 'customers.php',    'roles' => ['admin'],            'icon' => 'ti-user-circle'],

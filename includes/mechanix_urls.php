@@ -22,6 +22,10 @@ if (!function_exists('mechanix_public_url_prefix')) {
             $depth = 2;
         }
 
+        if (preg_match('#/t/(?:index|login)\.php$#', $script)) {
+            $depth = 2;
+        }
+
         $base = $script;
         for ($i = 0; $i < $depth; $i++) {
             $base = dirname($base);

@@ -35,7 +35,8 @@ $pendingCount = (int) $pdo->query("SELECT COUNT(*) FROM tenant_registrations WHE
         </div>
 
         <div class="page-body sa-superadmin-page-body">
-            <section class="content-grid superadmin-grid">
+            <div class="sa-onboarding-guide-wrap">
+            <section class="content-grid superadmin-grid sa-onboarding-guide-grid">
                 <article class="content-card">
                     <h3>Happy path</h3>
                     <ol class="sa-guide-list">
@@ -64,6 +65,7 @@ $pendingCount = (int) $pdo->query("SELECT COUNT(*) FROM tenant_registrations WHE
                     </div>
                 </article>
             </section>
+            </div>
         </div>
     </main>
 </div>
