@@ -99,24 +99,41 @@ $androidHref = trim($androidUrl);
             <?= renderTenantAccessModeNotice() ?>
 
             <section class="content-grid">
-                <article class="content-card">
-                    <h3>Public workspace</h3>
-                    <p>Customers and staff use this short link for your branded landing page and staff login. Colors apply to those public pages.</p>
+                <article class="content-card branding-public-card">
+                    <div class="branding-public-card__intro">
+                        <h3 class="branding-public-card__title">Public workspace</h3>
+                        <p class="branding-public-card__lead text-muted mb-0">Share these links with staff and customers. Public pages use your slug, logo, and colors below.</p>
+                    </div>
 
                     <?php if ($publicUrls !== null): ?>
-                        <div class="form-group">
-                            <label class="form-label">Public URLs</label>
-                            <div class="small text-muted" style="margin-bottom:6px;">Pretty paths need Apache <code>mod_rewrite</code> (see <code>t/.htaccess</code>). Otherwise use the compatibility links.</div>
-                            <ul class="list-unstyled small mb-0">
-                                <li><strong>Landing:</strong> <a href="<?= htmlspecialchars($publicUrls['pretty_home'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer"><?= htmlspecialchars($publicUrls['pretty_home'], ENT_QUOTES, 'UTF-8') ?></a></li>
-                                <li><strong>Staff login:</strong> <a href="<?= htmlspecialchars($publicUrls['pretty_login'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer"><?= htmlspecialchars($publicUrls['pretty_login'], ENT_QUOTES, 'UTF-8') ?></a></li>
-                                <li><strong>Compat landing:</strong> <a href="<?= htmlspecialchars($publicUrls['compat_home'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer"><?= htmlspecialchars($publicUrls['compat_home'], ENT_QUOTES, 'UTF-8') ?></a></li>
-                                <li><strong>Compat login:</strong> <a href="<?= htmlspecialchars($publicUrls['compat_login'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer"><?= htmlspecialchars($publicUrls['compat_login'], ENT_QUOTES, 'UTF-8') ?></a></li>
-                            </ul>
+                        <?php
+                        $hrefLanding = htmlspecialchars($publicUrls['pretty_home'], ENT_QUOTES, 'UTF-8');
+                        $hrefLogin = htmlspecialchars($publicUrls['pretty_login'], ENT_QUOTES, 'UTF-8');
+                        $dispLanding = htmlspecialchars($publicUrls['pretty_home'], ENT_QUOTES, 'UTF-8');
+                        $dispLogin = htmlspecialchars($publicUrls['pretty_login'], ENT_QUOTES, 'UTF-8');
+                        ?>
+                        <div class="branding-link-shell mt-3">
+                            <div class="branding-link-tile">
+                                <span class="branding-link-tile__badge">Landing</span>
+                                <code class="branding-link-tile__url" dir="ltr"><?= $dispLanding ?></code>
+                                <div class="branding-link-tile__row">
+                                    <a class="btn btn-primary btn-sm" href="<?= $hrefLanding ?>" target="_blank" rel="noopener noreferrer"><i class="ti ti-external-link me-1"></i>Open</a>
+                                    <button type="button" class="btn btn-ghost-secondary btn-sm branding-copy-url" data-url="<?= $dispLanding ?>"><i class="ti ti-copy me-1"></i>Copy</button>
+                                </div>
+                            </div>
+                            <div class="branding-link-tile">
+                                <span class="branding-link-tile__badge">Staff login</span>
+                                <code class="branding-link-tile__url" dir="ltr"><?= $dispLogin ?></code>
+                                <div class="branding-link-tile__row">
+                                    <a class="btn btn-primary btn-sm" href="<?= $hrefLogin ?>" target="_blank" rel="noopener noreferrer"><i class="ti ti-external-link me-1"></i>Open</a>
+                                    <button type="button" class="btn btn-ghost-secondary btn-sm branding-copy-url" data-url="<?= $dispLogin ?>"><i class="ti ti-copy me-1"></i>Copy</button>
+                                </div>
+                            </div>
                         </div>
+                        <p class="text-muted small mt-3 mb-0 branding-public-note"><span class="branding-public-note__dot"></span> Short URLs expect Apache rewrite rules in <code>t/.htaccess</code>.</p>
                     <?php endif; ?>
 
-                    <form action="actions/save_branding.php" method="POST" enctype="multipart/form-data" class="feature-toggle-form" style="margin-top: 1rem;">
+                    <form action="actions/save_branding.php" method="POST" enctype="multipart/form-data" class="feature-toggle-form branding-form-gap mt-3">
                         <div class="form-group">
                             <label for="public_slug">Public link slug</label>
                             <input class="form-control" type="text" id="public_slug" name="public_slug" value="<?= htmlspecialchars($publicSlugField, ENT_QUOTES, 'UTF-8') ?>" pattern="[a-z0-9][a-z0-9-]{1,62}" maxlength="63" required autocomplete="off">
@@ -124,6 +141,87 @@ $androidHref = trim($androidUrl);
                         </div>
 
                         <style>
+                            .branding-public-card__title {
+                                font-weight: 700;
+                                letter-spacing: -0.02em;
+                                margin-bottom: 0.35rem;
+                            }
+                            .branding-public-card__lead {
+                                font-size: 0.94rem;
+                                line-height: 1.55;
+                                max-width: 52ch;
+                            }
+                            .branding-link-shell {
+                                display: grid;
+                                gap: 12px;
+                            }
+                            @media (min-width: 768px) {
+                                .branding-link-shell {
+                                    grid-template-columns: 1fr 1fr;
+                                }
+                            }
+                            .branding-link-tile {
+                                border-radius: 18px;
+                                padding: 1rem 1.05rem;
+                                background: color-mix(in srgb, var(--tblr-body-color, #1e293b) 4%, var(--tblr-bg-surface, #fff));
+                                border: 1px solid color-mix(in srgb, var(--tblr-border-color, #e7eaef) 85%, transparent);
+                                display: flex;
+                                flex-direction: column;
+                                gap: 0.65rem;
+                                min-height: 100%;
+                            }
+                            .branding-link-tile__badge {
+                                font-size: 0.62rem;
+                                font-weight: 700;
+                                letter-spacing: 0.14em;
+                                text-transform: uppercase;
+                                color: var(--tblr-secondary, #626976);
+                            }
+                            .branding-link-tile__url {
+                                font-size: 0.82rem;
+                                font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+                                word-break: break-all;
+                                background: transparent;
+                                margin: 0;
+                                padding: 0;
+                                color: var(--tblr-body-color, #1e293b);
+                                font-weight: 500;
+                            }
+                            .branding-link-tile__row {
+                                display: flex;
+                                flex-wrap: wrap;
+                                gap: 8px;
+                                margin-top: auto;
+                                padding-top: 4px;
+                            }
+                            .btn-ghost-secondary {
+                                background: transparent;
+                                border: 1px dashed color-mix(in srgb, var(--tblr-border-color, #dee2e6) 90%, transparent);
+                                color: var(--tblr-secondary, #626976);
+                            }
+                            .btn-ghost-secondary:hover {
+                                border-style: solid;
+                                color: var(--tblr-body-color, #1e293b);
+                                background: color-mix(in srgb, var(--tblr-body-color, #1e293b) 5%, transparent);
+                            }
+                            .branding-public-note {
+                                display: flex;
+                                align-items: flex-start;
+                                gap: 8px;
+                                max-width: 56ch;
+                                line-height: 1.45;
+                            }
+                            .branding-public-note__dot {
+                                width: 6px;
+                                height: 6px;
+                                border-radius: 50%;
+                                margin-top: 0.35rem;
+                                flex-shrink: 0;
+                                background: color-mix(in srgb, var(--tblr-secondary, #626976) 55%, transparent);
+                            }
+                            .branding-form-gap {
+                                margin-top: 1.25rem !important;
+                            }
                             .branding-color-row {
                                 display: flex;
                                 align-items: center;
@@ -341,6 +439,46 @@ $androidHref = trim($androidUrl);
             });
             picker.addEventListener('change', function () {
                 hexSpan.textContent = picker.value;
+            });
+        });
+
+        function mechanixAbsoluteCopyUrl(pathOrUrl) {
+            var u = (pathOrUrl || '').trim();
+            if (!u) return '';
+            if (/^https?:\/\//i.test(u)) return u;
+            var origin = window.location.origin.replace(/\/$/, '');
+            return u.startsWith('/') ? origin + u : origin + '/' + u;
+        }
+
+        document.querySelectorAll('.branding-copy-url').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var raw = btn.getAttribute('data-url') || '';
+                if (!raw) return;
+                var text = mechanixAbsoluteCopyUrl(raw.trim());
+                function flash(ok) {
+                    var prev = btn.innerHTML;
+                    btn.innerHTML = ok ? '<i class="ti ti-check me-1"></i>Copied' : '<i class="ti ti-alert-circle me-1"></i>Failed';
+                    btn.disabled = true;
+                    setTimeout(function () {
+                        btn.innerHTML = prev;
+                        btn.disabled = false;
+                    }, ok ? 1400 : 2200);
+                }
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(function () { flash(true); }).catch(function () { flash(false); });
+                } else {
+                    var ta = document.createElement('textarea');
+                    ta.value = text;
+                    document.body.appendChild(ta);
+                    ta.select();
+                    try {
+                        document.execCommand('copy');
+                        flash(true);
+                    } catch (e) {
+                        flash(false);
+                    }
+                    document.body.removeChild(ta);
+                }
             });
         });
     </script>
